@@ -54,7 +54,6 @@ def show_stream(frames):
     else:
         for camera in frames:
             cv2.imshow(str(camera) + ' stream', frames[camera])
-    cv2.waitKey(1)  # important line to use the GUI
 
 
 def cls():

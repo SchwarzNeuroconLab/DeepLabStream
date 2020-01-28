@@ -1,7 +1,6 @@
 nidaqmx>=0.5.7
 click>=7.0
 opencv-python>=3.4.5.20
-guizero>=1.0.0
 numpy>=1.14.5
 pandas>=0.21.0
 matplotlib>=3.0.3

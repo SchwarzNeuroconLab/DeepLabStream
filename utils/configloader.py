@@ -29,7 +29,8 @@ FRAMERATE = dsc_config['Streaming'].getint('FRAMERATE')
 OUT_DIR = dsc_config['Streaming'].get('OUTPUT_DIRECTORY')
 STREAM = dsc_config['Streaming'].getboolean('STREAM')
 MULTI_CAM = dsc_config['Streaming'].getboolean('MULTIPLE_DEVICES')
-STACK_FRAMES = dsc_config['Streaming'].getboolean('STACK_FRAMES')
+STACK_FRAMES = dsc_config['Streaming'].getboolean('STACK_FRAMES') if dsc_config['Streaming'].getboolean(
+    'STACK_FRAMES') is not None else False
 ANIMALS_NUMBER = dsc_config['Streaming'].getint('ANIMALS_NUMBER') if dsc_config['Streaming'].getint(
     'ANIMALS_NUMBER') is not None else 1
 STREAMS = [str(part).strip() for part in dsc_config['Streaming'].get('STREAMS').split(',')]
