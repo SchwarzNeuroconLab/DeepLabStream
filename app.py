@@ -134,6 +134,7 @@ class AThread(QThread):
         """
         if os.name == 'nt':
             show_stream(frames)
+            cv2.waitKey(1)
         else:
             for camera in frames:
                 # converting to RGB
