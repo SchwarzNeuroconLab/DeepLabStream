@@ -17,14 +17,14 @@ In general, you need:
 - CPU with at least 4 cores to properly utilize parallelization;
 - Decent amount of RAM, at least 16 Gb;
 
-We tested DeepLabStream with multiple different setups and would say that minimum reasonable configuration would be:
+We tested DeepLabStream with different setups and would say that a minimum reasonable configuration would be:
 ```
 CPU: Intel Core i7-7700K CPU @ 4.20GHz
 RAM: 32GB DDR4
 GPU: Nvidia GeForce GTX 1050 (3GB)
 ```
 
-However, our recommended setup, with which we did achieve constant 30 FPS with 2 camera setup at 848x480 resolution:
+However, our recommended setup, with which we did achieve constant 30 FPS with a two camera setup at 848x480 resolution:
 ```
 CPU: Intel Core i7-9700K @ 3.60GHz
 RAM: 64 GB DDR4
@@ -38,15 +38,15 @@ In short, you need to be able to run DeepLabCut on your system before installing
 [Here](https://github.com/AlexEMG/DeepLabCut/blob/master/docs/installation.md) is a full instruction by DeepLabCut,
 but we will provide a short version/checklist below.
 
-1. Make sure that you have the proper Nvidia drivers installed; 
-2. Install [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) by Nvidia. 
+1. Make sure that you have the proper Nvidia drivers installed;
+2. Install [CUDA](https://developer.nvidia.com/cuda-downloads) by Nvidia.
 Please refer to this [table](https://stackoverflow.com/questions/30820513/what-is-the-correct-version-of-cuda-for-my-nvidia-driver/30820690#30820690) to ensure you have the correct driver/CUDA combination;
 3. Verify your CUDA installation on [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#verify-installation)
 or [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#verify-installation);
 4. Create an environment. We strongly recommend using [environments provided by DeepLabCut](https://github.com/AlexEMG/DeepLabCut/blob/master/conda-environments/README.md);
-5. If you are not using DeepLabCut-provided enviroments for step 4, install [cuDNN](https://developer.nvidia.com/cudnn).
+5. If you are not using DeepLabCut-provided environments for step 4, install [cuDNN](https://developer.nvidia.com/cudnn).
 Otherwise, skip this step;
-6. Install [Tensorflow](https://www.tensorflow.org/install/) using your environment from step 4. Short and ideal version would be simply running 
+6. Make sure that [Tensorflow](https://www.tensorflow.org/install/) is installed in your environment. Manual installation goes as followed:
     ```bash
     pip install tensorflow-gpu==1.12
     ``` 
@@ -55,13 +55,13 @@ Otherwise, skip this step;
 or [this](https://towardsdatascience.com/installing-tensorflow-with-cuda-cudnn-and-gpu-support-on-windows-10-60693e46e781) (Windows) manual. 
 The latter also provides a great overview of the whole process with the previous six steps.
 
-DeepLabStream was originally designed with with [DeepLabCut v1.11](https://github.com/AlexEMG/DeepLabCut/blob/1.11/docs/installation.md) in mind, but for the ease of installation and future-proofing we recommend current [DeepLabCut 2.x](https://github.com/AlexEMG/DeepLabCut) ([Nath, Mathis et al, 2019](https://www.nature.com/articles/s41596-019-0176-0)) . Both versions and networks trained with them worked fine within our tests.
+DeepLabStream was originally designed with [DeepLabCut v1.11](https://github.com/AlexEMG/DeepLabCut/blob/1.11/docs/installation.md) in mind, but for the ease of installation and future-proofing we recommend current [DeepLabCut 2.x](https://github.com/AlexEMG/DeepLabCut) ([Nath, Mathis et al, 2019](https://www.nature.com/articles/s41596-019-0176-0)) . Both versions and networks trained with them worked fine within our tests.
 
 ### DeepLabStream installation
 
-Easiest way of installing DeepLabStream would be the following:
+The easiest way of installing DeepLabStream would be the following:
 
-*(Make sure that you are working in the same environment that you installed DeepLabCut in)*
+*(Make sure that you are working in the same environment that you installed DeepLabCut in!)*
 
 ```bash
 git clone https://github.com/SchwarzNeuroconLab/DeepLabStream.git
@@ -87,8 +87,7 @@ If you installed it like a package with DeepLabCut's provided environment files,
     - STREAMS - (color, depth, infrared) choose this only for Intel RealSense cameras, otherwise leave this empty
     - OUTPUT_DIRECTORY - folder for data and video output
     - MULTIPLE_DEVICES - Set `True` if using multicamera setup, otherwise `False`
-    - STACK_FRAMES - Set `True` if you want to stack frames from multiple cameras for video and streaming output, otherwise `False`
-    - ANIMALS_NUMBER - the number of objects, defined by your model, that you are tracking (currently only reliable with "1")
+    - VIDEO_SOURCE - if you are not using RealSense or Basler cameras, you need to choose the correct source for your camera manually. It should be recognized by openCV.
 
 #### Multicam support
 
@@ -148,14 +147,16 @@ Very important note: **with this generic camera mode you will not be able to use
 To properly test your DeepLabStream installation, we included a testing script that you can run in three different modes. ```DeepLabStream.py``` allows you to test your cameras, your DeepLabcut installation,
 and to benchmark your DeepLabStream performance.
 
-1. Run following command to test your cameras:
+1. Run the following command to test your cameras:
 ```bash
 python DeepLabStream.py
 ```
+
 2. Next, you can test how your DeepLabCut installation behaves and if you did correctly set the DeepLabCut path in the config:
 ```bash
 python DeepLabStream.py --dlc-enabled
 ```
+
 3. And finally you can benchmark your system automatically:
 ```bash
 python DeepLabStream.py --dlc-enabled --benchmark-enabled
@@ -187,28 +188,37 @@ python app.py
 
 You will see the main control panel of a GUI app.
 
-![Main](docs/app_main_view.png)
+![Main](docs/screen_gui.png)
 
-To start working with DeepLabStream, press the `start streaming` button. It will activate the camera manager and show you the current view from the connected cameras.
+To start working with DeepLabStream, press the `Start Stream` button. It will activate the camera manager and show you the current view from the connected cameras.
 
-<img src="docs/app_streaming.png"  width=800>
+![Stream](docs/screen_stream.png)
 
-After that you can `start analysis` to start DeepLabCut and receive a pose estimations for each frame, or, additionally, you can `start recording` to record a
-video of the current feed (visible in the stream window). You will see your current video timestamp (counted in frames) and FPS after you pressed the `start analysis` button.
+After that you can `Start Analysis` to start DeepLabCut and receive a pose estimations for each frame, or, additionally, you can `Start Recording` to record a
+video of the current feed (visible in the stream window). You will see your current video timestamp (counted in frames) and FPS after you pressed the `Start Analysis` button.
 
-<img src="docs/app_analysis.png"  width=800>
+![Analisys](docs/screen_analysis.png)
 
-As you can see, this zebra is not very mouse-like, so the tracking is not entirely accurate.
+As you can see, we track three points that represent three body parts of the mouse - nose, neck and tail root.
+Every single frame where the animal was tracked is outputted to the dataframe, which would create a .csv file after the analysis is finished.
 
 After you finish with tracking and/or recording the video, you can stop either function by specifically pressing on corresponding "stop" button
-(so, `stop analysis` or `stop recording`) or you can stop the app and refresh all the timing at once, by pressing `stop streaming` button.
+(so, `Stop Analysis` or `Stop Recording`) or you can stop the app and refresh all the timing at once, by pressing `Stop Streaming` button.
 
 #### Experiments
 
 DeepLabStream was build specifically for closed-loop experiments, so with a properly implemented experiment protocol, running experiments on this system is as easy as 
-pressing the `start experiment` button. Depending on your protocol and experimental goals, experiments could run and finish without any further engagement from the user. 
-All experimental output can be stored to a text based .csv file for easy postprocessing. 
+pressing the `Start Experiment` button. Depending on your protocol and experimental goals, experiments could run and finish without any further engagement from the user.
 
+![Start](docs/screen_exp_start.png)
+
+Here is an example of a very simple experiment, that counts each time the mouse was inside some predefined area in the arena.
+
+![Experiment](docs/screen_exp.png)
+
+We have a visual representation of this event, the border of the area will turn green.
+
+All experimental output will be stored to a .csv file for easy postprocessing.
 
 ### How does this work
 
