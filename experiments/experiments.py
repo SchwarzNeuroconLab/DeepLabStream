@@ -92,6 +92,8 @@ class ExampleExperiment:
         self.experiment_finished = True
         print('Experiment completed!')
         self._exp_timer.reset()
+        # don't forget to end the process!
+        self._process.end()
 
     def get_trial(self):
         """
