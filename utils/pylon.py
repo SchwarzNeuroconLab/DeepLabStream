@@ -81,6 +81,7 @@ class PylonManager:
         """
         for camera_name, camera in self._enabled_devices.items():
             camera.StopGrabbing()
+        self._enabled_devices = {}
 
     def get_name(self) -> str:
         return self._manager_name

@@ -148,3 +148,4 @@ class RealSenseManager:
         for serial, device in self._enabled_devices.items():
             device_pipeline, device_profile = device
             device_pipeline.stop()
+        self._enabled_devices = {}
