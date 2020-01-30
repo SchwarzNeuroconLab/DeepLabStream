@@ -3,79 +3,12 @@ import os
 import cv2
 
 from DeepLabStream import DeepLabStream, show_stream
-from utils.configloader import MULTI_CAM, STREAMS, RESOLUTION, RECORD_EXP
+from utils.configloader import MULTI_CAM, STREAMS, RECORD_EXP
+from utils.gui_image import QFrame, ImageWindow, emit_qframes
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, pyqtSlot
-
-from PyQt5.QtWidgets import QPushButton, QApplication, QWidget, QLabel, QGridLayout
-
-from PyQt5.QtGui import QImage, QPixmap, QIcon
-
-width, height = RESOLUTION
-
-
-class ImageWindow(QWidget):
-    """
-    Image window is used to show an image within PyQt GUI
-    This example is hardcoded for width and height of currently defined resolution
-    """
-    def __init__(self, name):
-        super().__init__()
-        self.title = name
-        self.left = 0
-        self.top = 0
-        self.width, self.height = width, height
-        self.label = QLabel(self)
-        self.init_ui()
-
-    @pyqtSlot(QImage)
-    def set_image(self, image):
-        """
-        This is a slot for QImage widget
-        We use this to "catch" an emitted image
-        :param image: QImage
-        """
-        # using label to output the image
-        self.label.setPixmap(QPixmap.fromImage(image))
-
-    def init_ui(self):
-        """
-        Creating a UI itself
-        """
-        # title
-        self.setWindowTitle(self.title)
-        # geometric parameters
-        self.setGeometry(self.left, self.top, self.width, self.height)
-        self.resize(self.width, self.height)
-        # create a label
-        self.label.resize(self.width, self.height)
-
-    def closeEvent(self, event):
-        # keeps window from closing on accident
-        event.ignore()
-
-
-class QFrame(QObject):
-    """
-    This is a dummy class to workaround PyQt5 restrictions on declaring signals
-    Basically, it does not allow to be declared in an instance of a class, or it will become bounded
-    You need to define it as a class variable, but that does not work every time, especially for dynamic tasks
-    In short -
-    Okay:
-        class A:
-            smth = pyqtSignal()
-    Not okay:
-        class A:
-            def __init__()
-            self.smth = pyqtSignal()
-
-    But both of the examples provide the same functionality, A.smth is a pyqtSignal
-    So we workaround it, making a dummy class and going with the "okay" route
-    This is essential for multicam support
-
-    ! Probably have a tax on the performance
-    """
-    signal = pyqtSignal(QImage)
+from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QPushButton, QApplication, QWidget, QGridLayout
+from PyQt5.QtGui import QIcon
 
 
 # creating a complete thread process to work in the background
@@ -115,9 +48,9 @@ class AThread(QThread):
                 stream_manager.input_frames_for_analysis(all_frames, stream_manager.frame_index)
                 # streaming the stream
                 if res_frames:
-                    self.stream_frames(res_frames)
+                    self._stream_frames(res_frames)
             else:
-                self.stream_frames(color_frames)
+                self._stream_frames(color_frames)
 
             stream_manager.frame_index += 1
 
@@ -127,25 +60,21 @@ class AThread(QThread):
         """
         self.threadactive = False
 
-    def stream_frames(self, frames):
+    def _stream_frames(self, frames):
         """
         Shows some number of stream frames, depending on cameras quantity
+        Method of streaming depends on platform
+        Windows -> through openCV with their window objects
+        Unix -> thought PyQt with some widget window
         :param frames: dictionary of frames in format of {camera:frame}
         """
         if os.name == 'nt':
             show_stream(frames)
+            # very important line for openCV to work correctly
+            # actually does nothing, but do NOT delete
             cv2.waitKey(1)
         else:
-            for camera in frames:
-                # converting to RGB
-                rgb_image = cv2.cvtColor(frames[camera], cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb_image.shape
-                # converting to QImage
-                qpicture = QImage(rgb_image.data, w, h, ch * w, QImage.Format_RGB888)
-                # scaling QImage to resolution
-                scaled_qpicture = qpicture.scaled(width, height, Qt.KeepAspectRatio)
-                # emitting the picture
-                self.qframes[camera].signal.emit(scaled_qpicture)
+            emit_qframes(frames, self.qframes)
 
 
 class ButtonWindow(QWidget):
@@ -156,66 +85,64 @@ class ButtonWindow(QWidget):
         self.setWindowTitle('DeepLabStream')
         self.title = 'ButtonWindow'
         # next is the complete buttons dictionary with buttons, icons, functions and layouts
-        self.buttons_dict = {'Start_Stream': {"Button": QPushButton('Start Stream'),
-                                              "Icon": QIcon('misc/StartStream2.png'),
-                                              "Function": self.start_stream,
-                                              "Layout": (0, 0, 2, 2),
-                                              "State": True},
+        self._buttons_dict = {'Start_Stream': {"Button": QPushButton('Start Stream'),
+                                               "Icon": QIcon('misc/StartStream2.png'),
+                                               "Function": self.start_stream,
+                                               "Layout": (0, 0, 2, 2),
+                                               "State": True},
 
-                             'Start_Analysis': {"Button": QPushButton('Start Analysis'),
-                                                "Icon": QIcon('misc/StartAnalysis2.png'),
-                                                "Function": self.start_analysis,
-                                                "Layout": (2, 0, 2, 1),
-                                                "State": False},
+                              'Start_Analysis': {"Button": QPushButton('Start Analysis'),
+                                                 "Icon": QIcon('misc/StartAnalysis2.png'),
+                                                 "Function": self.start_analysis,
+                                                 "Layout": (2, 0, 2, 1),
+                                                 "State": False},
 
-                             'Start_Experiment': {"Button": QPushButton('Start Experiment'),
-                                                  "Icon": QIcon('misc/StartExperiment2.png'),
-                                                  "Function": self.start_experiment,
-                                                  "Layout": (4, 0, 2, 1),
+                              'Start_Experiment': {"Button": QPushButton('Start Experiment'),
+                                                   "Icon": QIcon('misc/StartExperiment2.png'),
+                                                   "Function": self.start_experiment,
+                                                   "Layout": (4, 0, 2, 1),
+                                                   "State": False},
+
+                              'Start_Recording': {"Button": QPushButton('Start Recording'),
+                                                  "Icon": QIcon('misc/StartRecording2.png'),
+                                                  "Function": self.start_recording,
+                                                  "Layout": (6, 0, 2, 1),
                                                   "State": False},
 
-                             'Start_Recording': {"Button": QPushButton('Start Recording'),
-                                                 "Icon": QIcon('misc/StartRecording2.png'),
-                                                 "Function": self.start_recording,
-                                                 "Layout": (6, 0, 2, 1),
-                                                 "State": False},
+                              'Stop_Stream': {"Button": QPushButton('Stop Stream'),
+                                              "Icon": QIcon('misc/StopStream2.png'),
+                                              "Function": self.stop_stream,
+                                              "Layout": (8, 0, 2, 2),
+                                              "State": False},
 
-                             'Stop_Stream': {"Button": QPushButton('Stop Stream'),
-                                             "Icon": QIcon('misc/StopStream2.png'),
-                                             "Function": self.stop_stream,
-                                             "Layout": (8, 0, 2, 2),
-                                             "State": False},
+                              'Stop_Analysis': {"Button": QPushButton('Stop Analysis'),
+                                                "Icon": QIcon('misc/StopAnalysis2.png'),
+                                                "Function": self.stop_analysis,
+                                                "Layout": (2, 1, 2, 1),
+                                                "State": False},
 
-                             'Stop_Analysis': {"Button": QPushButton('Stop Analysis'),
-                                               "Icon": QIcon('misc/StopAnalysis2.png'),
-                                               "Function": self.stop_analysis,
-                                               "Layout": (2, 1, 2, 1),
-                                               "State": False},
+                              'Stop_Experiment': {"Button": QPushButton('Stop Experiment'),
+                                                  "Icon": QIcon('misc/StopExperiment2.png'),
+                                                  "Function": self.stop_experiment,
+                                                  "Layout": (4, 1, 2, 1),
+                                                  "State": False},
 
-                             'Stop_Experiment': {"Button": QPushButton('Stop Experiment'),
-                                                 "Icon": QIcon('misc/StopExperiment2.png'),
-                                                 "Function": self.stop_experiment,
-                                                 "Layout": (4, 1, 2, 1),
-                                                 "State": False},
+                              'Stop_Recording': {"Button": QPushButton('Stop Recording'),
+                                                 "Icon": QIcon('misc/StopRecording2.png'),
+                                                 "Function": self.stop_recording,
+                                                 "Layout": (6, 1, 2, 1),
+                                                 "State": False}}
 
-                             'Stop_Recording': {"Button": QPushButton('Stop Recording'),
-                                                "Icon": QIcon('misc/StopRecording2.png'),
-                                                "Function": self.stop_recording,
-                                                "Layout": (6, 1, 2, 1),
-                                                "State": False}}
-        self.buttons_pairing = {
-
-        }
         # creating button layout with icons and functionality
         self.initialize_buttons()
-        self.thread = None
+        self._thread = None
         self.image_windows = {}
 
     def start(self):
-        self.thread.start()
+        self._thread.start()
 
     def stop(self):
-        self.thread.stop()
+        self._thread.stop()
 
     def initialize_buttons(self):
         """
@@ -223,23 +150,23 @@ class ButtonWindow(QWidget):
         Sets all buttons with an icon, function and position
         """
         layout = QGridLayout()
-        for func in self.buttons_dict:
+        for func in self._buttons_dict:
             # setting icon
-            self.buttons_dict[func]["Button"].setIcon(self.buttons_dict[func]["Icon"])
+            self._buttons_dict[func]["Button"].setIcon(self._buttons_dict[func]["Icon"])
             # setting function
-            self.buttons_dict[func]["Button"].clicked.connect(self.buttons_dict[func]["Function"])
+            self._buttons_dict[func]["Button"].clicked.connect(self._buttons_dict[func]["Function"])
             # setting position
-            layout.addWidget(self.buttons_dict[func]["Button"], *self.buttons_dict[func]["Layout"])
+            layout.addWidget(self._buttons_dict[func]["Button"], *self._buttons_dict[func]["Layout"])
             # setting default state
-            self.buttons_dict[func]["Button"].setEnabled(self.buttons_dict[func]["State"])
+            self._buttons_dict[func]["Button"].setEnabled(self._buttons_dict[func]["State"])
             # setting button size
-            self.buttons_dict[func]["Button"].setMinimumHeight(100)
+            self._buttons_dict[func]["Button"].setMinimumHeight(100)
         # setting window layout for all buttons
         self.setLayout(layout)
 
     def buttons_toggle(self, *buttons):
         for button in buttons:
-            self.buttons_dict[button]["Button"].setEnabled(not self.buttons_dict[button]["Button"].isEnabled())
+            self._buttons_dict[button]["Button"].setEnabled(not self._buttons_dict[button]["Button"].isEnabled())
 
     """ Button functions"""
 
@@ -248,32 +175,33 @@ class ButtonWindow(QWidget):
         stream_manager.start_cameras(STREAMS, MULTI_CAM)
 
         # initializing background thread
-        self.thread = AThread(self)
-        self.thread.start()
+        self._thread = AThread(self)
+        self._thread.start()
+        print("Streaming started")
 
         # flipping the state of the buttons
-        # for func in self.buttons_dict:
-        #     self.buttons_dict[func]["Button"].setEnabled(not self.buttons_dict[func]["State"])
         self.buttons_toggle("Start_Analysis",
                             "Start_Recording",
                             "Start_Stream",
                             "Stop_Stream")
 
+        # initializing image windows for Unix systems via PyQt
         if os.name != 'nt':
             for camera in stream_manager.enabled_cameras:
                 self.image_windows[camera] = ImageWindow(camera)
-                self.thread.qframes[camera].signal.connect(self.image_windows[camera].set_image)
+                self._thread.qframes[camera].signal.connect(self.image_windows[camera].set_image)
                 self.image_windows[camera].show()
         else:
+            # for Windows it is taken care by openCV
             pass
 
     def stop_stream(self):
         # stopping background thread
-        self.thread.stop()
+        self._thread.stop()
 
         # flipping the state of the buttons
-        for func in self.buttons_dict:
-            self.buttons_dict[func]["Button"].setEnabled(self.buttons_dict[func]["State"])
+        for func in self._buttons_dict:
+            self._buttons_dict[func]["Button"].setEnabled(self._buttons_dict[func]["State"])
 
         if os.name != 'nt':
             for camera in self.image_windows:
@@ -281,9 +209,9 @@ class ButtonWindow(QWidget):
         else:
             pass
 
-        print("Cameras stopping")
+        print("Streaming stopped")
         stream_manager.finish_streaming()
-        stream_manager._camera_manager.stop()
+        stream_manager.stop_cameras()
 
     def start_analysis(self):
         print("Analysis starting")

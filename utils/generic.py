@@ -13,6 +13,7 @@ class GenericManager:
         """
         source = VIDEO_SOURCE if VIDEO_SOURCE is not None else 0
         self._manager_name = "generic"
+        self._enabled_devices = {}
         self._camera = cv2.VideoCapture(int(source))
         self._camera_name = "Camera {}".format(source)
 
@@ -26,12 +27,11 @@ class GenericManager:
         """
         Getter for enabled devices dictionary
         """
-        return {self._camera_name: self._camera}
+        return self._enabled_devices
 
     def enable_stream(self, resolution, framerate, *args):
         """
         Enable one stream with given parameters
-        Pretty meaningless for pylon manager, just sets the desired resolution
         (hopefully)
         """
         width, height = resolution
@@ -49,7 +49,7 @@ class GenericManager:
         """
         We don't need to enable anything with opencv
         """
-        pass
+        self._enabled_devices = {self._camera_name: self._camera}
 
     def get_frames(self) -> tuple:
         """
@@ -71,6 +71,7 @@ class GenericManager:
         Stops camera
         """
         self._camera.release()
+        self._enabled_devices = {}
 
     def get_name(self) -> str:
         return self._manager_name
