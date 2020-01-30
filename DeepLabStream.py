@@ -175,6 +175,10 @@ class DeepLabStream:
         # creating output for dataframe
         # self.create_output()
 
+    def stop_cameras(self):
+        print("Stopping all cameras")
+        self._camera_manager.stop()
+
     #######################
     # video outputting part
     #######################
