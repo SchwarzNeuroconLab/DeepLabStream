@@ -230,6 +230,31 @@ and to end, prolong or modify parts of experimental protocol.
 
 ![Flowchart](docs/flowchart2.png)
 
+### Testing experiments offline
+
+Within  `/utils`  we implemented an offline testing script `VideoAnalyser.py` that enables experiment tests using prerecorded videos. 
+
+
+As an example: You can run the `ExampleExperiment` on any video by simply inserting the path of the video into `settings.ini`:
+```
+[Video]
+VIDEO_SOURCE = FullVideoPath.avi
+``` 
+To test your own experiments, you have to import your custom `ExperimentClass` like this:
+```
+# add it to the import line
+    from experiments.experiments import ExampleExperiment, YourExperiment
+``` 
+and change the following line to create an instance of that experiment:
+```
+# old line:
+    experiment = ExampleExperiment()
+# new line:
+    experiment = YourExperiment()
+``` 
+
+If you want to run the DlStream posture detection on a prerecorded video without running an experiment just set the `experiment_enabled` to `False`.
+
 ### Known issues
 
 #### Error when stopping the analysis:
@@ -237,8 +262,8 @@ and to end, prolong or modify parts of experimental protocol.
 BrokenPipeError: [Errno 32] Broken pipe
 ```
 
-This is an `multiprocessing.Queue` closing error, when some items are still in the Queue
-Should not affect the app in any meaningful way.
+This is an `multiprocessing.Queue` closing error, when some items are still in the Queue.
+This should not affect the app in any meaningful way.
 
 
 
