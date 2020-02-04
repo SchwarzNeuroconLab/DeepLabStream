@@ -48,6 +48,10 @@ video_name = "{}".format(name.split('.')[0])
 resolution = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 animals_list = ["Animal{}".format(num) for num in range(1, ANIMALS_NUMBER + 1)]
 
+fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+output_file = os.path.join(OUT_DIR, "Analysed_" + video_name + ".avi")
+video_file = cv2.VideoWriter(output_file, fourcc, 30, resolution)
+
 
 def start_videoanalyser():
     print("Starting DeepLabCut")
@@ -77,6 +81,7 @@ def start_videoanalyser():
             else:
                 out_frame = frame
             cv2.imshow('stream', out_frame)
+            video_file.write(out_frame)
             all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
             index += 1
         else:
@@ -86,6 +91,8 @@ def start_videoanalyser():
             break
 
     experiment.stop_experiment()
+    video_file.release()
+    video.release()
     create_dataframes(all_rows)
 
 
