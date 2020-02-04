@@ -78,7 +78,8 @@ You need to modify the DeepLabStream config in `settings.ini`  after installatio
 If you installed it like a package with DeepLabCut's provided environment files, it would be approximately here in your Anaconda environment:
 ```../anaconda3/envs/dlc-ubuntu-GPU/lib/python3.6/site-packages/deeplabcut```. Of course, the specific folder may vary.
 
-2. Change the `MODEL` variable to the name of your model, found in `../deeplabcut/pose_estimation_tensorflow/models` (`../deeplabcut/pose_estimation/models` for DLC v1.11) folder. 
+2. Change the `MODEL` variable to the name of your model, found in `../deeplabcut/pose_estimation_tensorflow/models` (`../deeplabcut/pose_estimation/models` for DLC v1.11) folder.
+if you are using DeepLabCut 2.0+ you first have to copy the model folder from the corresponding DLC project directory into the aforementioned pose estimation models folder.
 3. Change variables in the `[Streaming]` portion of the config to the most
    suitable for you:
 

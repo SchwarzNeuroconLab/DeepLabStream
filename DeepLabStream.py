@@ -92,12 +92,14 @@ class DeepLabStream:
     @ staticmethod
     def set_camera_manager():
         manager_list = []
+        # loading realsense manager, if installed
         realsense = find_spec("pyrealsense2") is not None
         if realsense:
             from utils.realsense import RealSenseManager
             realsense_manager = RealSenseManager()
             manager_list.append(realsense_manager)
 
+        # loading basler manager, if installed
         pylon = find_spec("pypylon") is not None
         if pylon:
             from utils.pylon import PylonManager
@@ -112,13 +114,15 @@ class DeepLabStream:
             else:
                 return False
 
-        from utils.generic import GenericManager
-        generic_manager = GenericManager()
-        manager_list.append(generic_manager)
-
+        # checking for connected cameras for all installed managers
         for manager in manager_list:
             if check_for_cameras(manager):
                 return manager
+        else:
+            # if no camera is found, try generic openCV manager
+            from utils.generic import GenericManager
+            generic_manager = GenericManager()
+            return generic_manager
 
     @property
     def cameras(self):
