@@ -1,6 +1,8 @@
 import cv2
 import time
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import pandas as pd
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame, plot_triggers_response
