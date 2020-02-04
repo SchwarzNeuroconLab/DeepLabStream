@@ -46,42 +46,48 @@ video = cv2.VideoCapture(VIDEO_SOURCE)
 name = os.path.split(VIDEO_SOURCE)[-1]
 video_name = "{}".format(name.split('.')[0])
 resolution = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-print("Starting DeepLabCut")
-config, sess, inputs, outputs = load_deeplabcut()
-
-print("Initializing experiment")
-experiment = ExampleExperiment()
-experiment_enabled = True
-experiment.start_experiment()
-
-# some variables initialization
 animals_list = ["Animal{}".format(num) for num in range(1, ANIMALS_NUMBER + 1)]
-all_rows = []
-index = 0
 
-while video.isOpened():
-    ret, frame = video.read()
-    if ret:
-        scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-        skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
-        if skeletons:
-            for skeleton in skeletons:
-                if experiment_enabled:
-                    result, response = experiment.check_skeleton(frame, skeleton)
-                    plot_triggers_response(frame, response)
-            out_frame = plot_bodyparts(frame, skeletons)
+
+def start_videoanalyser():
+    print("Starting DeepLabCut")
+    config, sess, inputs, outputs = load_deeplabcut()
+
+    print("Initializing experiment")
+    experiment = ExampleExperiment()
+    experiment_enabled = True
+    experiment.start_experiment()
+
+    # some variables initialization
+    all_rows = []
+    index = 0
+
+    while video.isOpened():
+        ret, frame = video.read()
+        if ret:
+            scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
+            peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+            skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
+            if skeletons:
+                for skeleton in skeletons:
+                    if experiment_enabled:
+                        result, response = experiment.check_skeleton(frame, skeleton)
+                        plot_triggers_response(frame, response)
+                out_frame = plot_bodyparts(frame, skeletons)
+            else:
+                out_frame = frame
+            cv2.imshow('stream', out_frame)
+            all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
+            index += 1
         else:
-            out_frame = frame
-        cv2.imshow('stream', out_frame)
-        all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
-        index += 1
-    else:
-        break
+            break
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-experiment.stop_experiment()
-create_dataframes(all_rows)
+    experiment.stop_experiment()
+    create_dataframes(all_rows)
+
+
+if __name__ == "__main__":
+    start_videoanalyser()
