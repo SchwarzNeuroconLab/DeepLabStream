@@ -229,5 +229,16 @@ and to end, prolong or modify parts of experimental protocol.
 
 ![Flowchart](docs/flowchart2.png)
 
+### Known issues
+
+#### Error when stopping the analysis:
+```
+BrokenPipeError: [Errno 32] Broken pipe
+```
+
+This is an `multiprocessing.Queue` closing error, when some items are still in the Queue
+Should not affect the app in any meaningful way.
+
+
 
 ## License

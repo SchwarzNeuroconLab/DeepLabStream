@@ -405,12 +405,15 @@ class DeepLabStream:
         # cleaning up the dlc processes
         if self._dlc_running:
             for camera in self._multiprocessing:
+                # finishing the process
                 self._multiprocessing[camera]['process'].terminate()
+                # closing all the Queues
                 self._multiprocessing[camera]['input'].close()
                 self._multiprocessing[camera]['output'].close()
             self._dlc_running = False
             self._multiprocessing = None
             self._start_time = None
+            # writing database
             if self._data_output:
                 self.create_dataframes()
 
