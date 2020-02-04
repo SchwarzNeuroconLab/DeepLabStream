@@ -15,7 +15,7 @@ class ExampleExperiment:
         self._process = ExampleProtocolProcess()
         self._green_point = (550, 163)
         self._blue_point = (372, 163)
-        self._radius = 20
+        self._radius = 40
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -37,6 +37,7 @@ class ExampleExperiment:
                 self.stop_experiment()
 
         if not self.experiment_finished:
+            result, response = False, None
             for trial in self._trials:
                 # check for all trials if condition is met
                 result, response = self._trials[trial]['trigger'](skeleton=skeleton)
@@ -52,9 +53,9 @@ class ExampleExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
-                return result, response
 
             self._process.set_trial(self._current_trial)
+            return result, response
 
     @property
     def _trials(self):
@@ -100,4 +101,4 @@ class ExampleExperiment:
         """
         Check which trial is going on right now
         """
-        return self._event
+        return self._current_trial
