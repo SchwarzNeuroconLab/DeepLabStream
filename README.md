@@ -213,11 +213,12 @@ pressing the `Start Experiment` button. Depending on your protocol and experimen
 
 ![Start](docs/screen_exp_start.png)
 
-Here is an example of a very simple experiment, that counts each time the mouse was inside some predefined area in the arena.
+In the provided `ExampleExperiment` two regions of interest (ROIs) are created inside an arena. The experiment is designed to count the number of times the mouse enters a ROI and trigger a corresponding visual stimulus on a screen.
+The high contrast stimuli (image files) are located within the `experiments/src` folder and specified within the `experiments.py` `ExampleExperiments` Class.
 
 ![Experiment](docs/screen_exp.png)
 
-We have a visual representation of this event, the border of the area will turn green.
+As a visual representation of this event, the border of the ROI will turn green.
 
 All experimental output will be stored to a .csv file for easy postprocessing.
 
@@ -232,7 +233,7 @@ and to end, prolong or modify parts of experimental protocol.
 
 ### Testing experiments offline
 
-Within  `/utils`  we implemented an offline testing script `VideoAnalyser.py` that enables experiment tests using prerecorded videos. 
+Within  `/utils`  we implemented an offline testing script `VideoAnalyzer.py` that enables experiment tests using prerecorded videos. 
 
 
 As an example: You can run the `ExampleExperiment` on any video by simply inserting the path of the video into `settings.ini`:
@@ -240,6 +241,8 @@ As an example: You can run the `ExampleExperiment` on any video by simply insert
 [Video]
 VIDEO_SOURCE = FullVideoPath.avi
 ``` 
+Then run `VideoAnalyzer.py` the same as you would run `app.py` (Note: `VideoAnalyzer.py` does not offer a GUI).
+
 To test your own experiments, you have to import your custom `ExperimentClass` like this:
 ```
 # add it to the import line
@@ -253,7 +256,10 @@ and change the following line to create an instance of that experiment:
     experiment = YourExperiment()
 ``` 
 
-If you want to run the DlStream posture detection on a prerecorded video without running an experiment just set the `experiment_enabled` to `False`.
+If you want to run the DeepLabStream posture detection on a prerecorded video without running an experiment just set the `experiment_enabled` to `False`.
+A video of your offline test will be saved if `video_output` is set `True` (default = `True`). As usual all experimental data will be exported in a .csv file.
+
+Note: `VideoAnalyzer.py` is not build to quickly analyze videos, but is specifically build to show the result immediately as a "live" stream.
 
 ### Known issues
 
