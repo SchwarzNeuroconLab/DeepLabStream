@@ -120,7 +120,7 @@ class DeepLabStream:
                 return manager
         else:
             # if no camera is found, try generic openCV manager
-            from utils.generic import GenericManager
+            from utils.generic_camera import GenericManager
             generic_manager = GenericManager()
             return generic_manager
 

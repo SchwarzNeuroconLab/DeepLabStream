@@ -1,5 +1,5 @@
 import cv2
-from utils.configloader import VIDEO_SOURCE
+from utils.configloader import CAMERA_SOURCE
 
 
 class GenericManager:
@@ -11,7 +11,7 @@ class GenericManager:
         Generic camera manager from video source
         Uses pure opencv
         """
-        source = VIDEO_SOURCE if VIDEO_SOURCE is not None else 0
+        source = CAMERA_SOURCE if CAMERA_SOURCE is not None else 0
         self._manager_name = "generic"
         self._enabled_devices = {}
         self._camera = cv2.VideoCapture(int(source))

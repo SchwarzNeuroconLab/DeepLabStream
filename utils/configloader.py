@@ -34,7 +34,7 @@ STACK_FRAMES = dsc_config['Streaming'].getboolean('STACK_FRAMES') if dsc_config[
 ANIMALS_NUMBER = dsc_config['Streaming'].getint('ANIMALS_NUMBER') if dsc_config['Streaming'].getint(
     'ANIMALS_NUMBER') is not None else 1
 STREAMS = [str(part).strip() for part in dsc_config['Streaming'].get('STREAMS').split(',')]
-VIDEO_SOURCE = dsc_config['Streaming'].get('VIDEO_SOURCE')
+CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')
 
 # experiment
 EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')
