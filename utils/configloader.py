@@ -40,11 +40,4 @@ VIDEO_SOURCE = dsc_config['Streaming'].get('VIDEO_SOURCE')
 EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
-# images
-# BACKGRND_PATH = dsc_config['Visual'].get('BACKGRND_PATH')
-# IMG1_INFO = dsc_config['Image'].get('IMG1_INFO')
-# IMG1_PATH = dsc_config['Image'].get('IMG1_PATH')
-# IMG2_INFO = dsc_config['Image'].get('IMG2_INFO')
-# IMG2_PATH = dsc_config['Image'].get('IMG2_PATH')
-
 START_TIME = time.time()
