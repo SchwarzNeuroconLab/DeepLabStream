@@ -73,7 +73,7 @@ while video.isOpened():
         else:
             out_frame = frame
         cv2.imshow('stream', out_frame)
-        all_rows.append(create_row(index, skeletons, experiment_enabled, None))
+        all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
         index += 1
     else:
         break
