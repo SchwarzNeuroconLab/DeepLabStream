@@ -1,22 +1,28 @@
 import time
+import os
 import cv2
 import numpy as np
 from experiments.DAQ_output import DigitalModDevice
 
 
-def show_visual_stim_img(type='background', name='vistim'):
+def show_visual_stim_img(img_type='background', name='vistim', img_dict=None):
     """
     Shows image in newly created or named window
 
-    :param type: defines image through visual dictionary to be displayed
+    :param img_type: defines image through visual dictionary to be displayed
     :param name: name of window that is created or used by OpenCV to display image
+    :param img_dict: optional custom image paths dictionary
     """
     # Show image when called
-    visual = {'background': dict(path=r"./experiments/src/whiteback_1920_1080.png"),
-              'Greenbar_whiteback': dict(path=r"./experiments/src/greenbar_whiteback_1920_1080.png"),
-              'Bluebar_whiteback': dict(path=r"./experiments/src/bluebar_whiteback_1920_1080.png")}
+    img_path = os.path.join(os.path.dirname(__file__), 'src')
+    if img_dict is None:
+        visual = {'background': r"whiteback_1920_1080.png",
+                  'Greenbar_whiteback': r"greenbar_whiteback_1920_1080.png",
+                  'Bluebar_whiteback': r"bluebar_whiteback_1920_1080.png"}
+    else:
+        visual = img_dict
     # load image unchanged (-1), greyscale (0) or color (1)
-    img = cv2.imread(visual[type]['path'], -1)
+    img = cv2.imread(os.path.join(img_path, visual[img_type]), -1)
     converted_image = np.uint8(img)
     cv2.namedWindow(name, cv2.WINDOW_NORMAL)
     cv2.imshow(name, converted_image)

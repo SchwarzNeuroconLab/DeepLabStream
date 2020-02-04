@@ -52,6 +52,7 @@ class ExampleExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
+                return result, response
 
             self._process.set_trial(self._current_trial)
 

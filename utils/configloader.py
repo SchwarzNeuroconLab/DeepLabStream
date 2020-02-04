@@ -8,10 +8,10 @@ dsc_config = cfg.ConfigParser()
 
 
 def get_script_path():
-    return os.path.dirname(os.path.realpath(sys.argv[0]))
+    return os.path.dirname(os.path.join(os.path.dirname(__file__), '..'))
 
 
-cfg_path = os.path.join(get_script_path(), 'settings.ini')
+cfg_path = os.path.join(os.path.dirname(__file__), '..', 'settings.ini')
 with open(cfg_path) as cfg_file:
     dsc_config.read_file(cfg_file)
 
@@ -35,6 +35,9 @@ ANIMALS_NUMBER = dsc_config['Streaming'].getint('ANIMALS_NUMBER') if dsc_config[
     'ANIMALS_NUMBER') is not None else 1
 STREAMS = [str(part).strip() for part in dsc_config['Streaming'].get('STREAMS').split(',')]
 CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')
+
+# Video
+VIDEO_SOURCE = dsc_config['Video'].get('VIDEO_SOURCE')
 
 # experiment
 EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')
