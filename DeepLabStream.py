@@ -288,7 +288,6 @@ class DeepLabStream:
                     # passes color frame to analysis
                     frame = c_frames[camera]
                     frame_time = time.time()
-                    print("input", index)
                     self._multiprocessing[camera]['input'].put((index, frame))
                     if d_maps:
                         self.store_frames(camera, frame, d_maps[camera], frame_time)
@@ -313,7 +312,6 @@ class DeepLabStream:
                         self._start_time = time.time()  # getting the first frame here
                     # Getting the analysed data
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
-                    print("output", analysed_index)
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
 
