@@ -8,7 +8,7 @@ class ExampleExperiment:
     """
     Simple class to contain all of the experiment properties
     Uses multiprocess to ensure the best possible performance and
-        to showcase that it is possible to work with any type of equipment, even timer-dependant
+        to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
     def __init__(self):
         self.experiment_finished = False

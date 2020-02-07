@@ -49,7 +49,7 @@ resolution = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PRO
 animals_list = ["Animal{}".format(num) for num in range(1, ANIMALS_NUMBER + 1)]
 
 fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-output_file = os.path.join(OUT_DIR, "Analysed_" + video_name + ".avi")
+output_file = os.path.join(OUT_DIR, "Analysed_" + video_name + time.strftime('%d%m%Y-%H%M%S') + ".avi")
 video_file = cv2.VideoWriter(output_file, fourcc, 30, resolution)
 
 
