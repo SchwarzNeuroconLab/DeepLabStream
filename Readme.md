@@ -8,10 +8,7 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
 ### Quick Reference:
  
  ### 1. [Installation](utils/Installation.md)
- 
- ### 2. [Introduction to experiments](experiments/Introduction.md)
- 
- ### 3. [Design your first experiment](experiments/MyFirstExperiment.md)
+
  
 ### How does this work
 
@@ -104,8 +101,6 @@ The high contrast stimuli (image files) are located within the `experiments/src`
 As a visual representation of this event, the border of the ROI will turn green.
 
 All experimental output will be stored to a .csv file for easy postprocessing.
-
-Look at the [Introduction to experiments](experiments/Introduction.md) to get an idea how to design your own experiment in DeepLabStream.
 
 ### Known issues
 
