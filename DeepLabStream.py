@@ -118,6 +118,12 @@ class DeepLabStream:
 
     @ staticmethod
     def set_camera_manager():
+        """
+        Trying to load each present camera manager, if installed
+        Then checking for connected cameras and choosing the one with at least some cameras connected
+        ! Camera managers cannot be mixed
+        :return: the chosen camera manager
+        """
         manager_list = []
         # loading realsense manager, if installed
         realsense = find_spec("pyrealsense2") is not None
@@ -340,13 +346,14 @@ class DeepLabStream:
                 if self._multiprocessing[camera]['output'].full():
                     if self._start_time is None:
                         self._start_time = time.time()  # getting the first frame here
+
                     # Getting the analysed data
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
-
                     analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time
+
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
                     frame_time = time.time() - self._start_time
@@ -535,20 +542,6 @@ class DeepLabStream:
         return self._start_time
 
 
-def describe_dataset(dataset, name):
-    """
-    Function to describe any given dataset and print out the results
-    """
-    average = np.average(dataset)
-    print("Average {0} time {1:6.5f}".format(name, average))
-    maximum = np.max(dataset)
-    print("Maximum {0} time {1:6.5f}".format(name, maximum))
-    minimum = np.min(dataset)
-    print("Minimum {0} time {1:6.5f}".format(name, minimum))
-    standart_deviation = np.std(dataset)
-    print("Standard deviation {0} time {1:6.5f}".format(name, standart_deviation))
-
-
 # testing part
 @click.command()
 @click.option('--dlc-enabled', 'dlc_enabled', is_flag=True)
@@ -598,7 +591,23 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
         whole_loop_time_data = []
         tracking_accuracy_counter = 0
 
+        def describe_dataset(dataset, name):
+            """
+            Function to describe dataset and print out the results
+            """
+            average = np.average(dataset)
+            print("Average {0} time {1:6.5f}".format(name, average))
+            maximum = np.max(dataset)
+            print("Maximum {0} time {1:6.5f}".format(name, maximum))
+            minimum = np.min(dataset)
+            print("Minimum {0} time {1:6.5f}".format(name, minimum))
+            standart_deviation = np.std(dataset)
+            print("Standard deviation {0} time {1:6.5f}".format(name, standart_deviation))
+
         def show_benchmark_statistics():
+            """
+            Outputting all stream benchmark statistics
+            """
             analysis_full_time = time.time() - start_time
             print("Full analysis time {0:4.2f}".format(analysis_full_time))
             ##################################################################
@@ -634,12 +643,15 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
             # inputting the frames
             stream_manager.input_frames_for_analysis(all_frames, stream_manager.frame_index)
 
+            ###########################################################
+            # Benchmarking part
             if res_time is not None:
                 if benchmark_enabled and got_first_analysed_frame:
                     analysis_time_data.append(res_time)
             else:
                 if benchmark_enabled and got_first_analysed_frame:
                     tracking_accuracy_counter += 1
+
             ###########################################################
             # streaming the stream
             if res_frames:
