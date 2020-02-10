@@ -1,9 +1,9 @@
 import time
 import os
-import sys
 import configparser as cfg
 
 # loading DeepLabStream configuration
+# remember when it was called DSC?
 dsc_config = cfg.ConfigParser()
 
 
