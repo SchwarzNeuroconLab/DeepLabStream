@@ -437,10 +437,12 @@ class DeepLabStream:
     def stop_recording(self):
         # finishing with the videos
         if self._recording_running:
+            print("Saving the video")
             for file in self._video_files.values():
                 file.release()
             self._recording_running = False
             self._video_files = None
+            print("Video saved")
 
     def stop_dlc(self):
         # cleaning up the dlc processes
@@ -469,9 +471,9 @@ class DeepLabStream:
         """
         Clean up after ourselves
         """
-        self.stop_recording()
-        self.stop_dlc()
         self.stop_experiment()
+        self.stop_dlc()
+        self.stop_recording()
         cv2.destroyAllWindows()
 
     #####################
