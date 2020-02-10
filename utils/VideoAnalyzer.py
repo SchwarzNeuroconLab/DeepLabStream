@@ -17,7 +17,7 @@ def create_dataframes(data_output):
     """
     df = pd.DataFrame(data_output)
     df.index.name = 'Frame'
-    print("Saving database for device {}".format(video_name))
+    print("Saving database for {}".format(video_name))
     df.to_csv(OUT_DIR + '/DataOutput{}'.format(video_name) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
 
 
@@ -29,7 +29,7 @@ resolution = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PRO
 animals_list = ["Animal{}".format(num) for num in range(1, ANIMALS_NUMBER + 1)]
 
 fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-output_file = os.path.join(OUT_DIR, "Analysed_" + video_name + ".avi")
+output_file = os.path.join(OUT_DIR, "Analysed_" + video_name + time.strftime('%d%m%Y-%H%M%S') + ".avi")
 video_file = cv2.VideoWriter(output_file, fourcc, 30, resolution)
 
 
@@ -37,10 +37,13 @@ def start_videoanalyser():
     print("Starting DeepLabCut")
     config, sess, inputs, outputs = load_deeplabcut()
 
-    print("Initializing experiment")
-    experiment = ExampleExperiment()
-    experiment_enabled = True
-    experiment.start_experiment()
+    experiment_enabled = False
+    video_output = True
+
+    if experiment_enabled:
+        print("Initializing experiment")
+        experiment = ExampleExperiment()
+        experiment.start_experiment()
 
     # some variables initialization
     all_rows = []
@@ -61,8 +64,12 @@ def start_videoanalyser():
             else:
                 out_frame = frame
             cv2.imshow('stream', out_frame)
-            video_file.write(out_frame)
-            all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
+            if video_output:
+                video_file.write(out_frame)
+            if experiment_enabled:
+                all_rows.append(create_row(index, skeletons, experiment_enabled, experiment.get_trial()))
+            else:
+                all_rows.append(create_row(index, skeletons, experiment_enabled, None))
             index += 1
         else:
             break
@@ -70,8 +77,11 @@ def start_videoanalyser():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    experiment.stop_experiment()
-    video_file.release()
+    if experiment_enabled:
+        experiment.stop_experiment()
+    if video_output:
+        print('Saving analyzed video for {}'.format(video_name))
+        video_file.release()
     video.release()
     create_dataframes(all_rows)
 
