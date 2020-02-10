@@ -42,6 +42,34 @@ def create_video_files(directory, devices, resolution, framerate, codec):
     return files
 
 
+def create_row(index, animal_skeletons, experiment_status, experiment_trial, start_time=None):
+    """
+    Create a pd.Series for each frame from each camera with joints position
+    :param experiment_trial: current trial name
+    :param experiment_status: current experiment status
+    :param index: frame index
+    :param animal_skeletons: skeletons for that frame
+    :param start_time: (optional) starting time point for Time column
+    """
+    row_dict = {}
+    # creating joints columns
+    for num, animal in enumerate(animal_skeletons):
+        for joint, value in animal.items():
+            row_dict[("Animal{}".format(num + 1),
+                      joint, 'x')], row_dict[("Animal{}".format(num + 1), joint, 'y')] = value
+    # optional time column
+    if start_time is not None:
+        row_dict[('Time', '', '')] = round(time.time() - start_time, 3)
+    # experiment columns
+    row_dict[('Experiment', 'Status', '')] = experiment_status
+    if experiment_trial is None and experiment_status:
+        row_dict[('Experiment', 'Trial', '')] = 'InterTrial'
+    else:
+        row_dict[('Experiment', 'Trial', '')] = experiment_trial
+    row = pd.Series(row_dict, name=index)
+    return row
+
+
 def show_stream(frames):
     """
     Shows some number of stream frames, depending on cameras quantity
@@ -74,7 +102,6 @@ class DeepLabStream:
         """
         self._camera_manager = self.set_camera_manager()  # camera manager, used to get frames from the camera
         self._video_codec = cv2.VideoWriter_fourcc(*'DIVX')  # codec in which we output the videofiles
-        self._animals_list = ["Animal{}".format(num) for num in range(1, ANIMALS_NUMBER + 1)]
         self._start_time = None  # time of initialization
         self._data_row = {camera: {} for camera in self.cameras}  # dictionary for creating row of data for each frame
         self._data_output = {}  # dictionary for storing rows for dataframes
@@ -107,6 +134,9 @@ class DeepLabStream:
             manager_list.append(pylon_manager)
 
         def check_for_cameras(camera_manager):
+            """
+            Helper method to get cameras, connected to that camera manager
+            """
             cameras = camera_manager.get_connected_devices()
             if cameras:
                 print("Found {} {} camera(s)!".format(len(cameras), camera_manager.get_name()))
@@ -335,7 +365,7 @@ class DeepLabStream:
                     # Gathering data as pd.Series for output
                     if self._data_output:
                         self.append_row(camera, analysed_index, skeletons,
-                                        self._experiment_running, self._experiment.get_trial())
+                                        self._experiment_running, self._experiment.get_trial(), self._start_time)
 
                     analysed_frames[camera] = analysed_image
             return analysed_frames, analysis_time
@@ -447,7 +477,7 @@ class DeepLabStream:
         for camera in self.enabled_cameras:
             self._data_output[camera] = []
 
-    def append_row(self, camera, index, animal_skeletons, experiment_status, experiment_trial):
+    def append_row(self, camera, index, animal_skeletons, experiment_status, experiment_trial, start_time=None):
         """
         Create a pd.Series for each frame from each camera with joints position and store it
         :param experiment_trial: current trial name
@@ -455,18 +485,9 @@ class DeepLabStream:
         :param camera: camera name
         :param index: frame index
         :param animal_skeletons: skeletons for that frame
+        :param start_time: (optional) starting time point for Time column
         """
-        row_dict = {}
-        for num, animal in enumerate(animal_skeletons):
-            for joint, value in animal.items():
-                row_dict[(self._animals_list[num], joint, 'x')], row_dict[(self._animals_list[num], joint, 'y')] = value
-        row_dict[('Time', '', '')] = round(time.time() - self._start_time, 3)
-        row_dict[('Experiment', 'Status', '')] = experiment_status
-        if experiment_trial is None and experiment_status:
-            row_dict[('Experiment', 'Trial', '')] = 'InterTrial'
-        else:
-            row_dict[('Experiment', 'Trial', '')] = experiment_trial
-        row = pd.Series(row_dict, name=index)
+        row = create_row(index, animal_skeletons, experiment_status, experiment_trial, start_time)
         self._data_output[camera].append(row)
 
     def create_dataframes(self):
@@ -478,6 +499,7 @@ class DeepLabStream:
             df.index.name = 'Frame'
             print("Saving database for device {}".format(camera))
             df.to_csv(OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
+            print("Database saved")
 
     ######
     # meta

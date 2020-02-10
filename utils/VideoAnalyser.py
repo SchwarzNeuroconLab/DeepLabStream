@@ -2,33 +2,13 @@ import cv2
 import time
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import pandas as pd
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from DeepLabStream import create_row
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame, plot_triggers_response
 from utils.configloader import VIDEO_SOURCE, OUT_DIR, ANIMALS_NUMBER
 from experiments.experiments import ExampleExperiment
-
-
-def create_row(row_index, animal_skeletons, experiment_status, experiment_trial):
-    """
-    Create a pd.Series for each frame from each camera with joints position and store it
-    :param experiment_trial: current trial name
-    :param experiment_status: current experiment status
-    :param row_index: frame index
-    :param animal_skeletons: skeletons for that frame
-    """
-    row_dict = {}
-    for num, animal in enumerate(animal_skeletons):
-        for joint, value in animal.items():
-            row_dict[(animals_list[num], joint, 'x')], row_dict[(animals_list[num], joint, 'y')] = value
-    row_dict[('Experiment', 'Status', '')] = experiment_status
-    if experiment_trial is None and experiment_status:
-        row_dict[('Experiment', 'Trial', '')] = 'InterTrial'
-    else:
-        row_dict[('Experiment', 'Trial', '')] = experiment_trial
-    row = pd.Series(row_dict, name=row_index)
-    return row
 
 
 def create_dataframes(data_output):
