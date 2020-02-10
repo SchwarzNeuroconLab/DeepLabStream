@@ -118,9 +118,9 @@ def calculate_distance(point1: tuple, point2: tuple) -> float:
 def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
     """
     Calculating distances traveled for each frame for desired body parts
-    :param dataframe DataFrame: dataframe to calculate distances on
+    :param dataframe: dataframe to calculate distances on
     Should have columns with X and Y coordinates of desired body_parts
-    :param body_parts str or list of str: part or parts to calculate distances for
+    :param body_parts: (str or list of str) part or parts to calculate distances for
     Can be either string or list of strings
     :return list: returns list of pd.Series with distances for each bodypart
     """
@@ -159,9 +159,9 @@ def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[
 def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
     """
     Calculating speed in pixels per seconds for each frame for desired body parts
-    :param dataframe DataFrame: dataframe to calculate speeds on
+    :param dataframe: dataframe to calculate speeds on
     Should have columns distances travelled for each desired body part
-    :param body_parts str or list of str: part or parts to calculate distances for
+    :param body_parts: part or parts to calculate distances for
     Can be either string or list of strings
     :return list: returns list of pd.Series with speeds for each bodypart
     """
