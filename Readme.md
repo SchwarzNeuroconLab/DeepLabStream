@@ -112,6 +112,18 @@ BrokenPipeError: [Errno 32] Broken pipe
 This is an `multiprocessing.Queue` closing error, when some items are still in the Queue.
 This should not affect the app in any meaningful way.
 
+#### Tensorflow not releasing GPU memory
+Sometimes Tensorflow session will not release all allocated GPU memory when you stop the analysis. This will result in OOM (out of memory) error.
+See more on that issue on [tensorflow github](https://github.com/tensorflow/tensorflow/issues/19731)
 
+The error itself looks like this:
+```
+2020-02-10 13:44:49.972600: E tensorflow/stream_executor/cuda/cuda_driver.cc:806] failed to allocate 635,29M (666146048 bytes) from device: CUDA_ERROR_OUT_OF_MEMORY: out of memory
+```
+
+The issue can be resolved by closing and opening the app. If not, manually kill all python processes
+```
+killall -9 python
+```
 
 ## License
