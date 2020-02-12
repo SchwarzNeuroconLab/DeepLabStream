@@ -44,3 +44,4 @@ EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
 START_TIME = time.time()
+EGG = "".join(format(ord(x), 'b') for x in "Hello there!")

@@ -1,4 +1,6 @@
 import cv2
+import random
+from utils.configloader import EGG
 
 
 def plot_dots(image, coordinates, color, cond=False):
@@ -63,3 +65,8 @@ def plot_triggers_response(image, response):
             cv2.circle(image, **plot['circle'], thickness=2)
         if 'square' in plot:
             cv2.rectangle(image, **plot['square'], thickness=2)
+
+
+def plot_special_peak():
+    if random.randint(0, 100000) == 1:
+        print(EGG)

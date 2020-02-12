@@ -115,6 +115,7 @@ class DeepLabStream:
         self.frame_index = 0
         self._fps_counter = []
         self._fps = 0
+        self.greetings()
 
     @ staticmethod
     def set_camera_manager():
@@ -513,6 +514,11 @@ class DeepLabStream:
     ######
     # meta
     ######
+    @staticmethod
+    def greetings():
+        print("This is DeepLabStream")
+        print("Developed by: Jens Schweihoff and Matvey Loshakov")
+
     def get_camera_manager(self):
         return self._camera_manager
 

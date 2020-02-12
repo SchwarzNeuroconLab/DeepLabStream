@@ -127,3 +127,8 @@ killall -9 python
 ```
 
 ## License
+
+## Authors
+Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
+
+Lead Developer: Matvey Loshakov, matveyloshakov@gmail.com
