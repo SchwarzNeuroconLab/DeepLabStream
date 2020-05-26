@@ -5,10 +5,14 @@ DeepLabStream is a python based multi-purpose tool that enables the realtime tra
 Our toolbox is adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)] and expands on its core capabilities.
 DeepLabStreams core feature is the real-time analysis using any type of camera-based video stream (incl. multiple streams).  Building onto that, we designed a full experimental closed-loop toolkit. It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation.
 
+
 ### Quick Reference:
  
  ### 1. [Installation](utils/Installation.md)
-
+ 
+ ### 2. [Introduction to experiments](docs/Introduction.md)
+ 
+ ### 3. [Design your first experiment](docs/MyFirstExperiment.md)
  
 ### How does this work
 
@@ -102,6 +106,8 @@ As a visual representation of this event, the border of the ROI will turn green.
 
 All experimental output will be stored to a .csv file for easy postprocessing.
 
+Look at the [Introduction to experiments](docs/Introduction.md) to get an idea how to design your own experiment in DeepLabStream.
+
 ### Known issues
 
 #### Error when stopping the analysis:
@@ -125,9 +131,12 @@ The issue can be resolved by closing and opening the app. If not, manually kill 
 ```
 killall -9 python
 ```
+## References:
+
+If you use this code or data please cite [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
 
 ## License
-
+This project is licensed under the GNU Lesser General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, express or implied. 
 ## Authors
 Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
 
