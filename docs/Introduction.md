@@ -66,7 +66,7 @@ It can be easily done with a simple `if` statement.
         
         return result
 ```
-You can go as complex as complex as you want, taking multiple body parts or even other objects and their relation into account when designing a trigger. Try it yourself!
+You can go as simple or as complex as you want, taking multiple body parts or even other objects and their relation into account when designing a trigger. Try it yourself!
 
 ### 2. Stimulation:
 
