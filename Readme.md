@@ -144,3 +144,5 @@ This project is licensed under the GNU Lesser General Public License v3.0. Note 
 Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
 
 Lead Developer: Matvey Loshakov, matveyloshakov@gmail.com
+
+Corresponding Author: Martin Schwarz, Martin.Schwarz@ukbonn.de
