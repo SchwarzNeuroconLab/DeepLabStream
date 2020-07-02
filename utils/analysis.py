@@ -118,9 +118,9 @@ def calculate_distance(point1: tuple, point2: tuple) -> float:
 def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
     """
     Calculating distances traveled for each frame for desired body parts
-    :param dataframe: dataframe to calculate distances on
+    :param dataframe DataFrame: dataframe to calculate distances on
     Should have columns with X and Y coordinates of desired body_parts
-    :param body_parts: (str or list of str) part or parts to calculate distances for
+    :param body_parts str or list of str: part or parts to calculate distances for
     Can be either string or list of strings
     :return list: returns list of pd.Series with distances for each bodypart
     """
@@ -159,9 +159,9 @@ def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[
 def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
     """
     Calculating speed in pixels per seconds for each frame for desired body parts
-    :param dataframe: dataframe to calculate speeds on
+    :param dataframe DataFrame: dataframe to calculate speeds on
     Should have columns distances travelled for each desired body part
-    :param body_parts: part or parts to calculate distances for
+    :param body_parts str or list of str: part or parts to calculate distances for
     Can be either string or list of strings
     :return list: returns list of pd.Series with speeds for each bodypart
     """
@@ -205,6 +205,39 @@ def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[Lis
         results.append(temp_df.apply(speed_func, axis=1, args=(body_parts,)))
     return results
 
+def angle_between_vectors(xa: int, ya: int, xb: int, yb: int, xc: int, yc: int) -> Tuple[str, float]:
+    """
+    Calculating angle between vectors, defined by coordinates
+    Returns angle and direction (left, right, forward or backward)
+    *ISSUE* - if y axis is reversed, directions would also be reversed
+    """
+    # using atan2() formula for both vectors
+    dir_ab = math.atan2(ya - yb, xa - xb)
+    dir_bc = math.atan2(yb - yc, xb - xc)
+
+    # angle between vectors in radians
+    rad_angle = dir_ab - dir_bc
+    pi = math.pi
+
+    # converting to degrees
+    angle = rad_angle
+    if pi < angle:
+        angle -= 2 * pi
+    elif - pi > angle:
+        angle += 2 * pi
+    angle = math.degrees(angle)
+
+    # defining the direction
+    if 180 > angle > 0:
+        direction = 'left'
+    elif -180 < angle < 0:
+        direction = 'right'
+    elif abs(angle) == 180:
+        direction = 'backwards'
+    else:
+        direction = 'forward'
+
+    return direction, angle
 
 ## miscellaneous ##
 def cls():

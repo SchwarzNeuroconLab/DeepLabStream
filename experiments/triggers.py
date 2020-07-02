@@ -1,4 +1,129 @@
-from utils.analysis import EllipseROI, RectangleROI
+from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
+from utils.configloader import RESOLUTION
+
+
+class HeaddirectionTrigger:
+    """Trigger to check if animal is turning head in a specific angle and egocentric direction"""
+    def __init__(self, angle: int, head_dir: str = 'both', debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param int angle: angle to meet for condition
+        :param str head_dir: head direction from egocentric position of the animal (left, right or both)
+
+         """
+        self._head_dir = head_dir
+        self._angle = angle
+        self._debug = debug
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+         ['tailroot', 'neck', 'nose'] you need to pass this to angle between vectors to get headdirection
+        """
+        tailroot_x, tailroot_y = skeleton['tailroot']
+        neck_x, neck_y = skeleton['neck']
+        nose_x, nose_y = skeleton['nose']
+        ret_head_dir, angle = angle_between_vectors(tailroot_x, tailroot_y, neck_x, neck_y , nose_x, nose_y)
+        true_angle = 180 - abs(angle)
+
+        if true_angle <= self._angle:
+            if self._head_dir == ret_head_dir:
+                result = True
+            elif self._head_dir == 'both':
+                result = True
+        else:
+            result = False
+
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        if self._debug:
+            center = (nose_x, nose_y)
+
+            response_body = {'plot': {'text': dict(text=str(true_angle),
+                                                   org=skeleton[self._end_point],
+                                                   color=(255, 255, 255)),
+                                      'circle': dict(center= center,
+                                                     radius= 5,
+                                                     color=color)
+                             }}
+        else:
+            response_body = {'angle': true_angle}
+
+        response = (result, response_body)
+        return response
+
+
+class DirectionTrigger:
+    """
+    Trigger to check if animal is looking in direction of some point
+    """
+    def __init__(self, point: tuple, angle: int, bodyparts: iter, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param tuple point: a point of interest in (x,y) format.
+        :param int angle: angle, at which animal is considered looking at the screen
+        :param iter bodyparts: a pair of joints of animal (tuple or list) that represent 'looking vector' like (start, end)
+        For example,
+         ('neck', 'nose') pair would mean that direction in which animal is looking defined by vector from neck to nose
+        """
+        self._angle = angle
+        self._debug = debug
+        self._point = point
+        self._start_point, self._end_point = bodyparts
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        start_x, start_y = skeleton[self._start_point]
+        end_x, end_y = skeleton[self._end_point]
+        direction_x, direction_y = self._point
+        head_dir, angle = angle_between_vectors(direction_x, direction_y, start_x, start_y, end_x, end_y)
+        true_angle = 180 - abs(angle)
+
+        result = true_angle <= self._angle
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        if self._debug:
+            response_body = {'plot': {'line': dict(pt1=skeleton[self._end_point],
+                                                   pt2=self._point,
+                                                   color=color),
+                                      'text': dict(text=str(true_angle),
+                                                   org=skeleton[self._end_point],
+                                                   color=(255, 255, 255))}}
+        else:
+            response_body = {'angle': true_angle}
+
+        response = (result, response_body)
+        return response
+
+
+class ScreenTrigger(DirectionTrigger):
+    """
+    Trigger to check if animal is looking at the screen
+    """
+    def __init__(self, direction: str, angle: int, bodyparts: iter, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param direction: a direction where the screen is located in the stream or video.
+        All possible directions: 'North' (or top of the frame), 'East' (right), 'South' (bottom), 'West' (left)
+        Note that directions are not tied to real-world cardinal directions
+        :param angle: angle, at which animal is considered looking at the screen
+        :param bodyparts: a pair of joints of animal (tuple or list) that represent 'looking vector' like (start, end)
+        For example,
+         ('neck', 'nose') pair would mean that direction in which animal is looking defined by vector from neck to nose
+        """
+        self._direction = direction
+        max_x, max_y = RESOLUTION
+        direction_dict = {'North': (int(max_x / 2), 0), 'South': (int(max_x / 2), max_y),
+                          'West': (0, int(max_y / 2)), 'East': (max_x, int(max_y / 2))}
+        super().__init__(direction_dict[self._direction], angle, bodyparts, debug)
 
 
 class RegionTrigger:
@@ -86,4 +211,52 @@ class OutsideTrigger(RegionTrigger):
         """
         result, response_body = super().check_skeleton(skeleton)
         response = (not result, response_body)  # flips result bool
+        return response
+
+
+class FreezeTrigger:
+    """
+    Trigger to check if animal is in freezing state
+    """
+    def __init__(self, threshold: int, debug: bool = False):
+        """
+        Initializing trigger with given threshold
+        :param threshold: int in pixel how much of a movement does not count
+        For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
+        """
+        self._threshold = threshold
+        self._skeleton = None
+        self._debug = debug  # not used in this trigger
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        # choosing a point to draw near the skeleton
+        org_point = skeleton[list(skeleton.keys())[0]]
+        joint_moved = []
+        if self._skeleton is None:
+            result = False
+            text = 'Not freezing'
+            self._skeleton = skeleton
+        else:
+            for joint in skeleton:
+                joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
+                joint_moved.append(abs(joint_travel) <= self._threshold)
+            if all(joint_moved):
+                result = True
+                text = 'Freezing'
+            else:
+                result = False
+                text = 'Not freezing'
+            self._skeleton = skeleton
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        response_body = {'plot': {'text': dict(text=text,
+                                               org=org_point,
+                                               color=color)}}
+        response = (result, response_body)
         return response
