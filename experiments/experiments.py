@@ -1,3 +1,12 @@
+"""
+DeepLabStream
+© J.Schweihoff, M. Loshakov
+University Bonn Medical Faculty, Germany
+https://github.com/SchwarzNeuroconLab/DeepLabStream
+Licensed under GNU General Public License v3.0
+"""
+
+
 from experiments.stimulus_process import ExampleProtocolProcess, Timer
 from experiments.triggers import RegionTrigger
 from utils.plotter import plot_triggers_response

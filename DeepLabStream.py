@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """
-Adapted from DeepLabCut Toolbox
-by
-Jens Schweihoff, jens.schweihoff@ukbonn.de
-Matvey Loshakov, matveyloshakov@gmail.com
+DeepLabStream
+© J.Schweihoff, M. Loshakov
+University Bonn Medical Faculty, Germany
+https://github.com/SchwarzNeuroconLab/DeepLabStream
+Licensed under GNU General Public License v3.0
 """
 import time
 import os

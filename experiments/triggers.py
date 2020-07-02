@@ -1,3 +1,12 @@
+"""
+DeepLabStream
+© J.Schweihoff, M. Loshakov
+University Bonn Medical Faculty, Germany
+https://github.com/SchwarzNeuroconLab/DeepLabStream
+Licensed under GNU General Public License v3.0
+"""
+
+
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
 from utils.configloader import RESOLUTION
 

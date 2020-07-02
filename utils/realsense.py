@@ -1,3 +1,11 @@
+"""
+DeepLabStream
+© J.Schweihoff, M. Loshakov
+University Bonn Medical Faculty, Germany
+https://github.com/SchwarzNeuroconLab/DeepLabStream
+Licensed under GNU General Public License v3.0
+"""
+
 import warnings
 import numpy as np
 warnings.filterwarnings(category=FutureWarning, action='ignore')  # filter unwanted warnings
