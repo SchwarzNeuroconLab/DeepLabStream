@@ -11,11 +11,11 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
 
 ### Quick Reference:
  
- ### 1. [Installation](utils/Installation.md)
+ ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation)
  
- ### 2. [Introduction to experiments](docs/Introduction.md)
+ ### 2. [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction)
  
- ### 3. [Design your first experiment](docs/MyFirstExperiment.md)
+ ### 3. [Design your first experiment](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/My-first-experiment)
  
 ### How does this work
 
@@ -25,44 +25,6 @@ Analysed data will also be utilized to enable closed-loop experiments without an
 and to end, prolong or modify parts of experimental protocol.
 
 ![Flowchart](docs/flowchart2.png)
-
-## Installation
-
-See [Installation](utils/Installation.md).
-
-## Testing
-
-To properly test your DeepLabStream installation, we included a testing script that you can run in three different modes. ```DeepLabStream.py``` allows you to test your cameras, your DeepLabcut installation,
-and to benchmark your DeepLabStream performance.
-
-1. Run the following command to test your cameras:
-```bash
-python DeepLabStream.py
-```
-
-2. Next, you can test how your DeepLabCut installation behaves and if you did correctly set the DeepLabCut path in the config:
-```bash
-python DeepLabStream.py --dlc-enabled
-```
-
-3. And finally you can benchmark your system automatically:
-```bash
-python DeepLabStream.py --dlc-enabled --benchmark-enabled
-```
-The stream would run until it gets 3000 analyzed frames (you can always stop it manually at any point, just press 'Q' while the stream window is in focus). 
-Then it will show you a detailed statistic of the overall performance timings, analysis timings, percentage of frames where it did lose tracking and your average FPS.
- 
-#### Recording testing
-
-Additionally, you can test and see the results of the build-in video recorder. Run the following command to test it:
-```bash
-python DeepLabStream.py --recording-enabled
-```
-
-This will record the videofeed from the camera to your `OUTPUT_DIRECTORY`. You can also add this flag to any of the previously mentioned tests to check performance with recording enabled.
-
-Important note: **recording will always save only "raw" video, without analysis, with framerate as close to specified as possible**
-
 
 ## Usage
 
@@ -109,31 +71,12 @@ As a visual representation of this event, the border of the ROI will turn green.
 
 All experimental output will be stored to a .csv file for easy postprocessing.
 
-Look at the [Introduction to experiments](docs/Introduction.md) to get an idea how to design your own experiment in DeepLabStream.
+Look at the [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction) to get an idea how to design your own experiment in DeepLabStream.
 
 ### Known issues
 
-#### Error when stopping the analysis:
-```
-BrokenPipeError: [Errno 32] Broken pipe
-```
+If you encounter any issues or errors, you can check out the wiki article ([Help there is an error!](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Help-there-is-an-error!)). If your issue is not listed yet, please refer to the issues and either submit a new issue or find a reported issue (which might be already solved) there. Thank you!
 
-This is an `multiprocessing.Queue` closing error, when some items are still in the Queue.
-This should not affect the app in any meaningful way.
-
-#### Tensorflow not releasing GPU memory
-Sometimes Tensorflow session will not release all allocated GPU memory when you stop the analysis. This will result in OOM (out of memory) error.
-See more on that issue on [tensorflow github](https://github.com/tensorflow/tensorflow/issues/19731)
-
-The error itself looks like this:
-```
-2020-02-10 13:44:49.972600: E tensorflow/stream_executor/cuda/cuda_driver.cc:806] failed to allocate 635,29M (666146048 bytes) from device: CUDA_ERROR_OUT_OF_MEMORY: out of memory
-```
-
-The issue can be resolved by closing and opening the app. If not, manually kill all python processes
-```
-killall -9 python
-```
 ## References:
 
 If you use this code or data please cite [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
