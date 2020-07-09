@@ -1,7 +1,14 @@
+
+
 # DeepLabStream
 
 ![GraphAbstract](docs/GraphAbstract.png)
 
+[![GitHub stars](https://img.shields.io/github/stars/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Star)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
+[![GitHub forks](https://img.shields.io/github/forks/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Fork)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
+![GitHub All Releases](https://img.shields.io/github/downloads/SchwarzNeuroconLab/DeepLabStream/total?style=social)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect)
 
 DeepLabStream is a python based multi-purpose tool that enables the realtime tracking of animals and manipulation of experiments.
 Our toolbox is adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expands on its core capabilities.
