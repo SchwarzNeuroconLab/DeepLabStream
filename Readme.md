@@ -91,7 +91,7 @@ If you encounter any issues or errors, you can check out the wiki article ([Help
 If you use this code or data please cite [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
 
 ## License
-This project is licensed under the GNU Lesser General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, expressed or implied. 
+This project is licensed under the GNU General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, expressed or implied. 
 ## Authors
 Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
 
