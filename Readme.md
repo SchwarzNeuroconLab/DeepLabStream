@@ -20,7 +20,7 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
 
  ### Read the preprint: [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
  
- ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation)
+ ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
  
  ### 2. [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction)
  
