@@ -10,8 +10,56 @@ Licensed under GNU General Public License v3.0
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
 from utils.configloader import RESOLUTION
 
+"""Single posture triggers"""
 
 class HeaddirectionTrigger:
+    """Trigger to check if animal is turning head in a specific angle to a reference point"""
+    def __init__(self, angle: int, point: tuple = (0,0), debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param int angle: angle to meet for condition
+        :param tuple point: point used as reference to measure headdirection angle
+
+         """
+        self._point = point
+        self._angle = angle
+        self._debug = debug
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+         [point , 'neck', 'nose'] you need to pass this to angle between vectors to get headdirection
+        """
+        ret_head_dir, angle = angle_between_vectors(*skeleton['neck'], *skeleton['nose'], *self._point)
+        true_angle = abs(angle)
+
+        if true_angle <= self._angle:
+            result = True
+        else:
+            result = False
+
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        if self._debug:
+            center = skeleton['nose']
+
+            response_body = {'plot': {'text': dict(text=str(true_angle),
+                                                   org=skeleton[self._end_point],
+                                                   color=(255, 255, 255)),
+                                      'circle': dict(center= center,
+                                                     radius= 5,
+                                                     color=color)
+                             }}
+        else:
+            response_body = {'angle': true_angle}
+
+        response = (result, response_body)
+        return response
+
+class EgoHeaddirectionTrigger:
     """Trigger to check if animal is turning head in a specific angle and egocentric direction"""
     def __init__(self, angle: int, head_dir: str = 'both', debug: bool = False):
         """
@@ -63,6 +111,7 @@ class HeaddirectionTrigger:
 
         response = (result, response_body)
         return response
+
 
 
 class DirectionTrigger:
@@ -223,6 +272,8 @@ class OutsideTrigger(RegionTrigger):
         return response
 
 
+"""Posture sequence triggers"""
+
 class FreezeTrigger:
     """
     Trigger to check if animal is in freezing state
@@ -261,6 +312,67 @@ class FreezeTrigger:
             else:
                 result = False
                 text = 'Not freezing'
+            self._skeleton = skeleton
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        response_body = {'plot': {'text': dict(text=text,
+                                               org=org_point,
+                                               color=color)}}
+        response = (result, response_body)
+        return response
+
+
+class SpeedTrigger:
+    """
+    Trigger to check if animal is moving above a certain speed
+    """
+    def __init__(self, threshold: int, bodypart: str = 'any', debug: bool = False):
+        """
+        Initializing trigger with given threshold
+        :param threshold: int in pixel how much of a movement does not count
+        :param bodypart: str or list of str, bodypart or list of bodyparts in skeleton to use for trigger,
+         if "any" will check if any bodypart reaches treshold; default "any"
+        For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
+        """
+        self._bodypart = bodypart
+        self._threshold = threshold
+        self._skeleton = None
+        self._debug = debug  # not used in this trigger
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        # choosing a point to draw near the skeleton
+        org_point = skeleton[list(skeleton.keys())[0]]
+        joint_moved = []
+        if self._skeleton is None:
+            result = False
+            text = 'First frame'
+            self._skeleton = skeleton
+        else:
+            if self._bodypart is "any":
+                for joint in skeleton:
+                    joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
+                    joint_moved.append(abs(joint_travel) >= self._threshold)
+
+            elif isinstance(self._bodypart, list):
+                for joint in self._bodypart:
+                    joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
+                    joint_moved.append(abs(joint_travel) >= self._threshold)
+            else:
+                joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
+                joint_moved.append(abs(joint_travel) >= self._threshold)
+
+            if all(joint_moved):
+                result = True
+                text = 'Running'
+            else:
+                result = False
+                text = ''
             self._skeleton = skeleton
 
         color = (0, 255, 0) if result else (0, 0, 255)

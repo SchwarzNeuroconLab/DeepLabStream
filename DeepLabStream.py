@@ -701,7 +701,7 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
                 if recording_enabled:
                     stream_manager.stop_recording()
                 break
-            else:
+            elif got_first_analysed_frame:
                 print("[{0}/3000] Benchmarking in progress".format(len(analysis_time_data)))
 
 

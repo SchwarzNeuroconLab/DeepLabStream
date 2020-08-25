@@ -83,3 +83,5 @@ class GenericManager:
 
     def get_name(self) -> str:
         return self._manager_name
+
+

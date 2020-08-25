@@ -105,3 +105,22 @@ class DigitalModDevice(Device):
         for i in range(repeats):
             self.timed_on(on_time)
             time.sleep(off_time)
+
+
+class AnalogModDevice(Device):
+    """Analog modulated devices"""
+
+    def __init__(self, AO_DAQ_PORT):
+        """
+        :param AO_DAQ_PORT: the analog output port on the DAQ board connected to the Device
+        """
+        super().__init__(AO_DAQ_PORT)
+
+    def amod_decive(self, V):
+        """ Changes Output current of Analog Output Port defined amount in Volt
+
+        :param V: Amount of Current as float if turned ON
+        """
+        with nidaqmx.Task() as task:
+            task.ao_channels.add_ao_voltage_chan(self.INPUT_PORT)
+            task.write([V], auto_start=True)
