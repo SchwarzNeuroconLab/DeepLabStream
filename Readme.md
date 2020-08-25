@@ -28,6 +28,7 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
  
  ### 4. [Adapting an existing experiment to your own needs](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Adapting-an-existing-experiment-to-your-own-needs)
  
+ #### Check out our [Out-of-the-Box](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Out-Of-The-Box:-What-Triggers-are-available%3F) section to get a good idea, what DLStream has in stock for your own experiments!
  
 ### How does this work
 
