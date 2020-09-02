@@ -12,6 +12,63 @@ from utils.configloader import RESOLUTION
 
 """Single posture triggers"""
 
+class HeaddirectionROITrigger:
+    """Trigger to check if animal is turning its head in a specific angle to a reference point (center of the region of interest)
+    and if the animal is not in the ROI"""
+    def __init__(self, center: tuple, radius: int, angle: float = 45, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param int angle: angle to meet for condition
+        :param tuple center: point used as reference to measure headdirection angle and center of ROI
+        :param int radius: radius of the ROI
+        :param debug: Not used in this trigger
+         """
+
+        self._headdirection_trigger = HeaddirectionTrigger(angle, center)
+        self._region_trigger = RegionTrigger(region_type= 'circle', center= center, radius = radius, bodyparts= 'nose')
+        self._center = center
+        self._angle = angle
+        self._radius = radius
+        self._debug = debug
+
+    def check_skeleton(self, skeleton: dict):
+        """
+        Checking skeleton for trigger
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+         [point , 'neck', 'nose'] is used for headdirection
+        """
+        _ , angle = angle_between_vectors(*skeleton['neck'], *skeleton['nose'], *self._center)
+        true_angle = abs(angle)
+
+        result_head, _ = self._headdirection_trigger.check_skeleton(skeleton)
+        result_roi, _ = self._region_trigger.check_skeleton(skeleton)
+
+        if result_head is True and result_roi is True:
+            result = True
+        else:
+            result = False
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+
+        if self._debug:
+            point = skeleton['nose']
+
+            response_body = {'plot': {'text': dict(text=str(true_angle),
+                                                   org=point,
+                                                   color=(255, 255, 255)),
+                                      'circle': dict(center= self._center,
+                                                     radius= self._radius,
+                                                     color=color)
+                             }}
+        else:
+            response_body = {'angle': true_angle}
+
+        response = (result, response_body)
+        return response
+
+
 class HeaddirectionTrigger:
     """Trigger to check if animal is turning head in a specific angle to a reference point"""
     def __init__(self, angle: int, point: tuple = (0,0), debug: bool = False):
