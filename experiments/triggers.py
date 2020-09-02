@@ -45,7 +45,7 @@ class HeaddirectionROITrigger:
         result_head, _ = self._headdirection_trigger.check_skeleton(skeleton)
         result_roi, _ = self._region_trigger.check_skeleton(skeleton)
 
-        if result_head is True and result_roi is True:
+        if result_head is True and result_roi is False:
             result = True
         else:
             result = False
