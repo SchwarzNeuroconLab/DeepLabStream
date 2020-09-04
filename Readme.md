@@ -6,7 +6,6 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Star)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
 [![GitHub forks](https://img.shields.io/github/forks/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Fork)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
-![GitHub All Releases](https://img.shields.io/github/downloads/SchwarzNeuroconLab/DeepLabStream/total?style=social)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect)
 
@@ -34,6 +33,51 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
  
  #### Check out our [Out-of-the-Box](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Out-Of-The-Box:-What-Triggers-are-available%3F) section to get a good idea, what DLStream has in stock for your own experiments!
  
+### How to use DeepLabStream
+
+Just run 
+```
+cd DeepLabStream
+python app.py
+``` 
+
+You will see the main control panel of a GUI app.
+
+![Main](https://user-images.githubusercontent.com/44863941/91172971-59faf000-e6dd-11ea-8b68-3c36db0ff22f.png)
+
+To start working with DeepLabStream, press the `Start Stream` button. It will activate the camera manager and show you the current view from the connected cameras.
+
+![Stream](https://user-images.githubusercontent.com/44863941/91173024-7008b080-e6dd-11ea-84b0-b05ac408d9a2.png)
+
+After that you can `Start Analysis` to start DeepLabCut and receive a pose estimations for each frame, or, additionally, you can `Start Recording` to record a
+video of the current feed (visible in the stream window). You will see your current video timestamp (counted in frames) and FPS after you pressed the `Start Analysis` button.
+
+![Analisys](https://user-images.githubusercontent.com/44863941/91173049-7ac34580-e6dd-11ea-80b6-ad56cb9cf22c.png)
+
+As you can see, we track three points that represent three body parts of the mouse - nose, neck and tail root.
+Every single frame where the animal was tracked is outputted to the dataframe, which would create a .csv file after the analysis is finished.
+
+After you finish with tracking and/or recording the video, you can stop either function by specifically pressing on corresponding "stop" button
+(so, `Stop Analysis` or `Stop Recording`) or you can stop the app and refresh all the timing at once, by pressing `Stop Streaming` button.
+
+#### Experiments
+
+DeepLabStream was build specifically for closed-loop experiments, so with a properly implemented experiment protocol, running experiments on this system is as easy as 
+pressing the `Start Experiment` button. Depending on your protocol and experimental goals, experiments could run and finish without any further engagement from the user.
+
+![Start](https://user-images.githubusercontent.com/44863941/91173075-857dda80-e6dd-11ea-90a4-1e768cab41ad.png)
+
+In the provided `ExampleExperiment` two regions of interest (ROIs) are created inside an arena. The experiment is designed to count the number of times the mouse enters a ROI and trigger a corresponding visual stimulus on a screen.
+The high contrast stimuli (image files) are located within the `experiments/src` folder and specified within the `experiments.py` `ExampleExperiments` Class.
+
+![Experiment](https://user-images.githubusercontent.com/44863941/91173098-90d10600-e6dd-11ea-94be-63e99f88df0a.png)
+
+As a visual representation of this event, the border of the ROI will turn green.
+
+All experimental output will be stored to a .csv file for easy postprocessing. Check out [Working with DLStream output](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Working-with-DLStream-output) for further details.
+
+Look at the [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction) to get an idea how to design your own experiment in DeepLabStream or learn how to adapt one of the already published experiments at [Adapting an existing experiment](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Adapting-an-existing-experiment-to-your-own-needs).
+
 ## How does this work
 
 DeepLabStream uses the camera's video stream to simultaneously record a raw (read as unmodified) video of the ongoing experiment,
