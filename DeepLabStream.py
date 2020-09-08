@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import click
 
-from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MULTI_CAM, STACK_FRAMES,\
+from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, EXP_NUMBER
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
@@ -96,6 +96,7 @@ class DeepLabStream:
     """
     Class for managing everything stream-related
     """
+
     def __init__(self):
         """
         Initializing the DeepLabStream class with some predefined variables
@@ -118,7 +119,7 @@ class DeepLabStream:
         self._fps = 0
         self.greetings()
 
-    @ staticmethod
+    @staticmethod
     def set_camera_manager():
         """
         Trying to load each present camera manager, if installed
@@ -554,7 +555,7 @@ class DeepLabStream:
 # testing part
 @click.command()
 @click.option('--dlc-enabled', 'dlc_enabled', is_flag=True)
-@click.option('--benchmark-enabled', 'benchmark_enabled',  is_flag=True)
+@click.option('--benchmark-enabled', 'benchmark_enabled', is_flag=True)
 @click.option('--recording-enabled', 'recording_enabled', is_flag=True)
 @click.option('--data-output-enabled', 'data_output_enabled', is_flag=True)
 def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_output_enabled):
@@ -703,6 +704,12 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
                 break
             elif got_first_analysed_frame:
                 print("[{0}/3000] Benchmarking in progress".format(len(analysis_time_data)))
+
+    if benchmark_enabled:
+        import re
+        short_model = re.split('[-_]', MODEL)
+        short_model = short_model[0] + '_' + short_model[2]
+        np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt', np.transpose([fps_data, whole_loop_time_data]))
 
 
 if __name__ == '__main__':

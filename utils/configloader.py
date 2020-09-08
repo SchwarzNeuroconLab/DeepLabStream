@@ -33,6 +33,7 @@ except ValueError:
     print('Incorrect resolution in config!\n'
           'Using default value "RESOLUTION = 848, 480"')
     RESOLUTION = (848, 480)
+MODEL = dsc_config['Streaming'].get('MODEL')
 FRAMERATE = dsc_config['Streaming'].getint('FRAMERATE')
 OUT_DIR = dsc_config['Streaming'].get('OUTPUT_DIRECTORY')
 STREAM = dsc_config['Streaming'].getboolean('STREAM')
