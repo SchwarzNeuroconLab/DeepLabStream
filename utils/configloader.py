@@ -47,6 +47,8 @@ CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')
 
 # Video
 VIDEO_SOURCE = dsc_config['Video'].get('VIDEO_SOURCE')
+VIDEO = dsc_config['Video'].getboolean('VIDEO')
+
 
 # experiment
 EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')

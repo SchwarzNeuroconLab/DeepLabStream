@@ -18,7 +18,7 @@ import pandas as pd
 import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, EXP_NUMBER
+    ANIMALS_NUMBER, STREAMS, EXP_NUMBER, VIDEO
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 from experiments.experiments import ExampleExperiment
@@ -127,41 +127,47 @@ class DeepLabStream:
         ! Camera managers cannot be mixed
         :return: the chosen camera manager
         """
-        manager_list = []
-        # loading realsense manager, if installed
-        realsense = find_spec("pyrealsense2") is not None
-        if realsense:
-            from utils.realsense import RealSenseManager
-            realsense_manager = RealSenseManager()
-            manager_list.append(realsense_manager)
 
-        # loading basler manager, if installed
-        pylon = find_spec("pypylon") is not None
-        if pylon:
-            from utils.pylon import PylonManager
-            pylon_manager = PylonManager()
-            manager_list.append(pylon_manager)
-
-        def check_for_cameras(camera_manager):
-            """
-            Helper method to get cameras, connected to that camera manager
-            """
-            cameras = camera_manager.get_connected_devices()
-            if cameras:
-                print("Found {} {} camera(s)!".format(len(cameras), camera_manager.get_name()))
-                return True
-            else:
-                return False
-
-        # checking for connected cameras for all installed managers
-        for manager in manager_list:
-            if check_for_cameras(manager):
-                return manager
+        if VIDEO:
+            from utils.generic import VideoManager
+            manager = VideoManager()
+            return manager
         else:
-            # if no camera is found, try generic openCV manager
-            from utils.generic_camera import GenericManager
-            generic_manager = GenericManager()
-            return generic_manager
+            manager_list = []
+            # loading realsense manager, if installed
+            realsense = find_spec("pyrealsense2") is not None
+            if realsense:
+                from utils.realsense import RealSenseManager
+                realsense_manager = RealSenseManager()
+                manager_list.append(realsense_manager)
+
+            # loading basler manager, if installed
+            pylon = find_spec("pypylon") is not None
+            if pylon:
+                from utils.pylon import PylonManager
+                pylon_manager = PylonManager()
+                manager_list.append(pylon_manager)
+
+            def check_for_cameras(camera_manager):
+                """
+                Helper method to get cameras, connected to that camera manager
+                """
+                cameras = camera_manager.get_connected_devices()
+                if cameras:
+                    print("Found {} {} camera(s)!".format(len(cameras), camera_manager.get_name()))
+                    return True
+                else:
+                    return False
+
+            # checking for connected cameras for all installed managers
+            for manager in manager_list:
+                if check_for_cameras(manager):
+                    return manager
+            else:
+                # if no camera is found, try generic openCV manager
+                from utils.generic import GenericManager
+                generic_manager = GenericManager()
+                return generic_manager
 
     @property
     def cameras(self):
