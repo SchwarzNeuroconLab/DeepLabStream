@@ -430,9 +430,11 @@ class DeepLabStream:
     ##################
     @staticmethod
     def set_up_experiment():
-        # add custom experiment here
-        experiment_dict = {1: ExampleExperiment}
-        experiment = experiment_dict[EXP_NUMBER]()
+        import importlib
+        from utils.configloader import EXP_NAME
+        mod = importlib.import_module('experiments.experiments')
+        experiment_class = getattr(mod, EXP_NAME)
+        experiment = experiment_class()
         return experiment
 
     def start_experiment(self):

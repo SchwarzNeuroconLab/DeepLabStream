@@ -51,7 +51,7 @@ VIDEO = dsc_config['Video'].getboolean('VIDEO')
 
 
 # experiment
-EXP_NUMBER = dsc_config['Experiment'].getint('EXP_NUMBER')
+EXP_NAME = dsc_config['Experiment'].get('EXP_NAME')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
 START_TIME = time.time()
