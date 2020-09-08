@@ -436,7 +436,7 @@ class DeepLabStream:
         try:
             experiment_class = getattr(mod, EXP_NAME)
             experiment = experiment_class()
-        except:
+        except AttributeError:
             raise ValueError(f'Experiment: {EXP_NAME} not in experiments.py.')
 
         return experiment
