@@ -63,7 +63,7 @@ class ExampleExperiment:
     def __init__(self):
         self._name = 'ExampleExperiment'
         self._parameter_dict = dict(POINT_1 = 'tuple',
-                                    POINT_1='tuple',
+                                    POINT_2='tuple',
                                     RADIUS = 'int',
                                     BODYPART = 'str',
                                     INTERTRIAL_TIME = 'int',
