@@ -18,6 +18,42 @@ from utils.analysis import angle_between_vectors
 from experiments.stimulation import show_visual_stim_img, laser_toggle, laser_switch
 
 
+def get_experiment_settings(experiment_name, parameter_dict):
+    import os
+    import configparser as cfg
+    exp_config = cfg.ConfigParser()
+    exp_path = os.path.join(os.path.dirname(__file__), 'experiment_config.ini')
+    with open(exp_path) as exp_file:
+        exp_config.read_file(exp_file)
+
+    experiment_config = {}
+    for parameter in list(parameter_dict.keys()):
+        if parameter_dict[parameter] == 'int':
+            try:
+                experiment_config[parameter] = exp_config[experiment_name].getint(parameter)
+            except:
+                experiment_config[parameter] = None
+        elif parameter_dict[parameter] == 'tuple':
+            try:
+                experiment_config[parameter] = tuple(int(entry) for entry in exp_config[experiment_name].get(parameter).split(','))
+            except:
+                experiment_config[parameter] = None
+
+        elif parameter_dict[parameter] == 'boolean':
+            try:
+                experiment_config[parameter] = exp_config[experiment_name].getboolean(parameter)
+            except:
+                experiment_config[parameter] = None
+
+        elif parameter_dict[parameter] == 'str':
+            try:
+                experiment_config[parameter] = exp_config[experiment_name].get(parameter)
+            except:
+                experiment_config[parameter] = None
+
+    return experiment_config
+
+
 class ExampleExperiment:
     """
     Simple class to contain all of the experiment properties
@@ -25,16 +61,28 @@ class ExampleExperiment:
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
     def __init__(self):
+        self._name = 'ExampleExperiment'
+        self._parameter_dict = dict(POINT_1 = 'tuple',
+                                    POINT_1='tuple',
+                                    RADIUS = 'int',
+                                    BODYPART = 'str',
+                                    INTERTRIAL_TIME = 'int',
+                                    TRIAL_TIME = 'int',
+                                    EXP_LENGTH = 'int',
+                                    EXP_COMPLETION = 'int',
+                                    EXP_TIME = 'int')
+        self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
         self._process = ExampleProtocolProcess()
-        self._green_point = (550, 163)
-        self._blue_point = (372, 163)
-        self._radius = 40
+        self._green_point = self._settings_dict['POINT_1']
+        self._blue_point = self._settings_dict['POINT_2']
+        self._radius = self._settings_dict['RADIUS']
+        self._trigger_bodypart = self._settings_dict['BODYPART']
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
-        self._trial_timers = {trial: Timer(10) for trial in self._trials}
-        self._exp_timer = Timer(600)
+        self._trial_timers = {trial: Timer(self._settings_dict['TRIAL_TIME']) for trial in self._trials}
+        self._exp_timer = Timer(self._settings_dict['EXP_TIME'])
 
     def check_skeleton(self, frame, skeleton):
         """
@@ -76,8 +124,8 @@ class ExampleExperiment:
         """
         Defining the trials
         """
-        green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, 'neck')
-        blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5, 'neck')
+        green_roi = RegionTrigger('circle', self._green_point, self._radius, self._trigger_bodypart)
+        blue_roi = RegionTrigger('circle', self._blue_point, self._radius, self._trigger_bodypart)
         trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
                                              count=0),
                   'Bluebar_whiteback': dict(trigger=blue_roi.check_skeleton,
@@ -116,6 +164,8 @@ class ExampleExperiment:
         Check which trial is going on right now
         """
         return self._current_trial
+
+
 
 """The following is the original experiments we used for our experiments! If you are interested in using this, 
 you will need to adapt the stimulation to your system! Otherwise I recommend looking at them for ideas how to incorporate
