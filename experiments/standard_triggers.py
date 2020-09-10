@@ -109,13 +109,9 @@ class StandardTrigger:
 
 
 
-
-
-
-
 """Single posture triggers"""
 
-class StandardHeaddirectionTrigger:
+class StandardHeaddirectionTrigger(StandardTrigger):
     """Trigger to check if animal is turning head in a specific angle to a reference point"""
     def __init__(self):
         """
@@ -173,14 +169,9 @@ class StandardHeaddirectionTrigger:
         response = (result, response_body)
         return response
 
-    def get_name(self):
-        return self._name
-
-    def get_settings(self):
-        return self._settings_dict
 
 
-class StandardRegionTrigger:
+class StandardRegionTrigger(StandardTrigger):
     """
     Trigger to check if animal is in Region Of Interest (ROI)
     """
@@ -255,7 +246,7 @@ class StandardRegionTrigger:
         return response
 
 
-class StandardSpeedTrigger:
+class StandardSpeedTrigger(StandardTrigger):
     """
     Trigger to check if animal is moving above a certain speed
     """
