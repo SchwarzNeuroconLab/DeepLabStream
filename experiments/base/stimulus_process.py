@@ -64,17 +64,17 @@ class Timer:
 
 def setup_stimulation(stimulus_name):
     import importlib
-    mod = importlib.import_module('experiments.standard_stimulation')
+    mod = importlib.import_module('experiments.base_stimulation')
     try:
         stimulation_class = getattr(mod, stimulus_name)
         stimulation = stimulation_class()
     except AttributeError:
-        raise ValueError(f'Stimulus: {stimulus_name} not in standard_stimulation.py.')
+        raise ValueError(f'Stimulus: {stimulus_name} not in stimulation.py.')
 
     return stimulation
 
 
-def standard_conditional_switch_protocol_run(condition_q: mp.Queue, stimulus_name):
+def base_conditional_switch_protocol_run(condition_q: mp.Queue, stimulus_name):
     condition = False
     stimulation = setup_stimulation(stimulus_name)
     while True:
@@ -86,7 +86,7 @@ def standard_conditional_switch_protocol_run(condition_q: mp.Queue, stimulus_nam
             stimulation.stop()
 
 
-def standard_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
+def base_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
     condition = False
     stimulation = setup_stimulation(stimulus_name)
     while True:
@@ -98,7 +98,7 @@ def standard_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_nam
             stimulation.removal()
 
 
-def standard_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):
+def base_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):
     """
     The function to use in ProtocolProcess class
     Designed to be run continuously alongside the main loop
@@ -106,12 +106,12 @@ def standard_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: 
     :param trial_q: the protocol name (inwards)
     :param success_q: the result of each protocol (outwards)
     :param trials: dict of possible trials
-    :param stimulus_name: exact name of stimulus function in standard_stimulus.py
+    :param stimulus_name: exact name of stimulus function in base_stimulus.py
     """
     current_trial = None
     # TODO: make this adaptive and working
     trial_dict = {}
-    stimulus_name = 'StandardStimulation'
+    stimulus_name = 'BaseStimulation'
     stimulation = setup_stimulation(stimulus_name)
     # starting the main loop without any protocol running
     while True:
@@ -127,7 +127,7 @@ def standard_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: 
             current_trial = None
 
 
-class StandardProtocolProcess:
+class BaseProtocolProcess:
     """
     Class to help work with protocol function in multiprocessing
     """
@@ -141,17 +141,17 @@ class StandardProtocolProcess:
         if self._process_type == 'trial' and trials is not None:
             self._trial_queue = mp.Queue(1)
             self._success_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=standard_trial_protocol_run, args=(self._trial_queue,
+            self._protocol_process = mp.Process(target=base_trial_protocol_run, args=(self._trial_queue,
                                                                                   self._success_queue,
                                                                                    trials))
         elif self._process_type == 'switch':
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=standard_conditional_switch_protocol_run, args=(self._condition_queue,
+            self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run, args=(self._condition_queue,
                                                                                                 stimulus_name))
 
         elif self._process_type == 'supply':
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=standard_conditional_supply_protocol_run, args=(self._condition_queue,
+            self._protocol_process = mp.Process(target=base_conditional_supply_protocol_run, args=(self._condition_queue,
                                                                                                 stimulus_name))
 
         self._running = False

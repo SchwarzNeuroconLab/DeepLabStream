@@ -7,10 +7,8 @@ Licensed under GNU General Public License v3.0
 """
 
 import time
-import os
 import cv2
 import numpy as np
-from experiments.DAQ_output import DigitalModDevice
 
 
 def get_stimulation_settings(stimulation_name, parameter_dict):
@@ -66,10 +64,10 @@ def get_stimulation_settings(stimulation_name, parameter_dict):
     return experiment_config
 
 
-class StandardStimulation:
+class BaseStimulation:
 
     def __init__(self):
-        self._name = 'StandardStimulation'
+        self._name = 'BaseStimulation'
         self._parameter_dict = dict(TYPE='str',
                                     PORT='str',
                                     STIM_TIME='float')
@@ -120,7 +118,7 @@ class StandardStimulation:
             print('Stimulation was already OFF.')
 
 
-class RewardDispenser(StandardStimulation):
+class RewardDispenser(BaseStimulation):
 
     def __init__(self):
 
@@ -170,7 +168,7 @@ class RewardDispenser(StandardStimulation):
         print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
 
 
-class ScreenStimulation(StandardStimulation):
+class ScreenStimulation(BaseStimulation):
 
     def __init__(self):
         self._name = 'ScreenStimulation'
@@ -231,34 +229,4 @@ class ScreenStimulation(StandardStimulation):
 
     def stop(self):
         print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
-
-
-
-def show_visual_stim_vid(type, name='vistim'):
-    """
-    Shows video in newly created or named window
-    WARNING: LONG FILES WILL HOLD THE PROCESS NOTICEABLY
-    :param type: defines video through visual dictionary to be displayed
-    :param name: name of window that is created or used by OpenCV to display image
-    """
-    # Show image when called
-    visual = {'Vid1': dict(path=r"./experiments/src/video1.mp4"),
-              'Vid2': dict(path=r"./experiments/src/video2.mp4")}
-    cap = cv2.VideoCapture(visual[type]['path'])
-    cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-    while cap.isOpened():
-        ret, frame = cap.read()
-
-        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        if ret is True:
-            cv2.imshow(name, frame)
-
-        else:
-            break
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
 

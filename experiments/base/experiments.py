@@ -8,8 +8,8 @@ Licensed under GNU General Public License v3.0
 
 import time
 
-from experiments.standard_stimulation import laser_switch
-from experiments.standard_stimulus_process import StandardProtocolProcess, Timer
+from experiments.base.stimulation import BaseStimulation
+from experiments.base.stimulus_process import BaseProtocolProcess, Timer
 from utils.plotter import plot_triggers_response
 
 
@@ -72,22 +72,22 @@ def get_experiment_settings(experiment_name, parameter_dict):
 
 def setup_trigger(trigger_name):
     import importlib
-    mod = importlib.import_module('experiments.standard_triggers')
+    mod = importlib.import_module('experiments.base_triggers')
     try:
         trigger_class = getattr(mod, trigger_name)
         trigger = trigger_class()
     except AttributeError:
-        raise ValueError(f'Trigger: {trigger_name} not in standard_triggers.py.')
+        raise ValueError(f'Trigger: {trigger_name} not in base_triggers.py.')
 
     return trigger
 
 
-class StandardExperiment:
+class BaseExperiment:
     """
         Base class for standard experiments"""
 
     def __init__(self):
-        self._name = 'StandardExperiment'
+        self._name = 'BaseExperiment'
         self._settings_dict = {}
         self.experiment_finished = False
         self._process = None
@@ -148,14 +148,14 @@ class StandardExperiment:
 
 
 
-class StandardExampleExperiment(StandardExperiment):
+class BaseExampleExperiment(BaseExperiment):
     """
     Simple class to contain all of the experiment properties
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
     def __init__(self):
-        self._name = 'StandardExampleExperiment'
+        self._name = 'BaseExampleExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
                                     PROCESS_TYPE = 'str',
                                     STIMULATION = 'str',
@@ -166,8 +166,8 @@ class StandardExampleExperiment(StandardExperiment):
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = StandardProtocolProcess(process_type= self._settings_dict['PROCESS_TYPE'],
-                                                stimulus_name= self._settings_dict['STIMULATION'])
+        self._process = BaseProtocolProcess(process_type= self._settings_dict['PROCESS_TYPE'],
+                                            stimulus_name= self._settings_dict['STIMULATION'])
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -254,14 +254,14 @@ class StandardExampleExperiment(StandardExperiment):
 
 
 
-class StandardConditionalExperiment(StandardExperiment):
+class BaseConditionalExperiment(BaseExperiment):
     """
     Simple class to contain all of the experiment properties
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
     def __init__(self):
-        self._name = 'StandardExampleExperiment'
+        self._name = 'BaseExampleExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
                                     STIMULATION = 'str',
                                     INTERTRIAL_TIME = 'int',
@@ -270,8 +270,8 @@ class StandardConditionalExperiment(StandardExperiment):
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = StandardProtocolProcess(process_type= 'condition',
-                                                stimulus_name= self._settings_dict['STIMULATION'])
+        self._process = BaseProtocolProcess(process_type='condition',
+                                            stimulus_name= self._settings_dict['STIMULATION'])
         self._event = None
         self._event_count = 0
         self._current_trial = None
@@ -344,12 +344,12 @@ class StandardConditionalExperiment(StandardExperiment):
 
 """Standardexperiments that can be setup by using the experiment config"""
 
-class StandardOptogeneticExperiment(StandardExperiment):
+class BaseOptogeneticExperiment(BaseExperiment):
     """Standard implementation of an optogenetic experiment"""
 
     def __init__(self):
         self.experiment_finished = False
-        self._name = 'StandardOptogeneticExperiment'
+        self._name = 'BaseOptogeneticExperiment'
 
         #loading settings
         self._exp_parameter_dict = dict(TRIGGER ='str',
@@ -380,6 +380,9 @@ class StandardOptogeneticExperiment(StandardExperiment):
         #trigger
         self._trigger = setup_trigger(self._settings_dict['TRIGGER'])
 
+        #Stimulation
+        self._stimulus = BaseStimulation()
+
 
     def check_skeleton(self, frame, skeleton):
 
@@ -400,7 +403,7 @@ class StandardOptogeneticExperiment(StandardExperiment):
                             print("Starting Stimulation")
                             self._event = True
                             # and activate the laser, start the timer and reset the intertrial timer
-                            laser_switch(True)
+                            self._stimulus.start()
                             self._event_start = time.time()
                             self._intertrial_timer.reset()
                         else:
@@ -412,7 +415,7 @@ class StandardOptogeneticExperiment(StandardExperiment):
                                 # turn off the laser and start inter-trial time
                                 print("Ending Stimulation, Stimulation time ran out")
                                 self._event = False
-                                laser_switch(False)
+                                self._stimulus.stop()
                                 trial_time = time.time() - self._event_start
                                 self._total_time += trial_time
                                 self._results.append(trial_time)
@@ -430,7 +433,7 @@ class StandardOptogeneticExperiment(StandardExperiment):
                                 # turn of the laser and start intertrial time
                                 print("Ending Stimulation, Trigger is False")
                                 self._event = False
-                                laser_switch(False)
+                                self._stimulus.stop()
                                 trial_time = time.time() - self._event_start
                                 self._total_time += trial_time
                                 self._results.append(trial_time)
