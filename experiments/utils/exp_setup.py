@@ -74,3 +74,32 @@ def get_trigger_settings(trigger_name, parameter_dict):
     experiment_config = get_config_settings(trigger_name, parameter_dict, 'base_config.ini')
 
     return experiment_config
+
+def get_process_settings(process_name, parameter_dict):
+    experiment_config = get_config_settings(process_name, parameter_dict, 'base_config.ini')
+
+    return experiment_config
+
+
+def setup_trigger(trigger_name):
+    import importlib
+    mod = importlib.import_module('experiments.base.triggers')
+    try:
+        trigger_class = getattr(mod, trigger_name)
+        trigger = trigger_class()
+    except AttributeError:
+        raise ValueError(f'Trigger: {trigger_name} not in base.triggers.py.')
+
+    return trigger
+
+
+def setup_process(process_name):
+    import importlib
+    mod = importlib.import_module('experiments.base.stimulus_process')
+    try:
+        process_class = getattr(mod, process_name)
+        process = process_class()
+    except AttributeError:
+        raise ValueError(f'Process: {process_name} not in base.stimulus_process.py.')
+
+    return process

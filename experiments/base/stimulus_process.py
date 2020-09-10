@@ -8,6 +8,7 @@ Licensed under GNU General Public License v3.0
 
 import time
 import multiprocessing as mp
+from experiments.utils.exp_setup import get_process_settings
 
 class Timer:
     """
@@ -131,28 +132,33 @@ class BaseProtocolProcess:
     """
     Class to help work with protocol function in multiprocessing
     """
-    def __init__(self, stimulus_name, trials: dict = None, process_type: str = 'condition'):
+    def __init__(self, trials: dict = None):
         """
         Setting up the three queues and the process itself
         """
+        self._name = 'BaseProtocolProcess'
+        self._parameter_dict = dict(TYPE='str',
+                                    STIMULATION ='str')
+        self._settings_dict = get_process_settings(self._name, self._parameter_dict)
 
         self._process_type = process_type
 
-        if self._process_type == 'trial' and trials is not None:
+
+        if self._settings_dict['TYPE'] == 'trial' and trials is not None:
             self._trial_queue = mp.Queue(1)
             self._success_queue = mp.Queue(1)
             self._protocol_process = mp.Process(target=base_trial_protocol_run, args=(self._trial_queue,
                                                                                   self._success_queue,
                                                                                    trials))
-        elif self._process_type == 'switch':
+        elif self._settings_dict['TYPE'] == 'switch':
             self._condition_queue = mp.Queue(1)
             self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run, args=(self._condition_queue,
-                                                                                                stimulus_name))
+                                                                                                self._settings_dict['STIMULATION']))
 
-        elif self._process_type == 'supply':
+        elif self._settings_dict['TYPE'] == 'supply':
             self._condition_queue = mp.Queue(1)
             self._protocol_process = mp.Process(target=base_conditional_supply_protocol_run, args=(self._condition_queue,
-                                                                                                stimulus_name))
+                                                                                                self._settings_dict['STIMULATION']))
 
         self._running = False
         self._current_trial = None

@@ -10,20 +10,8 @@ import time
 
 from experiments.base.stimulation import BaseStimulation
 from experiments.base.stimulus_process import BaseProtocolProcess, Timer
-from experiments.utils.exp_setup import get_experiment_settings
+from experiments.utils.exp_setup import get_experiment_settings, setup_trigger, setup_process
 from utils.plotter import plot_triggers_response
-
-
-def setup_trigger(trigger_name):
-    import importlib
-    mod = importlib.import_module('experiments.base_triggers')
-    try:
-        trigger_class = getattr(mod, trigger_name)
-        trigger = trigger_class()
-    except AttributeError:
-        raise ValueError(f'Trigger: {trigger_name} not in base_triggers.py.')
-
-    return trigger
 
 
 class BaseExperiment:
@@ -101,8 +89,7 @@ class BaseExampleExperiment(BaseExperiment):
     def __init__(self):
         self._name = 'BaseExampleExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
-                                    PROCESS_TYPE = 'str',
-                                    STIMULATION = 'str',
+                                    PROCESS = 'str',
                                     INTERTRIAL_TIME = 'int',
                                     TRIAL_TIME = 'int',
                                     EXP_LENGTH = 'int',
@@ -110,8 +97,7 @@ class BaseExampleExperiment(BaseExperiment):
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = BaseProtocolProcess(process_type= self._settings_dict['PROCESS_TYPE'],
-                                            stimulus_name= self._settings_dict['STIMULATION'])
+        self._process = setup_process(self._settings_dict['PROCESS'])
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
