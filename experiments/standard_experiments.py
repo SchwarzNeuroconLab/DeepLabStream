@@ -77,7 +77,7 @@ def setup_trigger(trigger_name):
         trigger_class = getattr(mod, trigger_name)
         trigger = trigger_class()
     except AttributeError:
-        raise ValueError(f'Trigger: {trigger_name} not in triggers.py.')
+        raise ValueError(f'Trigger: {trigger_name} not in standard_triggers.py.')
 
     return trigger
 
