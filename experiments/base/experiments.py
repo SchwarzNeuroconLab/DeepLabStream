@@ -270,7 +270,7 @@ class BaseConditionalExperiment(BaseExperiment):
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = BaseProtocolProcess(process_type='condition',
+        self._process = BaseProtocolProcess(process_type='switch',
                                             stimulus_name= self._settings_dict['STIMULATION'])
         self._event = None
         self._event_count = 0
