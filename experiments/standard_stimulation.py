@@ -13,50 +13,225 @@ import numpy as np
 from experiments.DAQ_output import DigitalModDevice
 
 
-def show_visual_stim_img(img_type='background', name='vistim', img_dict=None):
-    """
-    Shows image in newly created or named window
+def get_stimulation_settings(stimulation_name, parameter_dict):
+    import os
+    import configparser as cfg
+    exp_config = cfg.ConfigParser()
+    exp_path = os.path.join(os.path.dirname(__file__), 'experiment_config.ini')
+    with open(exp_path) as exp_file:
+        exp_config.read_file(exp_file)
 
-    :param img_type: defines image through visual dictionary to be displayed
-    :param name: name of window that is created or used by OpenCV to display image
-    :param img_dict: optional custom image paths dictionary
-    """
-    # Show image when called
-    img_path = os.path.join(os.path.dirname(__file__), 'src')
-    if img_dict is None:
-        visual = {'background': r"whiteback_1920_1080.png",
-                  'Greenbar_whiteback': r"greenbar_whiteback_1920_1080.png",
-                  'Bluebar_whiteback': r"bluebar_whiteback_1920_1080.png"}
-    else:
-        visual = img_dict
-    # load image unchanged (-1), greyscale (0) or color (1)
-    img = cv2.imread(os.path.join(img_path, visual[img_type]), -1)
-    converted_image = np.uint8(img)
-    cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-    cv2.imshow(name, converted_image)
+    experiment_config = {}
+    for parameter in list(parameter_dict.keys()):
+        if parameter_dict[parameter] == 'int':
+            try:
+                experiment_config[parameter] = exp_config[stimulation_name].getint(parameter)
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+        if parameter_dict[parameter] == 'float':
+            try:
+                experiment_config[parameter] = exp_config[stimulation_name].getfloat(parameter)
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+
+        elif parameter_dict[parameter] == 'tuple':
+            try:
+                experiment_config[parameter] = tuple(int(entry) for entry in exp_config[stimulation_name].get(parameter).split(','))
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+        elif parameter_dict[parameter] == 'list':
+            try:
+                experiment_config[parameter] = list(
+                    str(entry) for entry in exp_config[stimulation_name].get(parameter).split(','))
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+        elif parameter_dict[parameter] == 'boolean':
+            try:
+                experiment_config[parameter] = exp_config[stimulation_name].getboolean(parameter)
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+
+        elif parameter_dict[parameter] == 'str':
+            try:
+                experiment_config[parameter] = exp_config[stimulation_name].get(parameter)
+            except:
+                experiment_config[parameter] = None
+                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
+
+    return experiment_config
 
 
-def toggle_device():
-    """Controls micro peristaltic pump via digital trigger signal."""
-    device = DigitalModDevice('Dev1/PFI2')
-    device.toggle()
+class StandardStimulation:
 
-def show_visual_stim_img(type='background', name='vistim'):
-    """
-    Shows image in newly created or named window
+    def __init__(self):
+        self._name = 'StandardStimulation'
+        self._parameter_dict = dict(TYPE='str',
+                                    PORT='str',
+                                    STIM_TIME='float')
+        self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
+        self._running = False
+        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'])
 
-    :param type: defines image through visual dictionary to be displayed
-    :param name: name of window that is created or used by OpenCV to display image
-    """
-    # Show image when called
-    visual = {'background': dict(path=r"./experiments/src/whiteback_1920_1080.png"),
-              'Greenbar_whiteback': dict(path=r"./experiments/src/greenbar_whiteback_1920_1080.png"),
-              'Bluebar_whiteback': dict(path=r"./experiments/src/bluebar_whiteback_1920_1080.png")}
-    # load image unchanged (-1), greyscale (0) or color (1)
-    img = cv2.imread(visual[type]['path'], -1)
-    converted_image = np.uint8(img)
-    cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-    cv2.imshow(name, converted_image)
+    @staticmethod
+    def _setup_device(type, port):
+        device = None
+        if type == 'NI':
+            from experiments.DAQ_output import DigitalModDevice
+            device = DigitalModDevice(port)
+
+        return device
+
+    def stimulate(self):
+        """Run stimulation and stop after being done"""
+        if self._settings_dict['STIM_TIME'] is not None:
+            print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['STIM_TIME']))
+            self._stim_device.turn_on()
+            self._running = True
+            time.sleep(self._settings_dict['STIM_TIME'])
+            self._stim_device.turn_off()
+            self._running = False
+        else:
+            print('Stimulation: {} does not support stimulate().'.format(self._name))
+
+    def remove(self):
+        """remove stimulation (e.g. reward) and stop after being done"""
+        print('Stimulation: {} does not support remove().'.format(self._name))
+
+    def start(self):
+
+        if not self._running:
+            print('Stimulation: {} ON.'.format(self._name))
+            self._stim_device.turn_on()
+            self._running = True
+        else:
+            print('Stimulation was already ON.')
+
+    def stop(self):
+        if self._running:
+            print('Stimulation: {} OFF.'.format(self._name))
+            self._stim_device.turn_off()
+            self._running = False
+        else:
+            print('Stimulation was already OFF.')
+
+
+class RewardDispenser(StandardStimulation):
+
+    def __init__(self):
+
+        self._name = 'RewardDispenser'
+        self._parameter_dict = dict(TYPE = 'str',
+                                    STIM_PORT= 'str',
+                                    REMOVAL_PORT = 'str',
+                                    STIM_TIME = 'float',
+                                    REMOVAL_TIME = 'float')
+        self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
+        self._running = False
+        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['STIM_PORT'])
+        self._removal_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['REMOVAL_PORT'])
+
+
+    @staticmethod
+    def _setup_device(type, port):
+        device = None
+        if type == 'NI':
+            from experiments.DAQ_output import DigitalModDevice
+            device = DigitalModDevice(port)
+
+        return device
+
+    def stimulate(self):
+        """Run stimulation and stop after being done"""
+        print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['STIM_TIME']))
+        self._stim_device.turn_on()
+        self._running = True
+        time.sleep(self._settings_dict['STIM_TIME'])
+        self._stim_device.turn_off()
+        self._running = False
+
+    def remove(self):
+        """remove stimulation (e.g. reward) and stop after being done"""
+        print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['REMOVAL_TIME']))
+        self._removal_device.turn_on()
+        self._running = True
+        time.sleep(self._settings_dict['REMOVAL_TIME'])
+        self._removal_device.turn_off()
+        self._running = False
+
+    def start(self):
+        print('Stimulation: {} does not support start(). Did you mean stimulate()?'.format(self._name))
+
+    def stop(self):
+        print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
+
+
+class ScreenStimulation(StandardStimulation):
+
+    def __init__(self):
+        self._name = 'ScreenStimulation'
+        self._parameter_dict = dict(TYPE='str',
+                                    STIM_PATH='str',
+                                    BACKGROUND_PATH='str')
+        self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
+        self._running = False
+        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'])
+
+        self._background = self._setup_stimulus(self._settings_dict['BACKGROUND_PATH'], type = 'image') \
+            if self._settings_dict['BACKGROUND_PATH'] is not None else None
+        self._stimulus = self._setup_stimulus(self._settings_dict['STIM_PATH'], type = self._settings_dict['TYPE'])
+        self._window = None
+
+    @staticmethod
+    def _setup_stimulus(path, type = 'image'):
+        if type == 'image':
+            img = cv2.imread(path, -1)
+            stimulus = np.uint8(img)
+        elif type == 'video':
+            stimulus = cv2.VideoCapture(path)
+
+        return stimulus
+
+    def _setup_window(self):
+        cv2.namedWindow(self._name, cv2.WINDOW_NORMAL)
+
+    def stimulate(self):
+        """Run stimulation and stop after being done"""
+        if self._window is None:
+            self._setup_window()
+        if self._settings_dict['TYPE'] == 'image':
+            cv2.imshow(self._name, self._stimulus)
+
+        elif self._settings_dict['TYPE'] == 'video':
+            while self._stimulus.isOpened():
+                self._running = True
+                ret, frame = self._stimulus.read()
+                if ret is True:
+                    cv2.imshow(self._name, frame)
+                else:
+                    break
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            self._running = False
+            self._stimulus.release()
+
+    def remove(self):
+        """remove stimulation (e.g. reward) and stop after being done"""
+        if self._window is None:
+            self._setup_window()
+
+        cv2.imshow(self._name, self._background)
+
+    def start(self):
+        print('Stimulation: {} does not support start(). Did you mean stimulate()?'.format(self._name))
+
+    def stop(self):
+        print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
+
 
 
 def show_visual_stim_vid(type, name='vistim'):
@@ -87,78 +262,3 @@ def show_visual_stim_vid(type, name='vistim'):
 
     cap.release()
 
-
-def toggle_device():
-    """Controls micro peristaltic pump via digital trigger signal."""
-    device = DigitalModDevice('Dev1/PFI2')
-    device.toggle()
-
-"""The following is the original stimulation we used for our experiments! If you are interested in using this, 
-you will need to adapt the stimulation to your system! Otherwise I recommend looking at them for ideas how to incorporate
-your own experiment into DLStream!"""
-
-
-def laser_toggle():
-    """Toggle laser on or off
-    Laser needs to be connected to DAQ_PORT and switched to "Digital modulation"
-    If you use additional safety measurements to control the laser, make sure to undo them before starting the protocol!"""
-
-    laser = DigitalModDevice(LSR_DAQ_PORT)
-    laser.toggle()
-    print("Laser was toggled")
-
-def laser_switch(switch: bool = False):
-    """Toggle laser on or off
-    Laser needs to be connected to DAQ_PORT and switched to "Digital modulation"
-    If you use additional safety measurements to control the laser, make sure to undo them before starting the protocol!"""
-
-    laser = DigitalModDevice(LSR_DAQ_PORT)
-    if switch:
-        laser.turn_on()
-        print("Laser is switched on")
-
-    else:
-        laser.turn_off()
-        print("Laser is switched off")
-
-
-
-def deliver_tone_shock():
-    """
-    Activates tone signal via digital trigger. Cycle is optional
-    :param rep: Number of repetitions for signal [int]
-    :param duration: Duration in seconds of signal for each rep [float]
-    :param inter_time: Time in seconds between reps [float]
-    """
-
-    tone_gen = DigitalModDevice('Dev1/PFI5')
-    tone_gen.toggle()
-
-
-def deliver_airpuff(rep: int = 1, duration: float = 0.1, inter_time: float = 0.1):
-    """Controls pressure micro-injector via digital trigger signal.
-    All other parameters need to be manually changed on the Device, this only triggers it!"""
-
-    pump = DigitalModDevice(AP_DAQ_PORT)
-    if rep > 1:
-        pump.cycle(rep, duration, inter_time)
-    else:
-        pump.trigger()
-
-
-def deliver_liqreward():
-    """Controls micro peristaltic pump via digital trigger signal."""
-    pump_delivery = DigitalModDevice('Dev1/PFI2')
-    pump_delivery.toggle()
-
-
-def withdraw_liqreward():
-    """activates micro peristaltic pump"""
-    pump_withdraw = DigitalModDevice('Dev1/PFI6')
-    pump_withdraw.timed_on(3.5)
-
-
-if __name__ == '__main__':
-    toggle_device()
-    time.sleep(3.5)
-    toggle_device()
