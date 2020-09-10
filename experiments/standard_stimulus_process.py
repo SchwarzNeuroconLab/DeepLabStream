@@ -74,7 +74,7 @@ def setup_stimulation(stimulus_name):
     return stimulation
 
 
-def standard_conditional_protocol_run(condition_q: mp.Queue, stimulus_name):
+def standard_conditional_switch_protocol_run(condition_q: mp.Queue, stimulus_name):
     condition = False
     stimulation = setup_stimulation(stimulus_name)
     while True:
@@ -84,6 +84,18 @@ def standard_conditional_protocol_run(condition_q: mp.Queue, stimulus_name):
             stimulation.start()
         else:
             stimulation.stop()
+
+
+def standard_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
+    condition = False
+    stimulation = setup_stimulation(stimulus_name)
+    while True:
+        if condition_q.full():
+            condition = condition_q.get()
+        if condition:
+            stimulation.stimulate()
+        else:
+            stimulation.removal()
 
 
 def standard_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):
@@ -99,6 +111,7 @@ def standard_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: 
     current_trial = None
     # TODO: make this adaptive and working
     trial_dict = {}
+    stimulus_name = 'StandardStimulation'
     stimulation = setup_stimulation(stimulus_name)
     # starting the main loop without any protocol running
     while True:
@@ -131,9 +144,14 @@ class StandardProtocolProcess:
             self._protocol_process = mp.Process(target=standard_trial_protocol_run, args=(self._trial_queue,
                                                                                   self._success_queue,
                                                                                    trials))
-        elif self._process_type == 'condition':
+        elif self._process_type == 'switch':
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=standard_conditional_protocol_run, args=(self._condition_queue,
+            self._protocol_process = mp.Process(target=standard_conditional_switch_protocol_run, args=(self._condition_queue,
+                                                                                                stimulus_name))
+
+        elif self._process_type == 'supply':
+            self._condition_queue = mp.Queue(1)
+            self._protocol_process = mp.Process(target=standard_conditional_supply_protocol_run, args=(self._condition_queue,
                                                                                                 stimulus_name))
 
         self._running = False
