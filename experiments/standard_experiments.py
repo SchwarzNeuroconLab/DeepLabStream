@@ -84,12 +84,78 @@ def setup_trigger(trigger_name):
 
 class StandardExperiment:
     """
+        Base class for standard experiments"""
+
+    def __init__(self):
+        self._name = 'StandardExperiment'
+        self._settings_dict = {}
+        self.experiment_finished = False
+        self._process = None
+        self._event = None
+        self._current_trial = None
+        self._exp_timer = Timer(10)
+
+    def check_skeleton(self, frame, skeleton):
+        """
+        Checking each passed animal skeleton for a pre-defined set of conditions
+        Outputting the visual representation, if exist
+        Advancing trials according to inherent logic of an experiment
+        :param frame: frame, on which animal skeleton was found
+        :param skeleton: skeleton, consisting of multiple joints of an animal
+        """
+        pass
+
+
+    def check_exp_timer(self):
+        """
+        Checking the experiment timer
+        """
+        if not self._exp_timer.check_timer():
+            print("Experiment is finished")
+            print("Time ran out.")
+            self.stop_experiment()
+
+    def start_experiment(self):
+        """
+        Start the experiment
+        """
+        if self._process is not None:
+            self._process.start()
+        if not self.experiment_finished:
+            self._exp_timer.start()
+
+    def stop_experiment(self):
+        """
+        Stop the experiment and reset the timer
+        """
+        self.experiment_finished = True
+        print('Experiment completed!')
+        self._exp_timer.reset()
+        # don't forget to end the process!
+        if self._process is not None:
+            self._process.end()
+
+    def get_settings(self):
+
+        return self._settings_dict
+
+    def get_name(self):
+
+        return self._name
+
+
+
+
+
+
+class StandardExampleExperiment(StandardExperiment):
+    """
     Simple class to contain all of the experiment properties
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
     def __init__(self):
-        self._name = 'StandardExperiment'
+        self._name = 'StandardExampleExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
                                     INTERTRIAL_TIME = 'int',
                                     TRIAL_TIME = 'int',
@@ -186,7 +252,7 @@ class StandardExperiment:
 
 """Standardexperiments that can be setup by using the experiment config"""
 
-class StandardOptogeneticExperiment:
+class StandardOptogeneticExperiment(StandardExperiment):
     """Standard implementation of an optogenetic experiment"""
 
     def __init__(self):
@@ -298,10 +364,6 @@ class StandardOptogeneticExperiment:
     def get_trial(self):
         return self._event
 
-    def get_info(self):
-        """ returns optional info"""
-        info = None
-        return info
 
 
 
