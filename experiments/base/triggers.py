@@ -5,74 +5,19 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 """
-
-
+from experiments.utils.exp_setup import get_trigger_settings
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
 
+"""BaseTrigger class"""
 
-
-def get_trigger_settings(trigger_name, parameter_dict):
-    import os
-    import configparser as cfg
-    exp_config = cfg.ConfigParser()
-    exp_path = os.path.join(os.path.dirname(__file__), 'experiment_config.ini')
-    with open(exp_path) as exp_file:
-        exp_config.read_file(exp_file)
-
-    experiment_config = {}
-    for parameter in list(parameter_dict.keys()):
-        if parameter_dict[parameter] == 'int':
-            try:
-                experiment_config[parameter] = exp_config[trigger_name].getint(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-        if parameter_dict[parameter] == 'float':
-            try:
-                experiment_config[parameter] = exp_config[trigger_name].getfloat(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-
-        elif parameter_dict[parameter] == 'tuple':
-            try:
-                experiment_config[parameter] = tuple(int(entry) for entry in exp_config[trigger_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-        elif parameter_dict[parameter] == 'list':
-            try:
-                experiment_config[parameter] = list(
-                    str(entry) for entry in exp_config[trigger_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-        elif parameter_dict[parameter] == 'boolean':
-            try:
-                experiment_config[parameter] = exp_config[trigger_name].getboolean(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-
-        elif parameter_dict[parameter] == 'str':
-            try:
-                experiment_config[parameter] = exp_config[trigger_name].get(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, trigger_name))
-
-    return experiment_config
-
-"""StandardTrigger class"""
-
-class StandardTrigger:
+class BaseTrigger:
     """Base class for standard triggers"""
     def __init__(self):
         """
         Initialising trigger with following parameters:
          """
 
-        self._name = 'StandardTrigger'
+        self._name = 'BaseTrigger'
         self._settings_dict = {}
         self._debug = True
 
@@ -91,7 +36,7 @@ class StandardTrigger:
         if self._debug:
             center = skeleton[self._bodyparts[1]]
 
-            response_body = {'plot': {'text': dict(text='StandardTrigger',
+            response_body = {'plot': {'text': dict(text='BaseTrigger',
                                                    org=skeleton[self._bodyparts[1]],
                                                    color=color),
                                      }}
@@ -111,7 +56,7 @@ class StandardTrigger:
 
 """Single posture triggers"""
 
-class StandardHeaddirectionTrigger(StandardTrigger):
+class BaseHeaddirectionTrigger(BaseTrigger):
     """Trigger to check if animal is turning head in a specific angle to a reference point"""
     def __init__(self):
         """
@@ -121,7 +66,7 @@ class StandardHeaddirectionTrigger(StandardTrigger):
 
          """
 
-        self._name = 'StandardHeaddirectionTrigger'
+        self._name = 'BaseHeaddirectionTrigger'
 
         #loading settings
         self._trigger_parameter_dict = dict(POINT = 'tuple',
@@ -171,7 +116,7 @@ class StandardHeaddirectionTrigger(StandardTrigger):
 
 
 
-class StandardRegionTrigger(StandardTrigger):
+class BaseRegionTrigger(BaseTrigger):
     """
     Trigger to check if animal is in Region Of Interest (ROI)
     """
@@ -188,7 +133,7 @@ class StandardRegionTrigger(StandardTrigger):
         :param bodyparts: joint or a list of joints for which we are checking the ROI
         """
 
-        self._name = 'StandardRegionTrigger'
+        self._name = 'BaseRegionTrigger'
 
         #loading settings
         self._trigger_parameter_dict = dict(CENTER = 'tuple',
@@ -246,7 +191,7 @@ class StandardRegionTrigger(StandardTrigger):
         return response
 
 
-class StandardSpeedTrigger(StandardTrigger):
+class BaseSpeedTrigger(BaseTrigger):
     """
     Trigger to check if animal is moving above a certain speed
     """
@@ -259,7 +204,7 @@ class StandardSpeedTrigger(StandardTrigger):
         For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
         """
 
-        self._name = 'StandardRegionTrigger'
+        self._name = 'BaseRegionTrigger'
 
         #loading settings
         self._trigger_parameter_dict = dict(THRESHOLD = 'float',

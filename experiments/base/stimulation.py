@@ -10,58 +10,7 @@ import time
 import cv2
 import numpy as np
 
-
-def get_stimulation_settings(stimulation_name, parameter_dict):
-    import os
-    import configparser as cfg
-    exp_config = cfg.ConfigParser()
-    exp_path = os.path.join(os.path.dirname(__file__), 'experiment_config.ini')
-    with open(exp_path) as exp_file:
-        exp_config.read_file(exp_file)
-
-    experiment_config = {}
-    for parameter in list(parameter_dict.keys()):
-        if parameter_dict[parameter] == 'int':
-            try:
-                experiment_config[parameter] = exp_config[stimulation_name].getint(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-        if parameter_dict[parameter] == 'float':
-            try:
-                experiment_config[parameter] = exp_config[stimulation_name].getfloat(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-
-        elif parameter_dict[parameter] == 'tuple':
-            try:
-                experiment_config[parameter] = tuple(int(entry) for entry in exp_config[stimulation_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-        elif parameter_dict[parameter] == 'list':
-            try:
-                experiment_config[parameter] = list(
-                    str(entry) for entry in exp_config[stimulation_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-        elif parameter_dict[parameter] == 'boolean':
-            try:
-                experiment_config[parameter] = exp_config[stimulation_name].getboolean(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-
-        elif parameter_dict[parameter] == 'str':
-            try:
-                experiment_config[parameter] = exp_config[stimulation_name].get(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, stimulation_name))
-
-    return experiment_config
+from experiments.utils.exp_setup import get_stimulation_settings
 
 
 class BaseStimulation:
@@ -79,7 +28,7 @@ class BaseStimulation:
     def _setup_device(type, port):
         device = None
         if type == 'NI':
-            from experiments.DAQ_output import DigitalModDevice
+            from experiments.utils.DAQ_output import DigitalModDevice
             device = DigitalModDevice(port)
 
         return device
@@ -138,7 +87,7 @@ class RewardDispenser(BaseStimulation):
     def _setup_device(type, port):
         device = None
         if type == 'NI':
-            from experiments.DAQ_output import DigitalModDevice
+            from experiments.utils.DAQ_output import DigitalModDevice
             device = DigitalModDevice(port)
 
         return device

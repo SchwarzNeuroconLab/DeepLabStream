@@ -10,64 +10,8 @@ import time
 
 from experiments.base.stimulation import BaseStimulation
 from experiments.base.stimulus_process import BaseProtocolProcess, Timer
+from experiments.utils.exp_setup import get_experiment_settings
 from utils.plotter import plot_triggers_response
-
-
-def get_experiment_settings(experiment_name, parameter_dict):
-    import os
-    import configparser as cfg
-    exp_config = cfg.ConfigParser()
-    exp_path = os.path.join(os.path.dirname(__file__), 'experiment_config.ini')
-    with open(exp_path) as exp_file:
-        exp_config.read_file(exp_file)
-
-    experiment_config = {}
-    for parameter in list(parameter_dict.keys()):
-        if parameter_dict[parameter] == 'int':
-            try:
-                experiment_config[parameter] = exp_config[experiment_name].getint(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-        if parameter_dict[parameter] == 'float':
-            try:
-                experiment_config[parameter] = exp_config[experiment_name].getfloat(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-
-        elif parameter_dict[parameter] == 'tuple':
-            try:
-                experiment_config[parameter] = tuple(int(entry) for entry in exp_config[experiment_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-
-        elif parameter_dict[parameter] == 'list':
-            try:
-                experiment_config[parameter] = list(
-                    str(entry) for entry in exp_config[experiment_name].get(parameter).split(','))
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-
-        elif parameter_dict[parameter] == 'boolean':
-            try:
-                experiment_config[parameter] = exp_config[experiment_name].getboolean(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-
-
-        elif parameter_dict[parameter] == 'str':
-            try:
-                experiment_config[parameter] = exp_config[experiment_name].get(parameter)
-            except:
-                experiment_config[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, experiment_name))
-
-
-    return experiment_config
 
 
 def setup_trigger(trigger_name):
