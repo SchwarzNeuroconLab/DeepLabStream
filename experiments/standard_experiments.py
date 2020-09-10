@@ -8,8 +8,8 @@ Licensed under GNU General Public License v3.0
 
 import time
 
-from experiments.stimulation import laser_switch
-from experiments.stimulus_process import ExampleProtocolProcess, Timer
+from experiments.standard_stimulation import laser_switch
+from experiments.standard_stimulus_process import StandardProtocolProcess, Timer
 from utils.plotter import plot_triggers_response
 
 
@@ -157,6 +157,8 @@ class StandardExampleExperiment(StandardExperiment):
     def __init__(self):
         self._name = 'StandardExampleExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
+                                    PROCESS_TYPE = 'str',
+                                    STIMULATION = 'str',
                                     INTERTRIAL_TIME = 'int',
                                     TRIAL_TIME = 'int',
                                     EXP_LENGTH = 'int',
@@ -164,7 +166,8 @@ class StandardExampleExperiment(StandardExperiment):
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = ExampleProtocolProcess()
+        self._process = StandardProtocolProcess(process_type= self._settings_dict['PROCESS_TYPE'],
+                                                stimulus_name= self._settings_dict['STIMULATION'])
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -203,7 +206,7 @@ class StandardExampleExperiment(StandardExperiment):
                         self._current_trial = None
                         self._trial_timers[trial].start()
 
-            self._process.set_trial(self._current_trial)
+            self._process.put(self._current_trial)
             return result, response
 
     @property
@@ -248,6 +251,95 @@ class StandardExampleExperiment(StandardExperiment):
         Check which trial is going on right now
         """
         return self._current_trial
+
+
+
+class StandardConditionalExperiment(StandardExperiment):
+    """
+    Simple class to contain all of the experiment properties
+    Uses multiprocess to ensure the best possible performance and
+        to showcase that it is possible to work with any type of equipment, even timer-dependent
+    """
+    def __init__(self):
+        self._name = 'StandardExampleExperiment'
+        self._parameter_dict = dict(TRIGGER = 'str',
+                                    STIMULATION = 'str',
+                                    INTERTRIAL_TIME = 'int',
+                                    EXP_LENGTH = 'int',
+                                    EXP_COMPLETION = 'int',
+                                    EXP_TIME = 'int')
+        self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
+        self.experiment_finished = False
+        self._process = StandardProtocolProcess(process_type= 'condition',
+                                                stimulus_name= self._settings_dict['STIMULATION'])
+        self._event = None
+        self._event_count = 0
+        self._current_trial = None
+
+        self._exp_timer = Timer(self._settings_dict['EXP_TIME'])
+
+        self._trigger = setup_trigger(self._settings_dict['TRIGGER'])
+
+    def check_skeleton(self, frame, skeleton):
+        """
+        Checking each passed animal skeleton for a pre-defined set of conditions
+        Outputting the visual representation, if exist
+        Advancing trials according to inherent logic of an experiment
+        :param frame: frame, on which animal skeleton was found
+        :param skeleton: skeleton, consisting of multiple joints of an animal
+        """
+        self.check_exp_timer()  # checking if experiment is still on
+
+        if self._event_count >= self._settings_dict['EXP_COMPLETION']:
+            self.stop_experiment()
+
+        elif not self.experiment_finished:
+
+            # check if condition is met
+            result, response = self._trigger.check_skeleton(skeleton=skeleton)
+            plot_triggers_response(frame, response)
+            if result:
+                self._event_count += 1
+                print('Stimulation #{self._event_count}'.format())
+
+            self._process.put(result)
+            return result, response
+
+    def check_exp_timer(self):
+        """
+        Checking the experiment timer
+        """
+        if not self._exp_timer.check_timer():
+            print("Time ran out.")
+            self.stop_experiment()
+
+    def start_experiment(self):
+        """
+        Start the experiment
+        """
+        self._process.start()
+        if not self.experiment_finished:
+            self._exp_timer.start()
+
+    def stop_experiment(self):
+        """
+        Stop the experiment and reset the timer
+        """
+        self.experiment_finished = True
+        print('Experiment completed!')
+        self._exp_timer.reset()
+        # don't forget to end the process!
+        self._process.end()
+
+    def get_trial(self):
+        """
+        Check which trial is going on right now
+        """
+        return self._current_trial
+
+
+
+
 
 
 """Standardexperiments that can be setup by using the experiment config"""

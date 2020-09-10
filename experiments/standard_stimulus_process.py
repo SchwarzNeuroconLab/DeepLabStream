@@ -75,12 +75,12 @@ def setup_stimulation(stimulus_name):
 
 
 def standard_conditional_protocol_run(condition_q: mp.Queue, stimulus_name):
-    current_trial = None
+    condition = False
     stimulation = setup_stimulation(stimulus_name)
     while True:
         if condition_q.full():
-            current_trial = condition_q.get()
-        if current_trial is not None:
+            condition = condition_q.get()
+        if condition:
             stimulation.start()
         else:
             stimulation.stop()
