@@ -60,23 +60,23 @@ def get_config_settings(name, parameter_dict, config_file_name):
 
 
 def get_experiment_settings(experiment_name, parameter_dict):
-    experiment_config = get_config_settings(experiment_name, parameter_dict, 'base_config.ini')
+    experiment_config = get_config_settings(experiment_name, parameter_dict, 'default_config.ini')
 
     return experiment_config
 
 
 def get_stimulation_settings(stimulation_name, parameter_dict):
-    experiment_config = get_config_settings(stimulation_name, parameter_dict, 'base_config.ini')
+    experiment_config = get_config_settings(stimulation_name, parameter_dict, 'default_config.ini')
 
     return experiment_config
 
 def get_trigger_settings(trigger_name, parameter_dict):
-    experiment_config = get_config_settings(trigger_name, parameter_dict, 'base_config.ini')
+    experiment_config = get_config_settings(trigger_name, parameter_dict, 'default_config.ini')
 
     return experiment_config
 
 def get_process_settings(process_name, parameter_dict):
-    experiment_config = get_config_settings(process_name, parameter_dict, 'base_config.ini')
+    experiment_config = get_config_settings(process_name, parameter_dict, 'default_config.ini')
 
     return experiment_config
 
