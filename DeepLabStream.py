@@ -21,7 +21,6 @@ from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM
     ANIMALS_NUMBER, STREAMS, VIDEO
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
-from experiments.experiments import ExampleExperiment
 
 
 def create_video_files(directory, devices, resolution, framerate, codec):
