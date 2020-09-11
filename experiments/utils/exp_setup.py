@@ -28,20 +28,20 @@ def get_config_settings(name, parameter_dict, config_file_name):
                 config_dict[parameter] = config[name].getint(parameter)
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
         if parameter_dict[parameter] == 'float':
             try:
                 config_dict[parameter] = config[name].getfloat(parameter)
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
 
         elif parameter_dict[parameter] == 'tuple':
             try:
                 config_dict[parameter] = tuple(int(entry) for entry in config[name].get(parameter).split(','))
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
 
         elif parameter_dict[parameter] == 'list':
             try:
@@ -49,14 +49,14 @@ def get_config_settings(name, parameter_dict, config_file_name):
                     str(entry) for entry in config[name].get(parameter).split(','))
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
 
         elif parameter_dict[parameter] == 'boolean':
             try:
                 config_dict[parameter] = config[name].getboolean(parameter)
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
 
 
         elif parameter_dict[parameter] == 'str':
@@ -64,7 +64,7 @@ def get_config_settings(name, parameter_dict, config_file_name):
                 config_dict[parameter] = config[name].get(parameter)
             except:
                 config_dict[parameter] = None
-                print('Did not find valid {} entry for {}. Setting to None.'.format(parameter, name))
+                print('Did not find valid {} entry for {} in {}. Setting to None.'.format(parameter, name, config_file_name))
 
 
     return config_dict
@@ -101,13 +101,12 @@ def setup_experiment():
         config.read_file(file)
 
     experiment_name = config['EXPERIMENT']['BASE']
-
     import importlib
     mod = importlib.import_module('experiments.base.experiments')
     try:
         experiment_class = getattr(mod, experiment_name)
         experiment = experiment_class()
-    except AttributeError:
+    except Exception:
         raise ValueError(f'Experiment: {experiment_name} not in base.experiments.py.')
 
     return experiment
@@ -119,7 +118,7 @@ def setup_trigger(trigger_name):
     try:
         trigger_class = getattr(mod, trigger_name)
         trigger = trigger_class()
-    except AttributeError:
+    except Exception:
         raise ValueError(f'Trigger: {trigger_name} not in base.triggers.py.')
 
     return trigger
@@ -131,7 +130,7 @@ def setup_process(process_name):
     try:
         process_class = getattr(mod, process_name)
         process = process_class()
-    except AttributeError:
+    except Exception:
         raise ValueError(f'Process: {process_name} not in base.stimulus_process.py.')
 
     return process

@@ -193,7 +193,7 @@ class BaseConditionalExperiment(BaseExperiment):
     """
     def __init__(self):
         super().__init__()
-        self._name = 'BaseExampleExperiment'
+        self._name = 'BaseConditionalExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
                                     PROCESS = 'str',
                                     INTERTRIAL_TIME = 'int',
@@ -201,6 +201,7 @@ class BaseConditionalExperiment(BaseExperiment):
                                     EXP_COMPLETION = 'int',
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
+        print(self._settings_dict)
         self.experiment_finished = False
         self._process = setup_process(self._settings_dict['PROCESS'])
         self._event = None

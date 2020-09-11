@@ -138,11 +138,11 @@ class BaseRegionTrigger(BaseTrigger):
 
         #loading settings
         self._trigger_parameter_dict = dict(CENTER = 'tuple',
-                                            TYPE = 'int',
+                                            TYPE = 'str',
                                             RADIUS = 'int',
                                             BODYPARTS = 'list',
                                             DEBUG = 'boolean')
-        self._settings_dict = get_trigger_settings(self._name, self._exp_parameter_dict)
+        self._settings_dict = get_trigger_settings(self._name, self._trigger_parameter_dict)
 
         region_types = {'circle': EllipseROI, 'square': RectangleROI}
         self._region_of_interest = region_types[self._settings_dict['TYPE'].lower()](self._settings_dict['CENTER'],

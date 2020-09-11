@@ -8,14 +8,13 @@ Licensed under GNU General Public License v3.0
 
 import random
 import time
-import pandas as pd
 from functools import partial
 from collections import Counter
-from experiments.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess, ExampleProtocolProcess, Timer
-from experiments.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger
+from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess,Timer
+from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
-from experiments.stimulation import show_visual_stim_img, laser_toggle, laser_switch
+from experiments.custom.stimulation import show_visual_stim_img,laser_switch
 
 
 """The following is the original experiments we used for our experiments! If you are interested in using this, 
