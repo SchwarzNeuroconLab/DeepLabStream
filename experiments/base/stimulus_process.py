@@ -85,7 +85,7 @@ def base_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
         if condition:
             stimulation.stimulate()
         else:
-            stimulation.removal()
+            stimulation.remove()
 
 
 def base_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):

@@ -201,7 +201,6 @@ class BaseConditionalExperiment(BaseExperiment):
                                     EXP_COMPLETION = 'int',
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
-        print(self._settings_dict)
         self.experiment_finished = False
         self._process = setup_process(self._settings_dict['PROCESS'])
         self._event = None
