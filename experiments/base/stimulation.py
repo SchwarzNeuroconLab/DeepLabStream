@@ -70,7 +70,7 @@ class BaseStimulation:
 class RewardDispenser(BaseStimulation):
 
     def __init__(self):
-
+        super().__init__()
         self._name = 'RewardDispenser'
         self._parameter_dict = dict(TYPE = 'str',
                                     STIM_PORT= 'str',
@@ -120,6 +120,7 @@ class RewardDispenser(BaseStimulation):
 class ScreenStimulation(BaseStimulation):
 
     def __init__(self):
+        super().__init__()
         self._name = 'ScreenStimulation'
         self._parameter_dict = dict(TYPE='str',
                                     STIM_PATH='str',

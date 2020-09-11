@@ -65,7 +65,7 @@ class BaseHeaddirectionTrigger(BaseTrigger):
         :param tuple point: point used as reference to measure headdirection angle
 
          """
-
+        super().__init__()
         self._name = 'BaseHeaddirectionTrigger'
 
         #loading settings
@@ -133,6 +133,7 @@ class BaseRegionTrigger(BaseTrigger):
         :param bodyparts: joint or a list of joints for which we are checking the ROI
         """
 
+        super().__init__()
         self._name = 'BaseRegionTrigger'
 
         #loading settings
@@ -203,7 +204,7 @@ class BaseSpeedTrigger(BaseTrigger):
          if "any" will check if any bodypart reaches treshold; default "any"
         For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
         """
-
+        super().__init__()
         self._name = 'BaseRegionTrigger'
 
         #loading settings

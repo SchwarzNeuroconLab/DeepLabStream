@@ -141,24 +141,20 @@ class BaseProtocolProcess:
                                     STIMULATION ='str')
         self._settings_dict = get_process_settings(self._name, self._parameter_dict)
 
-        self._process_type = process_type
-
-
         if self._settings_dict['TYPE'] == 'trial' and trials is not None:
             self._trial_queue = mp.Queue(1)
             self._success_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_trial_protocol_run, args=(self._trial_queue,
-                                                                                  self._success_queue,
-                                                                                   trials))
+            self._protocol_process = mp.Process(target=base_trial_protocol_run,
+                                                args=(self._trial_queue, self._success_queue, trials))
         elif self._settings_dict['TYPE'] == 'switch':
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run, args=(self._condition_queue,
-                                                                                                self._settings_dict['STIMULATION']))
+            self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run,
+                                                args=(self._condition_queue, self._settings_dict['STIMULATION']))
 
         elif self._settings_dict['TYPE'] == 'supply':
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_conditional_supply_protocol_run, args=(self._condition_queue,
-                                                                                                self._settings_dict['STIMULATION']))
+            self._protocol_process = mp.Process(target=base_conditional_supply_protocol_run,
+                                                args=(self._condition_queue, self._settings_dict['STIMULATION']))
 
         self._running = False
         self._current_trial = None
@@ -173,9 +169,9 @@ class BaseProtocolProcess:
         """
         Ending the process
         """
-        if self._process_type == 'condition':
+        if self._settings_dict['TYPE'] == 'condition':
             self._condition_queue.close()
-        elif self._process_type == 'trial':
+        elif self._settings_dict['TYPE'] == 'trial':
             self._trial_queue.close()
             self._success_queue.close()
 
@@ -191,22 +187,21 @@ class BaseProtocolProcess:
         """
         Passing the trial name to the process
         """
-        if self._process_type == 'trial':
+        if self._settings_dict['TYPE'] == 'trial':
             if self._trial_queue.empty() and self._success_queue.empty():
                 self._trial_queue.put(input_p)
                 self._running = True
                 self._current_trial = input_p
 
-        elif self._process_type == 'condition':
+        elif self._settings_dict['TYPE'] == 'condition':
             if self._condition_queue.empty():
                 self._condition_queue.put(input_p)
-
 
     def get_result(self) -> bool:
         """
         Getting result from the process
         """
-        if self._process_type == 'trial':
+        if self._settings_dict['TYPE'] == 'trial':
             if self._success_queue.full():
                 self._running = False
                 return self._success_queue.get()
