@@ -7,36 +7,76 @@ import configparser as cfg
 class DlStreamConfigWriter:
 
     def __init__(self):
-        self._config = cfg.RawConfigParser()
+        self._config = self._init_configparser()
+        self._default_config = self._init_configparser()
+        self._init_configparser()
         self._filename = None
         self._default_path = os.path.join(os.path.dirname(__file__),'..', 'configs')
-        self._dlstream_dict = {}
+        self._dlstream_dict = dict(EXPERIMENT = dict(BASE='DEFAULT',
+                                                 EXPERIMENTOR = 'DEFAULT'))
         self._date = date.today().strftime("%d%m%Y")
 
-    def set_default(self, experiment_name):
-        default_config = cfg.RawConfigParser()
-        default_config.read(os.path.join(self._default_path, 'default_config.ini'))
+    @staticmethod
+    def _init_configparser():
+        config = cfg.ConfigParser()
+        config.optionxform=str
+        return config
 
-        self._dlstream_dict['EXPERIMENT'] = dict(BASE=experiment_name,
-                                                 EXPERIMENTOR = 'DEFAULT')
+    def set_experimentor(self, name):
+        self._dlstream_dict['EXPERIMENT']['EXPERIMENTOR'] = name
+
+    def set_experiment(self, experiment_name):
+        self._dlstream_dict['EXPERIMENT']['BASE'] = experiment_name
+
+    def set_default(self, experiment_name, trigger_name = None, process_name = None, stimulation_name = None):
+
         try:
-            self._dlstream_dict[experiment_name] = default_config[experiment_name]
+            self._default_config.read(os.path.join(self._default_path, 'default_config.ini'))
+        except FileNotFoundError:
+            raise FileNotFoundError('The default_config.ini was not found. Make sure it exists.')
+
+        self.set_experiment(experiment_name)
+
+        try:
+            self._dlstream_dict[experiment_name] =  self._default_config[experiment_name]
         except Exception:
             raise ValueError(f'Unknown Experiment: {experiment_name}.')
 
-        keys = ['TRIGGER', 'PROCESS']
-        for key in keys:
-            new_section = self._dlstream_dict[experiment_name][key]
-            if new_section is not None:
-                self._dlstream_dict[new_section] = default_config[new_section]
+        if trigger_name is not None:
+            self._dlstream_dict[trigger_name] =  self._default_config[trigger_name]
+            self._dlstream_dict[experiment_name]['TRIGGER'] = trigger_name
+        else:
+            trigger_name = self._dlstream_dict[experiment_name]['TRIGGER']
+            if trigger_name is not None:
+                self._dlstream_dict[trigger_name] =  self._default_config[trigger_name]
+
+        if process_name is not None:
+            self._dlstream_dict[process_name] =  self._default_config[process_name]
+            self._dlstream_dict[experiment_name]['PROCESS'] = process_name
+        else:
+            process_name = self._dlstream_dict[experiment_name]['PROCESS']
+            if process_name is not None:
+                self._dlstream_dict[process_name] =  self._default_config[process_name]
+
+        if stimulation_name is not None:
+            self._dlstream_dict[stimulation_name] = self._default_config[stimulation_name]
+            self._dlstream_dict[process_name]['STIMULATION'] = stimulation_name
+        else:
+            stimulation_name = self._dlstream_dict[process_name]['STIMULATION']
+            if stimulation_name is not None:
+                self._dlstream_dict[stimulation_name] = self._default_config[stimulation_name]
 
     def set_custom(self, config_path):
-        self._config.read(config_path)
+        try:
+            self._config.read(config_path)
+        except FileNotFoundError:
+            raise FileNotFoundError('Config file does not exist at this location.')
+
         self._dlstream_dict = self._config._sections
 
     def write_ini(self):
+        self._init_configparser()
         if self._filename is None:
-            print(self._dlstream_dict)
             experiment_name = self._dlstream_dict['EXPERIMENT']['BASE']
             self._filename = f'{experiment_name}_{self._date}.ini'
 
@@ -52,11 +92,12 @@ class DlStreamConfigWriter:
     def set_filename(self, filename):
         self._filename = filename + '.ini'
 
-
     def set_parameter(self):
-
+        pass
     def get_current_config(self):
         return self._dlstream_dict
+
+
 
 
 if __name__ == '__main__':
@@ -65,5 +106,5 @@ if __name__ == '__main__':
     settings_dict = dict(bodyparts='neck', stummbel=1, fumbel=(1, 2, 2), rumbel=False)
     experiment_dict = dict(experiment=settings_dict, trigger=settings_dict)
 
-    config.set_default('BaseConditionalExperiment')
+    config.set_default('BaseConditionalExperiment', trigger_name= 'BaseHeaddirectionTrigger', stimulation_name= 'ScreenStimulation')
     config.write_ini()
