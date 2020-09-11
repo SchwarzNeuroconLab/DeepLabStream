@@ -127,7 +127,7 @@ class ScreenStimulation(BaseStimulation):
                                     BACKGROUND_PATH='str')
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
-        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'])
+        self._stim_device = None
 
         self._background = self._setup_stimulus(self._settings_dict['BACKGROUND_PATH'], type = 'image') \
             if self._settings_dict['BACKGROUND_PATH'] is not None else None

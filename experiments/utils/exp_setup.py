@@ -136,6 +136,18 @@ def setup_process(process_name):
     return process
 
 
+def setup_stimulation(stimulus_name):
+    import importlib
+    mod = importlib.import_module('experiments.base.stimulation')
+    try:
+        stimulation_class = getattr(mod, stimulus_name)
+        stimulation = stimulation_class()
+    except Exception:
+        raise ValueError(f'Stimulus: {stimulus_name} not in stimulation.py.')
+
+    return stimulation
+
+
 class DlStreamConfigWriter:
 
     def __init__(self):
@@ -234,3 +246,5 @@ if __name__ == '__main__':
 
     exp = setup_experiment()
     print(exp)
+
+
