@@ -9,7 +9,7 @@ Licensed under GNU General Public License v3.0
 import time
 
 from experiments.base.stimulation import BaseStimulation
-from experiments.base.stimulus_process import BaseProtocolProcess, Timer
+from experiments.base.stimulus_process import Timer
 from experiments.utils.exp_setup import get_experiment_settings, setup_trigger, setup_process
 from utils.plotter import plot_triggers_response
 
