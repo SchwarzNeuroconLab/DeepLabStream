@@ -10,6 +10,7 @@ Licensed under GNU General Public License v3.0
 import os
 import configparser as cfg
 from datetime import date
+from utils.configloader import EXP_NAME
 
 
 
@@ -70,28 +71,46 @@ def get_config_settings(name, parameter_dict, config_file_name):
 
 
 
-def get_experiment_settings(experiment_name, parameter_dict, config_path = None):
+def get_experiment_settings(experiment_name, parameter_dict):
 
-    if config_path is None:
-        experiment_config = get_config_settings(experiment_name, parameter_dict, 'default_config.ini')
+    experiment_config = get_config_settings(experiment_name, parameter_dict, f'{EXP_NAME}.ini')
+
+    return experiment_config
+
+
+def get_stimulation_settings(stimulation_name, parameter_dict):
+    experiment_config = get_config_settings(stimulation_name, parameter_dict, f'{EXP_NAME}.ini')
+
+    return experiment_config
+
+def get_trigger_settings(trigger_name, parameter_dict):
+    experiment_config = get_config_settings(trigger_name, parameter_dict, f'{EXP_NAME}.ini')
+
+    return experiment_config
+
+def get_process_settings(process_name, parameter_dict):
+    experiment_config = get_config_settings(process_name, parameter_dict, f'{EXP_NAME}.ini')
 
     return experiment_config
 
 
-def get_stimulation_settings(stimulation_name, parameter_dict, config_path = None):
-    experiment_config = get_config_settings(stimulation_name, parameter_dict, 'default_config.ini')
+def setup_experiment():
+    config = cfg.ConfigParser()
+    path = os.path.join(os.path.dirname(__file__), '..', 'configs', f'{EXP_NAME}.ini')
+    with open(path) as file:
+        config.read_file(file)
 
-    return experiment_config
+    experiment_name = config['EXPERIMENT']['BASE']
 
-def get_trigger_settings(trigger_name, parameter_dict, config_path = None):
-    experiment_config = get_config_settings(trigger_name, parameter_dict, 'default_config.ini')
+    import importlib
+    mod = importlib.import_module('experiments.base.experiments')
+    try:
+        experiment_class = getattr(mod, experiment_name)
+        experiment = experiment_class()
+    except AttributeError:
+        raise ValueError(f'Experiment: {experiment_name} not in base.experiments.py.')
 
-    return experiment_config
-
-def get_process_settings(process_name, parameter_dict, config_path = None):
-    experiment_config = get_config_settings(process_name, parameter_dict, 'default_config.ini')
-
-    return experiment_config
+    return experiment
 
 
 def setup_trigger(trigger_name):
@@ -212,28 +231,7 @@ class DlStreamConfigWriter:
         return self._dlstream_dict
 
 
+if __name__ == '__main__':
 
-class ExperimentManager:
-
-    def __init__(self):
-        self._config = self._init_configparser()
-        self._config_path = None
-        self._base_path = os.path.join(os.path.dirname(__file__),'..', 'configs')
-        self._dlstream_config = {}
-
-    @staticmethod
-    def _init_configparser():
-        config = cfg.ConfigParser()
-        config.optionxform=str
-        return config
-
-
-    def set_config(self, config_name):
-
-        config_path = os.path.join(os.path.dirname(__file__),'..', 'configs', config_name)
-        try:
-            self._config.read(config_path)
-        except FileNotFoundError:
-            raise FileNotFoundError('Config file does not exist at this location.')
-
-        self._dlstream_config = self._config._sections
+    exp = setup_experiment()
+    print(exp)

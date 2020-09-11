@@ -430,15 +430,8 @@ class DeepLabStream:
     ##################
     @staticmethod
     def set_up_experiment():
-        import importlib
-        from utils.configloader import EXP_NAME
-        mod = importlib.import_module('experiments.experiments')
-        try:
-            experiment_class = getattr(mod, EXP_NAME)
-            experiment = experiment_class()
-        except AttributeError:
-            raise ValueError(f'Experiment: {EXP_NAME} not in experiments.py.')
-
+        from experiments.utils.exp_setup import setup_experiment
+        experiment = setup_experiment()
         return experiment
 
     def start_experiment(self):
