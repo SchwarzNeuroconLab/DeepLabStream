@@ -8,7 +8,8 @@ Licensed under GNU General Public License v3.0
 
 import time
 import multiprocessing as mp
-from experiments.utils.exp_setup import get_process_settings
+from experiments.utils.exp_setup import get_process_settings,setup_stimulation
+
 
 class Timer:
     """
@@ -63,18 +64,6 @@ class Timer:
         return self._start_time
 
 
-def setup_stimulation(stimulus_name):
-    import importlib
-    mod = importlib.import_module('experiments.base_stimulation')
-    try:
-        stimulation_class = getattr(mod, stimulus_name)
-        stimulation = stimulation_class()
-    except AttributeError:
-        raise ValueError(f'Stimulus: {stimulus_name} not in stimulation.py.')
-
-    return stimulation
-
-
 def base_conditional_switch_protocol_run(condition_q: mp.Queue, stimulus_name):
     condition = False
     stimulation = setup_stimulation(stimulus_name)
@@ -96,7 +85,7 @@ def base_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
         if condition:
             stimulation.stimulate()
         else:
-            stimulation.removal()
+            stimulation.remove()
 
 
 def base_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):

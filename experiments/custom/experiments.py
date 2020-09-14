@@ -10,11 +10,11 @@ import random
 import time
 from functools import partial
 from collections import Counter
-from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess, Timer
+from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess,Timer
 from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
-from experiments.custom.stimulation import show_visual_stim_img, laser_switch
+from experiments.custom.stimulation import show_visual_stim_img,laser_switch
 
 
 """The following is the original experiments we used for our experiments! If you are interested in using this, 

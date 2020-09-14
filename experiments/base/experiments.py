@@ -193,7 +193,7 @@ class BaseConditionalExperiment(BaseExperiment):
     """
     def __init__(self):
         super().__init__()
-        self._name = 'BaseExampleExperiment'
+        self._name = 'BaseConditionalExperiment'
         self._parameter_dict = dict(TRIGGER = 'str',
                                     PROCESS = 'str',
                                     INTERTRIAL_TIME = 'int',
