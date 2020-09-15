@@ -10,6 +10,7 @@ import time
 import cv2
 import multiprocessing as mp
 from experiments.custom.stimulation import show_visual_stim_img, deliver_liqreward, deliver_tone_shock, withdraw_liqreward, DigitalModDevice
+import random
 
 
 class Timer:
