@@ -51,6 +51,7 @@ VIDEO = dsc_config['Video'].getboolean('VIDEO')
 
 
 # experiment
+EXP_ORIGIN = dsc_config['Experiment'].get('EXP_NAME')
 EXP_NAME = dsc_config['Experiment'].get('EXP_NAME')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
