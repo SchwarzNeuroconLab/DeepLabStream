@@ -159,6 +159,12 @@ class DlStreamConfigWriter:
         self._dlstream_dict = dict(EXPERIMENT = dict(BASE='DEFAULT',
                                                  EXPERIMENTOR = 'DEFAULT'))
         self._date = date.today().strftime("%d%m%Y")
+        #TODO: Make this adaptive!
+        self._available_modules = dict(
+                EXPERIMENT=['BaseExampleExperiment', 'BaseConditionalExperiment', 'BaseOptogeneticExperiment'],
+                TRIGGER=['BaseRegionTrigger', 'BaseHeaddirectionTrigger', 'BaseSpeedTrigger'],
+                PROCESS=['BaseProtocolProcess'],
+                STIMULATION=['BaseStimulation', 'RewardDispenser', 'ScreenStimulation'])
 
     @staticmethod
     def _init_configparser():
@@ -166,18 +172,28 @@ class DlStreamConfigWriter:
         config.optionxform=str
         return config
 
+    def _read_default_config(self):
+        try:
+            self._default_config.read(os.path.join(self._default_path, 'default_config.ini'))
+        except FileNotFoundError:
+            raise FileNotFoundError('The default_config.ini was not found. Make sure it exists.')
+
+    def _read_config(self, config_path):
+
+        try:
+            self._config.read(config_path)
+        except FileNotFoundError:
+            raise FileNotFoundError('Config file does not exist at this location.')
+
     def set_experimentor(self, name):
         self._dlstream_dict['EXPERIMENT']['EXPERIMENTOR'] = name
 
     def set_experiment(self, experiment_name):
         self._dlstream_dict['EXPERIMENT']['BASE'] = experiment_name
 
-    def set_default(self, experiment_name, trigger_name = None, process_name = None, stimulation_name = None):
+    def import_default(self, experiment_name, trigger_name = None, process_name = None, stimulation_name = None):
 
-        try:
-            self._default_config.read(os.path.join(self._default_path, 'default_config.ini'))
-        except FileNotFoundError:
-            raise FileNotFoundError('The default_config.ini was not found. Make sure it exists.')
+        self._read_default_config()
 
         self.set_experiment(experiment_name)
 
@@ -210,21 +226,121 @@ class DlStreamConfigWriter:
             if stimulation_name is not None:
                 self._dlstream_dict[stimulation_name] = self._default_config[stimulation_name]
 
-    def set_custom(self, config_path):
-            try:
-                self._config.read(config_path)
-            except FileNotFoundError:
-                raise FileNotFoundError('Config file does not exist at this location.')
+    def import_custom(self, config_path):
 
-            self._dlstream_dict = self._config._sections
+        self._read_config(config_path)
+        self._dlstream_dict = self._config._sections
 
-    def write_ini(self):
-        self._init_configparser()
+    def _set_path(self):
         if self._filename is None:
             experiment_name = self._dlstream_dict['EXPERIMENT']['BASE']
             self._filename = f'{experiment_name}_{self._date}.ini'
 
         file = open(os.path.join(self._default_path, self._filename), 'w')
+        return file
+
+    def _change_module(self, module_type: str, module_name: str):
+        """Changes module in a given settings.ini (resets parameters on that module)
+        :param module_type str: Module type (TRIGGER, PROCESS, STIMULATION, EXPERIMENT etc.)
+        :param module_name str: Exact name of new module (with Camelcase)
+        :param config_path: path to config that needs changing"""
+
+        module_type = module_type.upper()
+        self._read_default_config()
+        # self.import_custom(config_path)
+
+
+        for key in self._dlstream_dict.keys():
+            if module_type in self._dlstream_dict[key].keys():
+                old_module = self._dlstream_dict[key][module_type]
+                self._dlstream_dict[key][module_type] = module_name
+        self._dlstream_dict.pop(old_module, None)
+        self._dlstream_dict[module_name] = self._default_config[module_name]
+        print(f'Changed {old_module} to {module_name}.')
+
+    def _change_parameter(self, module_name: str, parameter_name: str, parameter_value: str):
+
+        parameter_name = parameter_name.upper()
+        # self.import_custom(config_path)
+        if module_name in self._dlstream_dict.keys():
+            if parameter_name in self._dlstream_dict[module_name].keys():
+                old_value = self._dlstream_dict[module_name][parameter_name]
+                if not isinstance(parameter_value, str):
+                    parameter_value = str(parameter_value)
+                self._dlstream_dict[module_name][parameter_name] = parameter_value
+                print(f'Changed {parameter_name} in {module_name} from {old_value} to {parameter_value}.')
+            else:
+                raise ValueError(f'Parameter {parameter_name} does not exist in given config.')
+
+        else:
+            raise ValueError(f'Module {module_name} does not exist in given config.')
+
+    def check_if_default_exists(self, module_name, module_type):
+        #TODO: adjust to make adaptive
+        # self._read_default_config()
+        if module_name in self._available_modules[module_type]:
+            return True
+        else:
+            return False
+
+    def get_available_module_names(self, module_type):
+        return self._available_modules[module_type]
+
+
+    def change_modules(self, config_path, module_dict: dict, overwrite: bool = False):
+        """Changes multiple modules at once,
+        :param module_dict: dictionary in style:(module_type = module_name)"""
+
+        self.import_custom(config_path)
+
+        for key, value in module_dict.items():
+            self._change_module(module_type= str(key).upper(), module_name= value)
+
+        if overwrite:
+            self.write_ini(path = config_path)
+
+    def change_parameters(self, config_path, parameter_dict: dict, overwrite: bool = False):
+        """Changes multiple modules at once,
+        :param paramter_dict: nested dictionary in style:{module_name: dict(parameter_name = value)}"""
+
+        self.import_custom(config_path)
+        for key in parameter_dict.keys():
+            for inner_key, value in parameter_dict[key].items():
+                self._change_parameter(module_name=str(key).upper(), parameter_name=inner_key,
+                                       parameter_value=value)
+
+        if overwrite:
+            self.write_ini(path=config_path)
+
+    def change_config(self, config_path, config_dict: dict, overwrite: bool = False):
+        """Changes multiple modules and parameters at once,
+        :param config_dict: nested dictionary in style:dict(module_type ={module_name: dict(parameter_name = value)})"""
+
+        self.import_custom(config_path)
+
+        for key, inner_dict in config_dict.items():
+            if isinstance(inner_dict, dict):
+                for inner_key, most_inner_dict in inner_dict.items():
+                    self._change_module(module_type=key, module_name=inner_key)
+                    if isinstance(most_inner_dict, dict):
+                        for most_inner_key in most_inner_dict.keys():
+
+                            self._change_parameter(module_name=inner_key,
+                                                   parameter_name=str(most_inner_key).upper(),
+                                                   parameter_value=most_inner_dict[most_inner_key])
+            else:
+                self._change_module(module_type=key, module_name=inner_dict)
+
+        if overwrite:
+            self.write_ini(path=config_path)
+
+    def write_ini(self, path:str = None):
+        if path is None:
+            file = self._set_path()
+        else:
+            self._filename = os.path.basename(path)
+            file = open(path, 'w')
+        self._config = self._init_configparser()
         for key in self._dlstream_dict.keys():
             self._config.add_section(key)
             for parameter, value in self._dlstream_dict[key].items():
