@@ -162,7 +162,10 @@ class DlStreamConfigWriter:
         #TODO: Make this adaptive!
         self._available_modules = dict(
                 EXPERIMENT=['BaseExampleExperiment', 'BaseConditionalExperiment', 'BaseOptogeneticExperiment'],
-                TRIGGER=['BaseRegionTrigger', 'BaseHeaddirectionTrigger', 'BaseSpeedTrigger'],
+                TRIGGER=['BaseRegionTrigger', 'BaseOutsideRegionTrigger',
+                         'BaseHeaddirectionTrigger', 'BaseEgoHeaddirectionTrigger',
+                         'BaseScreenTrigger', 'BaseSpeedTrigger', 'BaseFreezeTrigger',
+                         'BaseHeaddirectionROITrigger'],
                 PROCESS=['BaseProtocolProcess'],
                 STIMULATION=['BaseStimulation', 'RewardDispenser', 'ScreenStimulation'])
 
