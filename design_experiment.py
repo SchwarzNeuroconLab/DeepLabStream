@@ -26,7 +26,7 @@ def design_experiment():
     #Name of experimentor
     experimenter = click.prompt('Enter an experimenter name', type = str)
     click.echo(f'Experimenter set to {experimenter}.')
-    config.set_experimentor(experimenter)
+    config.set_experimenter(experimenter)
 
     click.echo('Current modules are:\n BaseExperiment: {}\n Trigger: {}\n Process: {} \n Stimulation: {}'.format(input_dict['EXPERIMENT'],
                                                                                                                  input_dict['TRIGGER'],

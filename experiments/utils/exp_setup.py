@@ -173,7 +173,7 @@ class DlStreamConfigWriter:
         self._filename = None
         self._default_path = os.path.join(os.path.dirname(__file__),'..', 'configs')
         self._dlstream_dict = dict(EXPERIMENT = dict(BASE='DEFAULT',
-                                                 EXPERIMENTOR = 'DEFAULT'))
+                                                 EXPERIMENTER = 'DEFAULT'))
         self._date = date.today().strftime("%d%m%Y")
         #TODO: Make this adaptive!
         self._available_modules = dict(
@@ -204,8 +204,8 @@ class DlStreamConfigWriter:
         except FileNotFoundError:
             raise FileNotFoundError('Config file does not exist at this location.')
 
-    def set_experimentor(self, name):
-        self._dlstream_dict['EXPERIMENT']['EXPERIMENTOR'] = name
+    def set_experimenter(self, name):
+        self._dlstream_dict['EXPERIMENT']['EXPERIMENTER'] = name
 
     def set_experiment(self, experiment_name):
         self._dlstream_dict['EXPERIMENT']['BASE'] = experiment_name
