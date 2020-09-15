@@ -10,7 +10,7 @@ Licensed under GNU General Public License v3.0
 import os
 import configparser as cfg
 from datetime import date
-from utils.configloader import EXP_NAME
+from utils.configloader import EXP_NAME, EXP_ORIGIN
 
 
 
@@ -95,19 +95,35 @@ def get_process_settings(process_name, parameter_dict):
 
 
 def setup_experiment():
-    config = cfg.ConfigParser()
-    path = os.path.join(os.path.dirname(__file__), '..', 'configs', f'{EXP_NAME}.ini')
-    with open(path) as file:
-        config.read_file(file)
 
-    experiment_name = config['EXPERIMENT']['BASE']
-    import importlib
-    mod = importlib.import_module('experiments.base.experiments')
-    try:
-        experiment_class = getattr(mod, experiment_name)
-        experiment = experiment_class()
-    except Exception:
-        raise ValueError(f'Experiment: {experiment_name} not in base.experiments.py.')
+    if EXP_ORIGIN.upper() == 'BASE':
+        config = cfg.ConfigParser()
+        path = os.path.join(os.path.dirname(__file__), '..', 'configs', f'{EXP_NAME}.ini')
+        try:
+            with open(path) as file:
+                config.read_file(file)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'{EXP_NAME}.ini was not found. Make sure it exists.')
+
+        experiment_name = config['EXPERIMENT']['BASE']
+        import importlib
+        mod = importlib.import_module('experiments.base.experiments')
+        try:
+            experiment_class = getattr(mod, experiment_name)
+            experiment = experiment_class()
+        except Exception:
+            raise ValueError(f'Experiment: {experiment_name} not in base.experiments.py.')
+
+    elif EXP_ORIGIN.upper() == 'CUSTOM':
+
+        experiment_name = EXP_NAME
+        import importlib
+        mod = importlib.import_module('experiments.custom.experiments')
+        try:
+            experiment_class = getattr(mod, experiment_name)
+            experiment = experiment_class()
+        except Exception:
+            raise ValueError(f'Experiment: {experiment_name} not in custom.experiments.py.')
 
     return experiment
 
