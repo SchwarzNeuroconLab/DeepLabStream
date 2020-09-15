@@ -548,5 +548,15 @@ class BaseFreezeTrigger(BaseSpeedTrigger):
         Response body is used for plotting and outputting results to trials dataframes
         """
         result, response_body = super().check_skeleton(skeleton)
-        response = (not result, response_body)  # flips result bool
+        result = not result
+        color = (0, 255, 0) if result else (0, 0, 255)
+        if result:
+            text = 'Not Moving'
+        else:
+            text = ''
+        response_body = {'plot': {'text': dict(text=text,
+                                               org=skeleton[super()._bodypart[0]],
+                                               color=color)}}
+
+        response = (result, response_body)  # flips result bool
         return response
