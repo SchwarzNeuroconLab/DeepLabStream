@@ -179,7 +179,7 @@ class DlStreamConfigWriter:
         self._date = date.today().strftime("%d%m%Y")
         #TODO: Make this adaptive!
         self._available_modules = dict(
-                EXPERIMENT=['BaseExampleExperiment', 'BaseConditionalExperiment', 'BaseOptogeneticExperiment'],
+                EXPERIMENT=['BaseConditionalExperiment', 'BaseOptogeneticExperiment', 'BaseTrialExperiment'],
                 TRIGGER=['BaseRegionTrigger', 'BaseOutsideRegionTrigger',
                          'BaseHeaddirectionTrigger', 'BaseEgoHeaddirectionTrigger',
                          'BaseScreenTrigger', 'BaseSpeedTrigger', 'BaseFreezeTrigger',
@@ -212,7 +212,8 @@ class DlStreamConfigWriter:
     def set_experiment(self, experiment_name):
         self._dlstream_dict['EXPERIMENT']['BASE'] = experiment_name
 
-    def import_default(self, experiment_name, trigger_name = None, process_name = None, stimulation_name = None):
+    def import_default(self, experiment_name, trigger_name = None, process_name = None, stimulation_name = None,
+                       trial_trigger_name = None):
 
         self._read_default_config()
 
@@ -236,7 +237,7 @@ class DlStreamConfigWriter:
             self._dlstream_dict[experiment_name]['PROCESS'] = process_name
         else:
             process_name = self._dlstream_dict[experiment_name]['PROCESS']
-            if process_name is not None:
+            if process_name is None:
                 self._dlstream_dict[process_name] =  self._default_config[process_name]
 
         if stimulation_name is not None:
@@ -246,6 +247,14 @@ class DlStreamConfigWriter:
             stimulation_name = self._dlstream_dict[process_name]['STIMULATION']
             if stimulation_name is not None:
                 self._dlstream_dict[stimulation_name] = self._default_config[stimulation_name]
+
+        # TODO: Make this adaptive
+        if experiment_name == 'BaseTrialExperiment' and trial_trigger_name is not None:
+            # TODO: ADD option to use the same trigger as trigger_name
+            if not trigger_name == trial_trigger_name:
+                self._dlstream_dict[trial_trigger_name] = self._default_config[trial_trigger_name]
+            else:
+                raise ValueError(f'Trial Trigger can currently not be the same as Trigger.')
 
     def import_custom(self, config_path):
 
