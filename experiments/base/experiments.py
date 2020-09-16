@@ -204,7 +204,6 @@ class BaseConditionalExperiment(BaseExperiment):
                                     PROCESS = 'str',
                                     INTERTRIAL_TIME = 'int',
                                     EXP_LENGTH = 'int',
-                                    EXP_COMPLETION = 'int',
                                     EXP_TIME = 'int')
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
@@ -228,7 +227,7 @@ class BaseConditionalExperiment(BaseExperiment):
         """
         self.check_exp_timer()  # checking if experiment is still on
 
-        if self._event_count >= self._settings_dict['EXP_COMPLETION']:
+        if self._event_count >= self._settings_dict['EXP_LENGTH']:
             self.stop_experiment()
 
         elif not self.experiment_finished:
