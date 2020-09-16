@@ -511,9 +511,9 @@ class DeepLabStream:
         Outputting dataframes to csv
         """
         for num, camera in enumerate(self._data_output):
+            print("Saving database for device {}".format(camera))
             df = pd.DataFrame(self._data_output[camera])
             df.index.name = 'Frame'
-            print("Saving database for device {}".format(camera))
             df.to_csv(OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
             print("Database saved")
 
@@ -522,8 +522,10 @@ class DeepLabStream:
     ######
     @staticmethod
     def greetings():
+        from utils.configloader import EXP_NAME, EXP_ORIGIN
         print("This is DeepLabStream")
         print("Developed by: Jens Schweihoff and Matvey Loshakov")
+        print(f'Initializing {EXP_ORIGIN.lower()} experiment: {EXP_NAME}...')
 
     def get_camera_manager(self):
         return self._camera_manager
