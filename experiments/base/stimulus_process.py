@@ -88,7 +88,7 @@ def base_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
             stimulation.remove()
 
 
-def base_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):
+def base_trial_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, stimulation_name):
     """
     The function to use in ProtocolProcess class
     Designed to be run continuously alongside the main loop
@@ -99,22 +99,91 @@ def base_trial_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict
     :param stimulus_name: exact name of stimulus function in base_stimulus.py
     """
     current_trial = None
-    # TODO: make this adaptive and working
-    trial_dict = {}
-    stimulus_name = 'BaseStimulation'
-    stimulation = setup_stimulation(stimulus_name)
+    stimulation = setup_stimulation(stimulation_name)
     # starting the main loop without any protocol running
     while True:
         if trial_q.empty() and current_trial is None:
             pass
         elif trial_q.full():
-            current_trial = trial_q.get()
-            print(current_trial)
+            finished_trial = False
+            # starting timers
+            stimulus_timer = trials[current_trial]['stimulus_timer']
+            success_timer = trials[current_trial]['success_timer']
+            print('Starting protocol {}'.format(current_trial))
+            stimulus_timer.start()
+            success_timer.start()
+            condition_list = []
             # this branch is for already running protocol
         elif current_trial is not None:
-            success_q.put(True)
-            stimulation.stimulate()
-            current_trial = None
+            # checking for stimulus timer and outputting correct image
+            if stimulus_timer.check_timer():
+                # if stimulus timer is running, show stimulus
+                stimulation.stimulate()
+            else:
+                # if the timer runs out, finish protocol and reset timer
+                trials[current_trial]['stimulus_timer'].reset()
+                current_trial = None
+
+            # checking if any condition was passed
+            if condition_q.full():
+                stimulus_condition = condition_q.get()
+                # checking if timer for condition is running and condition=True
+                if success_timer.check_timer():
+                    # print('That was a success!')
+                    condition_list.append(stimulus_condition)
+                # elif success_timer.check_timer() and not stimulus_condition:
+                #     # print('That was not a success')
+                #     condition_list.append(False)
+
+            # checking if the timer for condition has run out
+            if not success_timer.check_timer() and not finished_trial:
+                if CTRL:
+                    # start a random time interval
+                    # TODO: working ctrl timer that does not set new time each frame...
+                    ctrl_time = random.randint(0,INTERTRIAL_TIME + 1)
+                    ctrl_timer = Timer(ctrl_time)
+                    ctrl_timer.start()
+                    print('Waiting for extra' + str(ctrl_time) + ' sec')
+                    if not ctrl_timer.check_timer():
+                        # in ctrl just randomly decide between the two
+                        print('Random choice between both stimuli')
+                        if random.random() >= 0.5:
+                            # very fast random choice between TRUE and FALSE
+                            deliver_liqreward()
+                            print('Delivered Reward')
+
+                        else:
+                            deliver_tone_shock()
+                            print('Delivered Aversive')
+
+                        ctrl_timer.reset()
+                        finished_trial = True
+                        # outputting the result, whatever it is
+                        success = trials[current_trial]['result_func'](condition_list)
+                        success_q.put(success)
+                        trials[current_trial]['success_timer'].reset()
+
+                else:
+                    if current_trial == 'Bluebar_whiteback':
+                        deliver_tone_shock()
+                        print('Delivered Aversive')
+                    elif current_trial == 'Greenbar_whiteback':
+                        if trials[current_trial]['random_reward']:
+                            if random.random() >= 0.5:
+                                # very fast random choice between TRUE and FALSE
+                                deliver_liqreward()
+                                print('Delivered Reward')
+                            else:
+                                print('No Reward')
+                        else:
+                            deliver_liqreward()
+                    # resetting the timer
+                    print('Timer for condition run out')
+                    finished_trial = True
+                    # outputting the result, whatever it is
+                    success = trials[current_trial]['result_func'](condition_list)
+                    success_q.put(success)
+                    trials[current_trial]['success_timer'].reset()
 
 
 class BaseProtocolProcess:
@@ -133,8 +202,10 @@ class BaseProtocolProcess:
         if self._settings_dict['TYPE'] == 'trial' and trials is not None:
             self._trial_queue = mp.Queue(1)
             self._success_queue = mp.Queue(1)
+            self._condition_queue = mp.Queue(1)
             self._protocol_process = mp.Process(target=base_trial_protocol_run,
-                                                args=(self._trial_queue, self._success_queue, trials))
+                                                args=(self._trial_queue, self._trial_queue,
+                                                self._success_queue, self._settings_dict['STIMULATION']))
         elif self._settings_dict['TYPE'] == 'switch':
             self._condition_queue = mp.Queue(1)
             self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run,
@@ -158,7 +229,7 @@ class BaseProtocolProcess:
         """
         Ending the process
         """
-        if self._settings_dict['TYPE'] == 'condition':
+        if self._settings_dict['TYPE'] == 'switch' or self._settings_dict['TYPE'] == 'supply':
             self._condition_queue.close()
         elif self._settings_dict['TYPE'] == 'trial':
             self._trial_queue.close()
@@ -182,7 +253,7 @@ class BaseProtocolProcess:
                 self._running = True
                 self._current_trial = input_p
 
-        elif self._settings_dict['TYPE'] == 'condition':
+        elif self._settings_dict['TYPE'] == 'switch' or self._settings_dict['TYPE'] == 'supply':
             if self._condition_queue.empty():
                 self._condition_queue.put(input_p)
 
