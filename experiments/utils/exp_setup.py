@@ -382,11 +382,15 @@ class DlStreamConfigWriter:
     def set_filename(self, filename):
         self._filename = filename + '.ini'
 
-    def set_parameter(self):
-        pass
     def get_current_config(self):
         return self._dlstream_dict
 
+    def get_parameters(self, module_name):
+        if module_name in self._dlstream_dict.keys():
+            print(self._dlstream_dict.keys())
+            return self._dlstream_dict[module_name]
+        else:
+            raise ValueError(f'{module_name} is not valid.')
 
 if __name__ == '__main__':
 

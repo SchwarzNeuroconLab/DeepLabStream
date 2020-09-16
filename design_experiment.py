@@ -1,32 +1,31 @@
 from experiments.utils.exp_setup import DlStreamConfigWriter
 import click
 
-
-def design_experiment():
-
+@click.command()
+@click.option('--default', 'default', is_flag=True)
+def design_experiment(default):
     config = DlStreamConfigWriter()
     input_dict = dict(EXPERIMENT = None,
                       TRIGGER = None,
                       PROCESS = None,
                       STIMULATION = None)
-    available_process_types = ['switch', 'supply']
 
-    for input_type in input_dict.keys():
-        if input_dict['EXPERIMENT'] == 'BaseOptogeneticExperiment' and input_type == 'STIMULATION':
-            input_dict[input_type] = 'BaseStimulation'
+    def get_input(input_name):
+        click.echo(f'Choosing {input_name}... \n Available {input_name}s are: ' + ', '.join(config.get_available_module_names(input_name)))
+        input_value = click.prompt(f'Enter a base {input_name} module',type=str)
+        while not config.check_if_default_exists(input_value,input_name):
+            click.echo(f'{input_name} {input_value} does not exists.')
+            input_value = click.prompt(f'Enter a base {input_name} module',type=str)
+        return input_value
+    """Experiment"""
 
-        click.echo(f'Available {input_type}s are: ' + ', '.join(config.get_available_module_names(input_type)))
-        input_value = click.prompt(f'Enter a base {input_type} module', type=str)
+    input_value = get_input('EXPERIMENT')
+    input_dict['EXPERIMENT'] = input_value
+    if input_value == 'BaseOptogeneticExperiment':
+        input_dict['STIMULATION'] = 'BaseStimulation'
+        input_dict['PROCESS'] = 'BaseProtocolProcess'
 
-        while not config.check_if_default_exists(input_value, input_type):
-            click.echo(f'{input_type} {input_value} does not exists.')
-            input_value = click.prompt(f'Enter a base {input_type} module', type=str)
-
-        input_dict[input_type] = input_value
-        click.echo(f'{input_type} set to {input_value}.')
-
-    if input_dict['EXPERIMENT'] == 'BaseTrialExperiment':
-        valid_input = False
+    elif input_value == 'BaseTrialExperiment':
         click.echo(f'Available Triggers are: ' + ', '.join(config.get_available_module_names('TRIGGER')))
         click.echo('Note, that you cannot select the same Trigger as selected in TRIGGER.')
 
@@ -38,62 +37,77 @@ def design_experiment():
         input_dict['TRIAL_TRIGGER'] = input_value
         click.echo(f'TRIAL_TRIGGER for BaseTrialExperiment set to {input_value}.')
 
+    """TRIGGER"""
 
-    # TODO: Make adaptive for multiple Triggers
+    input_value = get_input('TRIGGER')
+    input_dict['TRIGGER'] = input_value
+
+
+    """Process"""
+
+    if input_dict['PROCESS'] is None:
+        input_value = get_input('PROCESS')
+        input_dict['PROCESS'] = input_value
+
+    """STIMULATION"""
+    if input_dict['STIMULATION'] is None:
+        input_value = get_input('STIMULATION')
+        input_dict['STIMULATION'] = input_value
+
+    """Setting Process Type"""
+
+    if input_dict['EXPERIMENT'] == 'BaseTrialExperiment':
+        input_dict['PROCESS_TYPE'] = 'trial'
+    elif input_dict['STIMULATION'] == 'BaseStimulation':
+        input_dict['PROCESS_TYPE'] = 'switch'
+    elif input_dict['STIMULATION'] == 'ScreenStimulation' or input_dict['STIMULATION'] == 'RewardDispenser':
+        input_dict['PROCESS_TYPE'] = 'supply'
+
+
     if input_dict['EXPERIMENT'] == 'BaseTrialExperiment':
         config.import_default(experiment_name=input_dict['EXPERIMENT'], trigger_name=input_dict['TRIGGER'],
-                              process_name=input_dict['PROCESS'], stimulation_name=input_dict['STIMULATION'],
+                                  process_name=input_dict['PROCESS'], stimulation_name=input_dict['STIMULATION'],
                               trial_trigger_name=input_dict['TRIAL_TRIGGER'])
-
-        config._change_parameter(module_name=input_dict['EXPERIMENT'], parameter_name='TRIAL_TRIGGER',
-                             parameter_value=input_dict['TRIAL_TRIGGER'])
-
-        if input_dict['PROCESS'] == 'BaseProtocolProcess':
-            config._change_parameter(module_name=input_dict['PROCESS'], parameter_name='TYPE',
-                                     parameter_value='trial')
-
-    if input_dict['EXPERIMENT'] == 'BaseOptogeneticExperiment':
-        config.import_default(experiment_name=input_dict['EXPERIMENT'], trigger_name=input_dict['TRIGGER'],
-                              process_name=input_dict['PROCESS'], stimulation_name=input_dict['STIMULATION'])
-
-        if input_dict['PROCESS'] == 'BaseProtocolProcess':
-            config._change_parameter(module_name=input_dict['PROCESS'], parameter_name='TYPE',
-                                     parameter_value='switch')
-
 
     else:
         config.import_default(experiment_name=input_dict['EXPERIMENT'], trigger_name=input_dict['TRIGGER'],
-                              process_name=input_dict['PROCESS'], stimulation_name=input_dict['STIMULATION'])
+                                  process_name=input_dict['PROCESS'], stimulation_name=input_dict['STIMULATION'])
 
-    if input_dict['PROCESS'] == 'BaseProtocolProcess' and input_dict['EXPERIMENT'] != 'BaseTrialExperiment' and\
-            input_dict['EXPERIMENT'] != 'BaseOptogeneticExperiment':
-        valid_input = False
-
-        click.echo(f'Available types are: ' + ', '.join(available_process_types))
-        input_value = click.prompt(f'Enter a type for BaseProtocolProcess', type=str)
-        if input_value in available_process_types:
-            valid_input = True
-        while not valid_input:
-            click.echo(f'{input_type} {input_value} does not exists.')
-            input_value = click.prompt(f'Enter a valid type for BaseProtocolProcess', type=str)
-            if input_value in available_process_types:
-                valid_input = True
-
-        input_dict['PROCESS_TYPE'] = input_value
-        click.echo(f'BaseProtocolProcess type set to {input_value}.')
-        config._change_parameter(module_name = input_dict['PROCESS'], parameter_name = 'TYPE',
-                                 parameter_value = input_dict['PROCESS_TYPE'])
+    if 'PROCESS_TYPE' in input_dict.keys():
+        config._change_parameter(module_name=input_dict['PROCESS'],parameter_name='TYPE',
+                                 parameter_value=input_dict['PROCESS_TYPE'])
 
 
-    #Name of experimentor
-    experimenter = click.prompt('Enter an experimenter name', type = str)
+    if click.confirm('Do you want to set parameters as well (Not recommended)? \n Note, that you can change them in the created file later.'):
+        current_config = config.get_current_config()
+        ignore_list = ['EXPERIMENT', 'BaseProtocolProcess']
+        inner_ignore_list = ['EXPERIMENTER', 'PROCESS', 'STIMULATION', 'TRIGGER', 'DEBUG']
+        try:
+            for module in current_config.keys():
+                parameter_dict = config.get_parameters(module)
+                if module not in ignore_list:
+                    for input_key in parameter_dict.keys():
+                        if input_key not in inner_ignore_list:
+                            click.echo(f'Default {input_key} is: ' + str(parameter_dict[input_key]))
+                            input_value = click.prompt(f'Enter new value: ',type=str)
+                            config._change_parameter(module_name=module,parameter_name=input_key,
+                                                     parameter_value=input_value)
+        except:
+            click.echo('Failed to set individual parameters. Please change them later in the config file...')
+    else:
+        click.echo('Skipping parameters. Experiment config will be created with default values...')
+    """Finish up"""
+    # Name of experimentor
+    experimenter = click.prompt('Enter an experimenter name',type=str)
     click.echo(f'Experimenter set to {experimenter}.')
     config.set_experimenter(experimenter)
 
-    click.echo('Current modules are:\n BaseExperiment: {}\n Trigger: {}\n Process: {} \n Stimulation: {}'.format(input_dict['EXPERIMENT'],
-                                                                                                                 input_dict['TRIGGER'],
-                                                                                                                 input_dict['PROCESS'],
-                                                                                                                 input_dict['STIMULATION']))
+    click.echo('Current modules are:\n BaseExperiment: {}\n Trigger: {}\n Process: {} \n Stimulation: {}'.format(
+        input_dict['EXPERIMENT'],
+        input_dict['TRIGGER'],
+        input_dict['PROCESS'],
+        input_dict['STIMULATION']))
+
 
     if click.confirm('Do you want to continue?'):
         config.write_ini()
@@ -102,4 +116,3 @@ def design_experiment():
 
 if __name__ == '__main__':
     design_experiment()
-
