@@ -10,42 +10,9 @@ In your console of choice or IDE, run `design_experiment.py`
 
 You will be asked to enter the base modules that can be used to design a basic experiment in DLStream.
 
-````
-design_experiment.py
 
-Available EXPERIMENTs are: BaseExampleExperiment, BaseConditionalExperiment, BaseOptogeneticExperiment
-Enter a base EXPERIMENT module: BaseExampleExperiment
-...
-EXPERIMENT set to BaseExampleExperiment.
+![Design_experiment](experiments/utils/misc/design_experiment_gif.gif)
 
-Available TRIGGERs are: BaseRegionTrigger, BaseHeaddirectionTrigger, BaseSpeedTrigger
-Enter a base TRIGGER module: BaseRegionTrigger
-...
-TRIGGER set to BaseRegionTrigger.
-
-Available PROCESSs are: BaseProtocolProcess
-Enter a base PROCESS module: BaseProtocolProcess
-...
-PROCESS set to BaseProtocolProcess.
-
-Available STIMULATIONs are: BaseStimulation, RewardDispenser, ScreenStimulation
-Enter a base STIMULATION module: BaseStimulation
-...
-STIMULATION set to BaseStimulation.
-...
-Enter an experimenter name: TestUser
-...
-Experimenter set to TestUser.
-Current modules are:
- BaseExperiment: BaseExampleExperiment
- Trigger: BaseRegionTrigger
- Process: BaseProtocolProcess 
- Stimulation: BaseStimulation
-Do you want to continue? [y/N]: Y
-...
-Created BaseExampleExperiment_15092020.ini.
-Config was created. It can be found in experiments/configs
-````
 
 #### Selecting a designed experiment in DLStream
 Once a experiment config file has been created, the experiment can be used in DLStream by entering the filename to `settings.ini`.
