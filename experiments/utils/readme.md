@@ -10,9 +10,7 @@ In your console of choice or IDE, run `design_experiment.py`
 
 You will be asked to enter the base modules that can be used to design a basic experiment in DLStream.
 
-
-![Design_experiment](experiments/utils/misc/design_experiment_gif.gif)
-
+![Example](docs/design_experiment_gif.gif)
 
 #### Selecting a designed experiment in DLStream
 Once a experiment config file has been created, the experiment can be used in DLStream by entering the filename to `settings.ini`.
