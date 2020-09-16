@@ -294,8 +294,6 @@ class BaseOptogeneticExperiment(BaseExperiment):
                                         MAX_STIM_TIME = 'int',
                                         MIN_STIM_TIME='int',
                                         MAX_TOTAL_STIM_TIME = 'int',
-                                        EXP_LENGTH = 'int',
-                                        EXP_COMPLETION = 'int',
                                         EXP_TIME = 'int',
                                         PROCESS = 'str')
         self._settings_dict = get_experiment_settings(self._name, self._exp_parameter_dict)
