@@ -124,6 +124,9 @@ def setup_experiment():
         except Exception:
             raise ValueError(f'Experiment: {experiment_name} not in custom.experiments.py.')
 
+    else:
+        raise ValueError(f'Experiment Origin "{EXP_ORIGIN}" not valid. Pick CUSTOM or BASE.')
+
     return experiment
 
 
