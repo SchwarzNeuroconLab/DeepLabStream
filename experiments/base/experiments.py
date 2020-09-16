@@ -198,6 +198,7 @@ class BaseTrialExperiment(BaseExperiment):
         self._parameter_dict = dict(TRIGGER = 'str',
                                     PROCESS = 'str',
                                     INTERTRIAL_TIME = 'int',
+                                    TRIAL_NAME = 'str',
                                     TRIAL_TRIGGER = 'str',
                                     TRIAL_TIME = 'int',
                                     STIMULUS_TIME = 'int',
@@ -215,13 +216,12 @@ class BaseTrialExperiment(BaseExperiment):
         self._intertrial_timer = Timer(self._settings_dict['INTERTRIAL_TIME'])
 
 
-
     def check_skeleton(self, frame, skeleton):
         status, trial = self._process.get_status()
         if status:
             current_trial = self._trials[trial]
             condition, response = current_trial['trigger'].check_skeleton(skeleton)
-            self._process.pass_condition(condition)
+            self._process.put(condition)
             result = self._process.get_result()
             if result is not None:
                 self.process_result(result, trial)
@@ -250,7 +250,7 @@ class BaseTrialExperiment(BaseExperiment):
                 init_result, response_body = self._init_trigger.check_skeleton(skeleton)
                 if init_result:
                     # check trial start triggers
-                    self._process.set_trial(self._current_trial)
+                    self._process.put_trial(self._trials[self._current_trial], self._current_trial)
                     self._print_check = False
                 elif not self._print_check:
                     print('Next trial: #' + str(len(self._result_list) + 1) + ' ' + self._current_trial)
@@ -291,7 +291,7 @@ class BaseTrialExperiment(BaseExperiment):
             result_func = any
         else:
             raise ValueError(f'Result function can only be "all" or "any", not {self._settings_dict["RESULT_FUNC"]}.')
-        trials = {'Trial': dict(stimulus_timer=Timer(self._settings_dict['STIMULUS_TIME']),
+        trials = {self._settings_dict['TRIAL_NAME']: dict(stimulus_timer=Timer(self._settings_dict['STIMULUS_TIME']),
                                success_timer=Timer(self._settings_dict['TRIAL_TIME']),
                                trigger=trigger,
                                result_func=result_func)}
