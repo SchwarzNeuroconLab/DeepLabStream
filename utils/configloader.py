@@ -49,8 +49,13 @@ CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')
 VIDEO_SOURCE = dsc_config['Video'].get('VIDEO_SOURCE')
 VIDEO = dsc_config['Video'].getboolean('VIDEO')
 
+#IPWEBCAM
+PORT = dsc_config['IPWEBCAM'].get('PORT')
+IPWEBCAM = dsc_config['IPWEBCAM'].getboolean('IPWEBCAM')
+
 
 # experiment
+EXP_ORIGIN = dsc_config['Experiment'].get('EXP_ORIGIN')
 EXP_NAME = dsc_config['Experiment'].get('EXP_NAME')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 

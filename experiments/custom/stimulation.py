@@ -10,7 +10,7 @@ import time
 import os
 import cv2
 import numpy as np
-from experiments.DAQ_output import DigitalModDevice
+from experiments.utils.DAQ_output import DigitalModDevice
 
 
 def show_visual_stim_img(img_type='background', name='vistim', img_dict=None):

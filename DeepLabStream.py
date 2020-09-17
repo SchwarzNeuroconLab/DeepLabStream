@@ -18,10 +18,9 @@ import pandas as pd
 import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, VIDEO
+    ANIMALS_NUMBER, STREAMS, VIDEO, IPWEBCAM
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
-from experiments.experiments import ExampleExperiment
 
 
 def create_video_files(directory, devices, resolution, framerate, codec):
@@ -132,6 +131,13 @@ class DeepLabStream:
             from utils.generic import VideoManager
             manager = VideoManager()
             return manager
+
+        elif IPWEBCAM:
+            from utils.generic import WebCamManager
+            manager = WebCamManager()
+            return manager
+
+
         else:
             manager_list = []
             # loading realsense manager, if installed
@@ -430,15 +436,8 @@ class DeepLabStream:
     ##################
     @staticmethod
     def set_up_experiment():
-        import importlib
-        from utils.configloader import EXP_NAME
-        mod = importlib.import_module('experiments.experiments')
-        try:
-            experiment_class = getattr(mod, EXP_NAME)
-            experiment = experiment_class()
-        except AttributeError:
-            raise ValueError(f'Experiment: {EXP_NAME} not in experiments.py.')
-
+        from experiments.utils.exp_setup import setup_experiment
+        experiment = setup_experiment()
         return experiment
 
     def start_experiment(self):
@@ -519,9 +518,9 @@ class DeepLabStream:
         Outputting dataframes to csv
         """
         for num, camera in enumerate(self._data_output):
+            print("Saving database for device {}".format(camera))
             df = pd.DataFrame(self._data_output[camera])
             df.index.name = 'Frame'
-            print("Saving database for device {}".format(camera))
             df.to_csv(OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
             print("Database saved")
 
@@ -530,8 +529,10 @@ class DeepLabStream:
     ######
     @staticmethod
     def greetings():
+        from utils.configloader import EXP_NAME, EXP_ORIGIN
         print("This is DeepLabStream")
         print("Developed by: Jens Schweihoff and Matvey Loshakov")
+        print(f'Initializing {EXP_ORIGIN.lower()} experiment: {EXP_NAME}...')
 
     def get_camera_manager(self):
         return self._camera_manager

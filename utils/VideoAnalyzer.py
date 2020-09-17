@@ -16,7 +16,7 @@ from DeepLabStream import create_row
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame, plot_triggers_response
 from utils.configloader import VIDEO_SOURCE, OUT_DIR, ANIMALS_NUMBER
-from experiments.experiments import ExampleExperiment
+from experiments.custom.experiments import ExampleExperiment
 
 
 def create_dataframes(data_output):
