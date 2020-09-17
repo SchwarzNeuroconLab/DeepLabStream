@@ -25,13 +25,21 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
  
  ### 2. [How to use DLStream GUI](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/How-to-use-DLStream)
  
- ### 3. [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction)
+ ### 3. Check out our [Out-of-the-Box](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Out-Of-The-Box:-Overview) 
  
- ### 4. [Design your first experiment](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/My-first-experiment)
+ ### 4. [Design an Out-of-the-Box Experiment](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Out-Of-The-Box:-Design-Experiments)
  
- ### 5. [Adapting an existing experiment to your own needs](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Adapting-an-existing-experiment-to-your-own-needs)
+### What's underneath?:
  
- #### Check out our [Out-of-the-Box](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Out-Of-The-Box:-What-Triggers-are-available%3F) section to get a good idea, what DLStream has in stock for your own experiments!
+ ### 5. [Introduction to experiments](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Introduction)
+ 
+ ### For advanced users:
+ 
+ ### 6. [Design your first experiment](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/My-first-experiment)
+ 
+ ### 7. [Adapting an existing experiment to your own needs](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Adapting-an-existing-experiment-to-your-own-needs)
+ 
+
  
 ### How to use DeepLabStream
 
@@ -52,7 +60,7 @@ To start working with DeepLabStream, press the `Start Stream` button. It will ac
 After that you can `Start Analysis` to start DeepLabCut and receive a pose estimations for each frame, or, additionally, you can `Start Recording` to record a
 video of the current feed (visible in the stream window). You will see your current video timestamp (counted in frames) and FPS after you pressed the `Start Analysis` button.
 
-![Analisys](https://user-images.githubusercontent.com/44863941/91173049-7ac34580-e6dd-11ea-80b6-ad56cb9cf22c.png)
+![Analysis](https://user-images.githubusercontent.com/44863941/91173049-7ac34580-e6dd-11ea-80b6-ad56cb9cf22c.png)
 
 As you can see, we track three points that represent three body parts of the mouse - nose, neck and tail root.
 Every single frame where the animal was tracked is outputted to the dataframe, which would create a .csv file after the analysis is finished.
