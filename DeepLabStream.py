@@ -18,7 +18,7 @@ import pandas as pd
 import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, VIDEO
+    ANIMALS_NUMBER, STREAMS, VIDEO, IPWEBCAM
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 
@@ -131,6 +131,13 @@ class DeepLabStream:
             from utils.generic import VideoManager
             manager = VideoManager()
             return manager
+
+        elif IPWEBCAM:
+            from utils.generic import WebCamManager
+            manager = WebCamManager()
+            return manager
+
+
         else:
             manager_list = []
             # loading realsense manager, if installed
