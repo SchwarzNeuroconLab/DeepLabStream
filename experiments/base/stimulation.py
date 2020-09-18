@@ -19,17 +19,34 @@ class BaseStimulation:
         self._name = 'BaseStimulation'
         self._parameter_dict = dict(TYPE='str',
                                     PORT='str',
+                                    IP = 'str',
                                     STIM_TIME='float')
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
-        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'])
+        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'], self._settings_dict['IP'])
 
     @staticmethod
-    def _setup_device(type, port):
+    def _setup_device(type, port, ip):
         device = None
         if type == 'NI':
             from experiments.utils.DAQ_output import DigitalModDevice
             device = DigitalModDevice(port)
+
+        if type == 'RASPBERRY':
+            from experiments.utils.generic_output import DigitalPiBoardDevice
+            device = DigitalPiBoardDevice(port)
+
+        if type == 'RASP_NETWORK':
+            from experiments.utils.generic_output import DigitalPiBoardDevice
+            if ip is not None:
+                device = DigitalPiBoardDevice(port, ip)
+            else:
+                raise ValueError('IP required for remote GPIO control.')
+
+        if type == 'ARDUINO':
+            from experiments.utils.generic_output import DigitalArduinoDevice
+            device = DigitalArduinoDevice(port)
+
 
         return device
 
@@ -72,22 +89,37 @@ class RewardDispenser(BaseStimulation):
     def __init__(self):
         self._name = 'RewardDispenser'
         self._parameter_dict = dict(TYPE = 'str',
+                                    IP = 'str',
                                     STIM_PORT= 'str',
                                     REMOVAL_PORT = 'str',
                                     STIM_TIME = 'float',
                                     REMOVAL_TIME = 'float')
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
-        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['STIM_PORT'])
-        self._removal_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['REMOVAL_PORT'])
+        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['STIM_PORT'],
+                                               self._settings_dict['IP'])
+        self._removal_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['REMOVAL_PORT'],
+                                                  self._settings_dict['IP'])
 
 
     @staticmethod
-    def _setup_device(type, port):
+    def _setup_device(type, port, ip):
         device = None
         if type == 'NI':
             from experiments.utils.DAQ_output import DigitalModDevice
             device = DigitalModDevice(port)
+
+        if type == 'RASPBERRY':
+            from experiments.utils.generic_output import DigitialPiBoardDevice
+            device = DigitialPiBoardDevice(port)
+
+        if type == 'RASP_NETWORK':
+            from experiments.utils.generic_output import DigitialPiBoardDevice
+            if ip is not None:
+                device = DigitialPiBoardDevice(port, ip)
+            else:
+                raise ValueError('IP required for remote GPIO control.')
+
 
         return device
 

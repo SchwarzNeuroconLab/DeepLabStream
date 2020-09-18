@@ -302,7 +302,19 @@ class DeepLabStream:
 
                     output_q.put((index, peaks))
         elif MODEL_ORIGIN == 'DEEPPOSEKIT':
-            print('Not here yet...')
+            from deepposekit.models import load_model
+            from utils.configloader import MODEL_PATH
+            model = load_model(MODEL_PATH)
+            predict_model = model.predict_model
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    frame = frame[..., 1][..., None]
+                    st_frame = np.stack([frame])
+                    prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
+                    peaks= prediction[0,:,:2]
+                    output_q.put((index, peaks))
+
 
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
