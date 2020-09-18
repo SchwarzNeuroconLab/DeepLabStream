@@ -264,6 +264,8 @@ class DeepLabStream:
     ######################
     @staticmethod
     def get_pose_mp(input_q, output_q):
+        from dlclive import DLCLive
+
         """
         Process to be used for each camera/DLC stream of analysis
         Designed to be run in an infinite loop
@@ -277,6 +279,19 @@ class DeepLabStream:
                 scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
                 peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
                 output_q.put((index, peaks))
+
+
+        dlc_live = DLCLive(DLC_LIVE)
+        while True:
+            if input_q.full():
+                index, frame = input_q.get()
+                if not dlc_live.is_initialized:
+                    peaks = dlc_live.init_inference(frame)
+                else:
+                    peaks = dlc_live.get_pose(frame)
+
+                output_q.put((index, peaks))
+
 
     @staticmethod
     def create_mp_tools(devices):

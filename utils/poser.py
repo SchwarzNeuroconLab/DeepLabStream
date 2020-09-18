@@ -187,3 +187,31 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons.append(create_animal_skeleton(unique_cluster))
 
     return animal_skeletons
+
+
+def transform_2skeleton(pose):
+    from utils.configloader import ALL_BODYPARTS
+    skeleton = dict()
+    counter = 0
+    for bp in pose:
+        skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
+        counter += 1
+    return skeleton
+
+
+def transform_2pose(skeleton):
+    pose = np.array([*skeleton.values()])
+    return pose
+
+
+
+def calculate_skeletons_dlc_live(pose ,animals_number: int = 1) -> list:
+    """
+    Creating skeletons from given pose
+    There could be no more skeletons than animals_number
+    Only unique skeletons output
+    """
+
+    skeletons = [transform_2skeleton(pose)]
+
+    return skeletons
