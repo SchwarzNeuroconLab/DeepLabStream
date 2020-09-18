@@ -19,7 +19,8 @@ import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, VIDEO, IPWEBCAM
-from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
+from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons,\
+    get_ma_pose, calculate_ma_skeletons, calculate_skeletons_dlc_live
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 
 
@@ -264,7 +265,8 @@ class DeepLabStream:
     ######################
     @staticmethod
     def get_pose_mp(input_q, output_q):
-        from dlclive import DLCLive
+        from utils.configloader import MODEL_ORIGIN
+        from utils.poser import get_ma_pose
 
         """
         Process to be used for each camera/DLC stream of analysis
@@ -272,26 +274,38 @@ class DeepLabStream:
         :param input_q: index and corresponding frame
         :param output_q: index and corresponding analysis
         """
-        config, sess, inputs, outputs = load_deeplabcut()
-        while True:
-            if input_q.full():
-                index, frame = input_q.get()
-                scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                output_q.put((index, peaks))
 
+        if MODEL_ORIGIN == 'DLC' or  MODEL_ORIGIN == 'MADLC':
+            config, sess, inputs, outputs = load_deeplabcut()
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    if MODEL_ORIGIN == 'DLC':
+                        scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
+                        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                    if MODEL_ORIGIN == 'MADLC':
+                        peaks = get_ma_pose(frame, config, sess, inputs, outputs)
 
-        dlc_live = DLCLive(DLC_LIVE)
-        while True:
-            if input_q.full():
-                index, frame = input_q.get()
-                if not dlc_live.is_initialized:
-                    peaks = dlc_live.init_inference(frame)
-                else:
-                    peaks = dlc_live.get_pose(frame)
+                    output_q.put((index, peaks))
 
-                output_q.put((index, peaks))
+        elif MODEL_ORIGIN == 'DLC-LIVE':
+            from dlclive import DLCLive
+            from utils.configloader import MODEL_PATH
+            dlc_live = DLCLive(MODEL_PATH)
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    if not dlc_live.is_initialized:
+                        peaks = dlc_live.init_inference(frame)
+                    else:
+                        peaks = dlc_live.get_pose(frame)
 
+                    output_q.put((index, peaks))
+        elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+            print('Not here yet...')
+
+        else:
+            raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
     @staticmethod
     def create_mp_tools(devices):
