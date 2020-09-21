@@ -242,7 +242,7 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     return animal_skeletons
 
 
-"""DLC LIVE"""
+"""DLC LIVE & DeepPoseKit"""
 
 
 
@@ -288,11 +288,11 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
 
-    elif MODEL_ORIGIN == 'DLC-LIVE':
+    elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         animal_skeletons = calculate_skeletons_dlc_live(peaks,  animals_number= 1)
         if animals_number != 1:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
-                             ' If you are using differently colored animals, please refere to the bodyparts directly.')
+                             ' If you are using differently colored animals, please refer to the bodyparts directly.')
 
 
 
