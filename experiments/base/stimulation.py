@@ -33,18 +33,18 @@ class BaseStimulation:
             device = DigitalModDevice(port)
 
         if type == 'RASPBERRY':
-            from experiments.utils.generic_output import DigitalPiBoardDevice
-            device = DigitalPiBoardDevice(port)
+            from experiments.utils.gpio_control import DigitalPiDevice
+            device = DigitalPiDevice(port)
 
         if type == 'RASP_NETWORK':
-            from experiments.utils.generic_output import DigitalPiBoardDevice
+            from experiments.utils.gpio_control import DigitalPiDevice
             if ip is not None:
-                device = DigitalPiBoardDevice(port, ip)
+                device = DigitalPiDevice(port, ip)
             else:
                 raise ValueError('IP required for remote GPIO control.')
 
         if type == 'ARDUINO':
-            from experiments.utils.generic_output import DigitalArduinoDevice
+            from experiments.utils.gpio_control import DigitalArduinoDevice
             device = DigitalArduinoDevice(port)
 
 
@@ -110,11 +110,11 @@ class RewardDispenser(BaseStimulation):
             device = DigitalModDevice(port)
 
         if type == 'RASPBERRY':
-            from experiments.utils.generic_output import DigitialPiBoardDevice
+            from experiments.utils.gpio_control import DigitialPiBoardDevice
             device = DigitialPiBoardDevice(port)
 
         if type == 'RASP_NETWORK':
-            from experiments.utils.generic_output import DigitialPiBoardDevice
+            from experiments.utils.gpio_control import DigitialPiBoardDevice
             if ip is not None:
                 device = DigitialPiBoardDevice(port, ip)
             else:
