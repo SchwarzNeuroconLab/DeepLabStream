@@ -16,10 +16,8 @@ from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
-from utils.configloader import deeplabcut_config, MODEL_ORIGIN
+from utils.configloader import  MODEL_ORIGIN, MODEL_NAME, MODEL_PATH
 
-MODEL = deeplabcut_config['model']
-DLC_PATH = deeplabcut_config['dlc_path']
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
 try:
@@ -31,7 +29,7 @@ try:
 # if not DLC 2 is not installed, try import from DLC 1 the old way
 except ImportError:
     # adding DLC posing path and loading modules from it
-    sys.path.insert(0, DLC_PATH + "/pose-tensorflow")
+    sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
     from config import load_config
     from nnet import predict
     models_folder = 'pose-tensorflow/models/'
@@ -43,7 +41,7 @@ def load_deeplabcut():
 
     :return: tuple of DeepLabCut config, TensorFlow session, inputs and outputs
     """
-    model = os.path.join(DLC_PATH, models_folder, MODEL)
+    model = os.path.join(MODEL_PATH, models_folder, MODEL_NAME)
     cfg = load_config(os.path.join(model, 'test/pose_cfg.yaml'))
     snapshots = sorted([sn.split('.')[0] for sn in os.listdir(model + '/train/') if "index" in sn])
     cfg['init_weights'] = model + '/train/' + snapshots[-1]
@@ -237,7 +235,7 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
 
         return skeletons
     animal_skeletons = extract_to_animal_skeleton(pose['coordinates'])
-    # animal_skeletons = list(animal_skeletons.values())
+    animal_skeletons = list(animal_skeletons.values())
 
     return animal_skeletons
 
@@ -294,6 +292,6 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refere to the bodyparts directly.')
 
-
+    return animal_skeletons
 
 
