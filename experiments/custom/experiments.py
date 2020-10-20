@@ -11,7 +11,7 @@ import time
 from functools import partial
 from collections import Counter
 from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess,Timer, ExampleProtocolProcess
-from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger
+from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger, SpeedTrigger
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img,laser_switch
@@ -136,6 +136,80 @@ EXP_LENGTH = 40
 EXP_TIME = 3600
 EXP_COMPLETION = 10
 
+
+
+class SpeedExperiment:
+    """
+    Simple class to contain all of the experiment properties
+    Uses multiprocess to ensure the best possible performance and
+        to showcase that it is possible to work with any type of equipment, even timer-dependent
+    """
+    def __init__(self):
+        self.experiment_finished = False
+        self._threshold = 10
+        self._event = None
+        self._current_trial = None
+        self._event_count = 0
+        self._trigger = SpeedTrigger(threshold = self._threshold,bodypart= 'tailroot', timewindow_len= 5)
+        self._exp_timer = Timer(600)
+
+    def check_skeleton(self, frame, skeleton):
+        """
+        Checking each passed animal skeleton for a pre-defined set of conditions
+        Outputting the visual representation, if exist
+        Advancing trials according to inherent logic of an experiment
+        :param frame: frame, on which animal skeleton was found
+        :param skeleton: skeleton, consisting of multiple joints of an animal
+        """
+        self.check_exp_timer()  # checking if experiment is still on
+
+        if not self.experiment_finished:
+            result, response = self._trigger.check_skeleton(skeleton=skeleton)
+            plot_triggers_response(frame, response)
+            if result:
+                laser_switch(True)
+                self._event_count += 1
+                print(self._event_count)
+                print('Light on')
+
+            else:
+                laser_switch(False)
+                print('Light off')
+
+            return result, response
+
+
+    def check_exp_timer(self):
+        """
+        Checking the experiment timer
+        """
+        if not self._exp_timer.check_timer():
+            print("Experiment is finished")
+            print("Time ran out.")
+            self.stop_experiment()
+
+    def start_experiment(self):
+        """
+        Start the experiment
+        """
+        if not self.experiment_finished:
+            self._exp_timer.start()
+
+    def stop_experiment(self):
+        """
+        Stop the experiment and reset the timer
+        """
+        self.experiment_finished = True
+        print('Experiment completed!')
+        self._exp_timer.reset()
+        # don't forget to stop the laser for safety!
+        laser_switch(False)
+
+    def get_trial(self):
+        """
+        Check which trial is going on right now
+        """
+        return self._current_trial
 
 class FirstExperiment:
     def __init__(self):
