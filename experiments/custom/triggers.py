@@ -368,12 +368,9 @@ class FreezeTrigger:
             self._skeleton = skeleton
         else:
             joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
-            print(joint_travel)
             self._timewindow.append(joint_travel)
-            print(self._timewindow)
             if len(self._timewindow) == self._timewindow_len:
                 joint_moved = np.sum(self._timewindow)
-            print(joint_moved)
 
             if abs(joint_moved) <= self._threshold:
                 result = True
@@ -426,12 +423,9 @@ class SpeedTrigger:
             self._skeleton = skeleton
         else:
             joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
-            print(joint_travel)
             self._timewindow.append(joint_travel)
-            print(self._timewindow)
             if len(self._timewindow) == self._timewindow_len:
                 joint_moved = np.sum(self._timewindow)
-            print(joint_moved)
 
             if abs(joint_moved) >= self._threshold:
                 result = True
