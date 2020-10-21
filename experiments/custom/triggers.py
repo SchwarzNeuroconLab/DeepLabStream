@@ -8,9 +8,13 @@ Licensed under GNU General Public License v3.0
 
 
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
-from utils.configloader import RESOLUTION
+from utils.configloader import RESOLUTION, TIME_WINDOW
 from collections import deque
+from experiments.custom.featureextraction import FeatureExtractor
 import numpy as np
+
+import time
+
 """Single posture triggers"""
 
 class HeaddirectionROITrigger:
@@ -441,3 +445,101 @@ class SpeedTrigger:
         response = (result, response_body)
 
         return response
+
+
+"""Behavior classifier trigger"""
+
+
+class SimbaThresholdBehaviorTriggerPool:
+    """
+    Trigger to check if animal's behavior is classified as specific motif above threshold probability.
+    """
+
+    def __init__(self,prob_threshold: float, class_process_pool, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param float prob_threshold: threshold probability of prediction that is returned by classifier and should be used as trigger.
+        If you plan to use the classifier for multiple trial triggers in the same experiment with different thresholds. We recommend setting up the
+        trigger_probability during check_skeleton
+        :param class_process_pool: list of dictionaries with keys process: mp.Process, input: mp.queue, output: mp.queue;
+         used for lossless frame-by-frame classification
+
+        """
+        self._trigger_threshold = prob_threshold
+        self._process_pool = class_process_pool
+        self._last_prob = 0.0
+        self._feature_id = 0
+        self._center = None
+        self._debug = debug
+        self._skeleton = None
+        self._time_window_len = TIME_WINDOW
+        self.feat_extractor = FeatureExtractor(input_array_length= self._time_window_len)
+        self._time_window = deque(maxlen=self._time_window_len)
+
+
+    def fill_time_window(self,skeleton: dict):
+        """Transforms skeleton input into flat numpy array of coordinates to pass to feature extraction"""
+        from utils.poser import transform_2pose
+        flat_values = transform_2pose(skeleton).flatten()
+        # this appends the new row to the deque time_window, which will drop the "oldest" entry due to a maximum
+        # length of time_window_len
+        self._time_window.append(flat_values)
+
+    def check_skeleton(self, skeleton, target_prob: float = None):
+        """
+        Checking skeleton for trigger, will pass skeleton window to classifier if window length is reached and
+        collect skeletons otherwise
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :param target_prob: optional, overwrites self._trigger_prob with target probability. this is supposed to enable the
+        set up of different trials (with different motif thresholds) in the experiment without the necessaty to init to
+        classifiers: default None
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        self.fill_time_window(skeleton)
+        f_extract_output = None
+        """Checks if necessary time window was collected and passes it to classifier"""
+        if len(self._time_window) == self._time_window_len:
+            start_time = time.time()
+            f_extract_output = self.feat_extractor.extract_features(self._time_window)
+            if self._debug:
+                end_time = time.time()
+                print("Feature extraction time: {:.2f} msec".format((end_time-start_time)*1000))
+        #if enough postures where collected and their features extracted
+        if f_extract_output is not None:
+            #if the last classification is done and was taken
+            self._feature_id += 1
+            self._process_pool.pass_features((f_extract_output, self._feature_id), debug = self._debug)
+        #check if a process from the pool is done with the result
+        result, feature_id = self._process_pool.get_result(debug = self._debug)
+        if result is not None:
+            self._last_prob = result
+        # else:
+        #     self._last_prob = 0.0
+
+        if target_prob is not None:
+            self._trigger_threshold = target_prob
+        # choosing a point to draw near the skeleton
+        self._center = (50,50)
+        result = False
+        text = 'Current probability: {:.2f}'.format(self._last_prob)
+
+        if self._trigger_threshold <= self._last_prob:
+            result = True
+            text = 'Motif matched: {:.2f}'.format(self._last_prob)
+
+        color = (0,255,0) if result else (0,0,255)
+        response_body = {'plot': {'text': dict(text=text,
+                                               org=self._center,
+                                               color=color)}}
+        response = (result,response_body)
+        return response
+
+    def get_trigger_threshold(self):
+        return self._trigger_threshold
+
+    def get_last_prob(self):
+        return self._last_prob
+
+    def get_time_window_len(self):
+        return self._time_window_len
