@@ -18,7 +18,7 @@ import pandas as pd
 import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, VIDEO, IPWEBCAM
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 
@@ -127,18 +127,17 @@ class DeepLabStream:
         :return: the chosen camera manager
         """
 
-        if VIDEO:
+        if STREAMING_SOURCE.lower() == 'video':
             from utils.generic import VideoManager
             manager = VideoManager()
             return manager
 
-        elif IPWEBCAM:
+        elif STREAMING_SOURCE.lower() == 'ipwebcam':
             from utils.generic import WebCamManager
             manager = WebCamManager()
             return manager
 
-
-        else:
+        elif STREAMING_SOURCE.lower() == 'camera':
             manager_list = []
             # loading realsense manager, if installed
             realsense = find_spec("pyrealsense2") is not None
@@ -174,6 +173,9 @@ class DeepLabStream:
                 from utils.generic import GenericManager
                 generic_manager = GenericManager()
                 return generic_manager
+        else:
+            raise ValueError(f'Streaming source {STREAMING_SOURCE} is not a valid option. \n'
+                             f'Please choose from "video", "camera" or "ipwebcam".')
 
     @property
     def cameras(self):
