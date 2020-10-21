@@ -8,7 +8,6 @@ Licensed under GNU General Public License v3.0
 
 import cv2
 import random
-from utils.configloader import EGG
 
 
 def plot_dots(image, coordinates, color, cond=False):
