@@ -5,19 +5,28 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 
-Feature extraction functions were provided by Simon Nillson from Golden Lab
+Simba Feature extraction functions were provided by Simon Nillson from Golden Lab
 Main developer of SiMBA https://github.com/sgoldenlab/simba
-and integrated into the FeatureExtractor
+and integrated into the SimbaFeatureExtractor
+
+Bsoid Feature extraction functions were adpated from code orginally by Alexander Hsu from Yttri Lab
+Main developer of B-Soid https://github.com/YttriLab/B-SOID
+and integrated into the BsoidFeatureExtractor
 """
 
-from utils.configloader import PIXPERMM
+from utils.configloader import PIXPERMM, FRAMERATE
 import numpy as np
+import pandas as pd
+import math
 from numba import jit
+import itertools
 
 
 ### EUCLIDIAN DISTANCES IN SINGLE FRAMES
 @jit(nopython=True, cache=True)
 def EuclidianDistCalc(inArr):
+    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba
+    """
     Mouse_1_nose_to_tail = int(np.sqrt(((inArr[-1][4] - inArr[-1][12]) ** 2 + (inArr[-1][5] - inArr[-1][13]) ** 2)))
     Mouse_2_nose_to_tail = int(np.sqrt(((inArr[-1][18] - inArr[-1][26]) ** 2 + (inArr[-1][19] - inArr[-1][27]) ** 2)))
     Mouse_1_Ear_distance = int(np.sqrt(((inArr[-1][0] - inArr[-1][2]) ** 2 + (inArr[-1][1] - inArr[-1][3]) ** 2)))
@@ -38,6 +47,9 @@ def EuclidianDistCalc(inArr):
 ### EUCLIDEAN DISTANCES BETWEEN CENTROIDS IN ROLLING WINDOWS
 @jit(nopython=True, cache=True)
 def distancesBetweenBps(bpArray, bp):
+    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba
+    """
+
     frames2Process = bpArray.shape[0]
     bps2process = int(bpArray.shape[1] / 2)
     outputArray = np.zeros((frames2Process, bps2process - 1))
@@ -66,6 +78,9 @@ def distancesBetweenBps(bpArray, bp):
 ### EUCLIDEAN DISTANCES BETWEEN BODY-PARTS WITHIN EACH ANIMALS HULL
 @jit(nopython=True, cache=True)
 def bpDistancesInHull(animal1arraySplit):
+    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba
+    """
+
     frames2process = animal1arraySplit.shape[0]
     bps2process = animal1arraySplit[1].shape[0]
     outputArray = np.zeros((frames2process, bps2process))
@@ -83,6 +98,9 @@ def bpDistancesInHull(animal1arraySplit):
 ### TOTAL MOVEMENT OF ALL ANIMALS IN ROLLING WINDOWS
 @jit(nopython=True, cache=True)
 def TotalMovementBodyparts(arrayConcat_Animal1, arrayConcat_Animal2):
+    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba
+    """
+
     frames2process = arrayConcat_Animal2.shape[0]
     bps2process = int(arrayConcat_Animal2.shape[1] / 2)
     outputArray_animal_1, outputArray_animal_2 = np.zeros((frames2process, bps2process)), np.zeros(
@@ -112,6 +130,9 @@ def TotalMovementBodyparts(arrayConcat_Animal1, arrayConcat_Animal2):
 ### MOVEMENTS OF INDIVIDUAL BODY-PARTS
 @jit(nopython=True, cache=True)
 def singleAnimalBpMovements(tail_1, tail_2, center_1, center_2, nose_1, nose_2):
+    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba
+    """
+
     Tail_base_movement_M1_median_2, Tail_base_movement_M2_median_2 = int(np.median(tail_1)), int(np.median(tail_2))
     Tail_base_movement_M2_mean_2, Tail_base_movement_M2_sum_2 = int(np.mean(tail_2)), int(np.sum(tail_2))
     Centroid_movement_M1_mean_2, Centroid_movement_M1_sum_2 = int(np.mean(center_1)), int(np.sum(center_1))
@@ -125,9 +146,10 @@ def singleAnimalBpMovements(tail_1, tail_2, center_1, center_2, nose_1, nose_2):
 
 
 
-class FeatureExtractor:
+class SimbaFeatureExtractor:
     """Feature extraction module for integration in behavior trigger, takes list of postures as input
-     and calculates features to pass to classifier. Features and classifier have to match!"""
+     and calculates features to pass to classifier. Features and classifier have to match!
+     Designed to work with Simba https://github.com/sgoldenlab/simba """
 
     def __init__(self, input_array_length):
         self.currPixPerMM = PIXPERMM
@@ -144,7 +166,9 @@ class FeatureExtractor:
 
     def extract_features(self, input_array):
         """Takes bp coordinates of length input_list_length and extract features.
-        :return extracted feature list for input to classifier"""
+        :return extracted feature list for input to classifier"
+        Adapted from code provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+
 
         def append2featureList(featureList,measures2add):
             featureList.extend(measures2add)
@@ -208,3 +232,138 @@ class FeatureExtractor:
 
         else:
             return None
+
+
+class BsoidFeatureExtractor:
+    """Feature extraction module for integration in behavior trigger, takes list of postures as input
+     and calculates features to pass to classifier. Features and classifier have to match!
+     Designed to work with BSOID; https://github.com/YttriLab/B-SOID"""
+
+    def __init__(self, input_array_length):
+        self.input_array_length = input_array_length
+        self._fps = FRAMERATE
+
+    def get_currPixPerMM(self):
+        return None
+
+    def get_input_array_length(self):
+        return self.input_array_length
+
+    def set_input_array_length(self,new_input_array_length):
+        self.input_array_length = new_input_array_length
+
+    def extract_features(self, input_array):
+        """
+        Extracts features based on (x,y) positions
+        :param input_array: list of poses
+        :return f_10fps: 2D array, extracted features
+           Adapted from BSOID; https://github.com/YttriLab/B-SOID
+        """
+
+        def boxcar_center(a, n):
+            a1 = pd.Series(a)
+            moving_avg = np.array(a1.rolling(window=n, min_periods=1, center=True).mean())
+
+            return moving_avg
+
+        def adp_filt_pose(pose_estimation):
+            """Adapted from adp_filt function in BSOID"""
+            currdf = np.array(pose_estimation)
+            datax = currdf[:, :, 0]
+            datay = currdf[:, :, 1]
+            #TODO: Adapt filter to work without workaround and skeleton
+            #data_lh = currdf[:, :, 2]
+            data_lh = np.full_like(datax, 0.9)
+            currdf_filt = np.zeros((datax.shape[0], (datax.shape[1]) * 2))
+            perc_rect = []
+            for i in range(data_lh.shape[1]):
+                perc_rect.append(0)
+            for x in range(data_lh.shape[1]):
+                a, b = np.histogram(data_lh[1:, x].astype(np.float))
+                rise_a = np.where(np.diff(a) >= 0)
+                if rise_a[0][0] > 1:
+                    llh = b[rise_a[0][0]]
+                else:
+                    llh = b[rise_a[0][1]]
+                data_lh_float = data_lh[:, x].astype(np.float)
+                perc_rect[x] = np.sum(data_lh_float < llh) / data_lh.shape[0]
+                currdf_filt[0, (2 * x):(2 * x + 2)] = np.hstack([datax[0, x], datay[0, x]])
+                for i in range(1, data_lh.shape[0]):
+                    if data_lh_float[i] < llh:
+                        currdf_filt[i, (2 * x):(2 * x + 2)] = currdf_filt[i - 1, (2 * x):(2 * x + 2)]
+                    else:
+                        currdf_filt[i, (2 * x):(2 * x + 2)] = np.hstack([datax[i, x], datay[i, x]])
+            currdf_filt = np.array(currdf_filt)
+            currdf_filt = currdf_filt.astype(np.float)
+            return currdf_filt, perc_rect
+
+        if len(input_array) == self.input_array_length:
+            data, p_sub_threshold = adp_filt_pose(input_array)
+            data = np.array([data])
+            win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
+            feats = []
+            for m in range(len(data)):  # 1
+                dataRange = len(data[m])  # 5
+                dxy_r = []
+                dis_r = []
+                for r in range(dataRange):  # 0-4
+                    if r < dataRange - 1:
+                        dis = []
+                        for c in range(0, data[m].shape[1], 2):  # 0-17, 2
+                            dis.append(np.linalg.norm(data[m][r + 1, c:c + 2] - data[m][r, c:c + 2]))
+                        dis_r.append(dis)
+                    dxy = []
+                    for i, j in itertools.combinations(range(0, data[m].shape[1], 2), 2):  # 0-17, 2
+                        dxy.append(data[m][r, i:i + 2] - data[m][r, j:j + 2])
+                    dxy_r.append(dxy)
+                dis_r = np.array(dis_r)
+                dxy_r = np.array(dxy_r)
+                dis_smth = []
+                dxy_eu = np.zeros([dataRange, dxy_r.shape[1]])  # 5,36
+                ang = np.zeros([dataRange - 1, dxy_r.shape[1]])
+                dxy_smth = []
+                ang_smth = []
+                for l in range(dis_r.shape[1]):  # 0-8
+                    dis_smth.append(boxcar_center(dis_r[:, l], win_len))
+                for k in range(dxy_r.shape[1]):  # 0-35
+                    for kk in range(dataRange):  # 0
+                        dxy_eu[kk, k] = np.linalg.norm(dxy_r[kk, k, :])
+                        if kk < dataRange - 1:
+                            b_3d = np.hstack([dxy_r[kk + 1, k, :], 0])
+                            a_3d = np.hstack([dxy_r[kk, k, :], 0])
+                            c = np.cross(b_3d, a_3d)
+                            ang[kk, k] = np.dot(np.dot(np.sign(c[2]), 180) / np.pi,
+                                                math.atan2(np.linalg.norm(c),
+                                                           np.dot(dxy_r[kk, k, :], dxy_r[kk + 1, k, :])))
+                    dxy_smth.append(boxcar_center(dxy_eu[:, k], win_len))
+                    ang_smth.append(boxcar_center(ang[:, k], win_len))
+                dis_smth = np.array(dis_smth)
+                dxy_smth = np.array(dxy_smth)
+                ang_smth = np.array(ang_smth)
+                feats.append(np.vstack((dxy_smth[:, 1:], ang_smth, dis_smth)))
+
+            f_10fps = []
+            for n in range(0, len(feats)):
+                feats1 = np.zeros(len(data[n]))
+                for s in range(math.floor(self._fps / 10)):
+                    for k in range(round(self._fps / 10) + s, len(feats[n][0]), round(self._fps / 10)):
+                        if k > round(self._fps / 10) + s:
+                            feats1 = np.concatenate((feats1.reshape(feats1.shape[0], feats1.shape[1]),
+                                                     np.hstack((np.mean((feats[n][0:dxy_smth.shape[0],
+                                                                         range(k - round(self._fps / 10), k)]), axis=1),
+                                                                np.sum((feats[n][dxy_smth.shape[0]:feats[n].shape[0],
+                                                                        range(k - round(self._fps / 10), k)]),
+                                                                       axis=1))).reshape(len(feats[0]), 1)), axis=1)
+                        else:
+                            feats1 = np.hstack((np.mean((feats[n][0:dxy_smth.shape[0], range(k - round(self._fps / 10), k)]),
+                                                        axis=1),
+                                                np.sum((feats[n][dxy_smth.shape[0]:feats[n].shape[0],
+                                                        range(k - round(self._fps / 10), k)]), axis=1))).reshape(
+                                len(feats[0]), 1)
+                    f_10fps.append(feats1)
+            return f_10fps
+
+        else:
+            return None
+
+

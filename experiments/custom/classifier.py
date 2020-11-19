@@ -44,9 +44,9 @@ class Classifier:
         return self._win_len
 
 
-class SiMBAClassifier():
+class SiMBAClassifier:
     """SiMBA base class for simple behavior classification trigger. Loads pretrained classifier, gets passed features
-    from FeatureExtractor. Returns probability of prediction that can be incorporated into triggers."""
+    from SimbaFeatureExtractor. Returns probability of prediction that can be incorporated into triggers."""
 
     def __init__(self):
         self._classifier = self.load_classifier(PATH_TO_CLASSIFIER)
@@ -68,10 +68,48 @@ class SiMBAClassifier():
         self.last_result = probability
         return probability
 
-    def get_last_result(self,skeleton_window: list):
+    def get_last_result(self):
         """Returns predicted last prediction"""
         return self.last_result
 
+
+class BsoidClassifier:
+    """BSOID base class for multiple behavior classification trigger. Loads pretrained classifier, gets passed features
+    from SimbaFeatureExtractor. Returns probability of prediction that can be incorporated into triggers."""
+
+    def __init__(self):
+        self._classifier = self.load_classifier(PATH_TO_CLASSIFIER)
+        self.last_result = 0.0
+
+    @staticmethod
+    def load_classifier(path_to_sav):
+        """Load saved classifier"""
+        import joblib
+        file = open(path_to_sav,'rb')
+        [_, _, _, clf, _, predictions] = joblib.load(file)
+        file.close()
+        return clf
+
+    def classify(self, features):
+        """predicts motif probability from features    :param feats: list, multiple feats (original feature space)
+        :param clf: Obj, MLP classifier
+        :return nonfs_labels: list, label/100ms
+        Adapted from BSOID; https://github.com/YttriLab/B-SOID
+        """
+        labels_fslow = []
+        for i in range(0, len(features)):
+            labels = self._classifier.predict(features[i].T)
+            labels_fslow.append(labels)
+        self.last_result = labels_fslow
+
+        return labels_fslow
+
+    def get_last_result(self):
+        """Returns predicted last prediction"""
+        return self.last_result
+
+
+"""process protocols"""
 
 def example_classifier_run(input_classification_q: mp.Queue,output_classification_q: mp.Queue):
     classifier = Classifier()  # initialize classifier
@@ -98,6 +136,22 @@ def simba_classifier_run(input_q: mp.Queue,output_q: mp.Queue):
             output_q.put((last_prob))
             end_time = time.time()
             # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+        else:
+            pass
+
+
+def bsoid_classifier_run(input_q: mp.Queue,output_q: mp.Queue):
+    classifier = BsoidClassifier()  # initialize classifier
+    while True:
+        features = None
+        if input_q.full():
+            features = input_q.get()
+        if features is not None:
+            start_time = time.time()
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob))
+            end_time = time.time()
+            print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
         else:
             pass
 
@@ -166,6 +220,15 @@ class SimbaClassifier_Process(ClassifierProcess):
                                                                                     self.output_queue))
 
 
+class BsoidClassifier_Process(ClassifierProcess):
+
+    def __init__(self):
+        super().__init__()
+        self.input_queue = mp.Queue(1)
+        self.output_queue = mp.Queue(1)
+        self._classification_process = mp.Process(target=bsoid_classifier_run,args=(self.input_queue,
+                                                                                    self.output_queue))
+
 """Processing pool for classification"""
 
 
@@ -202,6 +265,22 @@ def simba_classifier_pool_run(input_q: mp.Queue,output_q: mp.Queue):
         else:
             pass
 
+
+def bsoid_classifier_pool_run(input_q: mp.Queue,output_q: mp.Queue):
+    classifier = BsoidClassifier()  # initialize classifier
+    while True:
+        features = None
+        feature_id = 0
+        if input_q.full():
+            features,feature_id = input_q.get()
+        if features is not None:
+            start_time = time.time()
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob,feature_id))
+            end_time = time.time()
+            print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+        else:
+            pass
 
 class ClassifierProcessPool:
     """
@@ -309,3 +388,17 @@ class SimbaProcessPool(ClassifierProcessPool):
         """
         super().__init__(pool_size)
         self._process_pool = super().initiate_pool(simba_classifier_pool_run,pool_size)
+
+
+class BsoidProcessPool(ClassifierProcessPool):
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self,pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        super().__init__(pool_size)
+        self._process_pool = super().initiate_pool(bsoid_classifier_pool_run,pool_size)
