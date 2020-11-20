@@ -27,17 +27,19 @@ def plot_bodyparts(image, skeletons):
     """
     res_image = image.copy()
     # predefined colors list
-    colors_list = [(0, 0, 255), (0, 255, 0), (0, 255, 255), (255, 0, 0), (255, 0, 255), (255, 255, 0), (255, 255, 128),
-                   (0, 0, 128), (0, 128, 0), (0, 128, 128), (0, 128, 255), (0, 255, 128), (128, 0, 0), (128, 0, 128),
-                   (128, 0, 255), (128, 128, 0), (128, 128, 128), (128, 128, 255), (128, 255, 0), (128, 255, 128),
-                   (128, 255, 255), (255, 0, 128), (255, 128, 0), (255, 128, 128), (255, 128, 255)]
+    #colors_list = [(0, 0, 255), (0, 255, 0), (0, 255, 255), (255, 0, 0), (255, 0, 255), (255, 255, 0), (255, 255, 128),
+                   # (0, 0, 128), (0, 128, 0), (0, 128, 128), (0, 128, 255), (0, 255, 128), (128, 0, 0), (128, 0, 128),
+                   # (128, 0, 255), (128, 128, 0), (128, 128, 128), (128, 128, 255), (128, 255, 0), (128, 255, 128),
+                   # (128, 255, 255), (255, 0, 128), (255, 128, 0), (255, 128, 128), (255, 128, 255)]
+    color = (255, 0, 0)
 
     for animal in skeletons:
         bodyparts = animal.keys()
         bp_count = len(bodyparts)
-        colors = dict(zip(bodyparts, colors_list[:bp_count]))
+        #colors = dict(zip(bodyparts, colors_list[:bp_count]))
         for part in animal:
-            plot_dots(res_image, tuple(animal[part]), colors[part])
+            plot_dots(res_image, tuple(animal[part]), color)
+            #plot_dots(res_image, tuple(animal[part]), colors[part])
     return res_image
 
 

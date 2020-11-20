@@ -409,9 +409,7 @@ class DeepLabStream:
 
                     # Getting the analysed data
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
-                    #TODO: REMOVE IF USELESS
-                    skeletons = [transform_2skeleton(peaks)]
-                    #skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
+                    skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
                     analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time

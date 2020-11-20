@@ -85,7 +85,6 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
-    plot_special_peak()
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -246,11 +245,19 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
 
 def transform_2skeleton(pose):
     from utils.configloader import ALL_BODYPARTS
-    skeleton = dict()
-    counter = 0
-    for bp in pose:
-        skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
-        counter += 1
+    try:
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
+            counter += 1
+    except IndexError:
+        #print(ValueError('The number of bodyparts by ALL_BODYPARTS was not sufficient. Autonaming enabled...'))
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton['bp{}'.format(counter)] = tuple(np.array(bp[0:2],dtype = int))
+            counter += 1
     return skeleton
 
 
