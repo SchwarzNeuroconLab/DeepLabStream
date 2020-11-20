@@ -30,6 +30,15 @@ with open(adv_cfg_path) as adv_cfg_file:
 # DeepLabCut
 deeplabcut_config = dict(dsc_config.items('DeepLabCut'))
 
+#poseestimation
+MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
+MODEL_PATH = dsc_config['Pose Estimation'].get('MODEL_PATH')
+MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
+ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
+
+
+
+
 # Streaming items
 try:
     RESOLUTION = tuple(int(part) for part in dsc_config['Streaming'].get('RESOLUTION').split(','))

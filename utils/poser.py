@@ -20,19 +20,20 @@ from utils.configloader import  MODEL_ORIGIN, MODEL_NAME, MODEL_PATH
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
-try:
-    import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
-    from deeplabcut.pose_estimation_tensorflow.config import load_config
-    from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+if MODEL_ORIGIN == 'DLC' or MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'MADLC':
+    try:
+        import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
+        from deeplabcut.pose_estimation_tensorflow.config import load_config
+        from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
 
-    models_folder = 'pose_estimation_tensorflow/models/'
-# if not DLC 2 is not installed, try import from DLC 1 the old way
-except ImportError:
-    # adding DLC posing path and loading modules from it
-    sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
-    from config import load_config
-    from nnet import predict
-    models_folder = 'pose-tensorflow/models/'
+        models_folder = 'pose_estimation_tensorflow/models/'
+    # if not DLC 2 is not installed, try import from DLC 1 the old way
+    except ImportError:
+        # adding DLC posing path and loading modules from it
+        sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
+        from config import load_config
+        from nnet import predict
+        models_folder = 'pose-tensorflow/models/'
 
 
 def load_deeplabcut():
