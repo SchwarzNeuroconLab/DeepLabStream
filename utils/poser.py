@@ -11,7 +11,6 @@ import os
 import numpy as np
 from itertools import product, combinations
 from utils.analysis import calculate_distance
-from utils.plotter import plot_special_peak
 from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
