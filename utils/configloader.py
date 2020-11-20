@@ -13,6 +13,7 @@ import configparser as cfg
 # loading DeepLabStream configuration
 # remember when it was called DSC?
 dsc_config = cfg.ConfigParser()
+adv_dsc_config = cfg.ConfigParser()
 
 
 def get_script_path():
@@ -23,14 +24,11 @@ cfg_path = os.path.join(os.path.dirname(__file__), '..', 'settings.ini')
 with open(cfg_path) as cfg_file:
     dsc_config.read_file(cfg_file)
 
-
-#poseestimation
-MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
-MODEL_PATH = dsc_config['Pose Estimation'].get('MODEL_PATH')
-MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
-ALL_BODYPARTS = tuple(part for part in dsc_config['Streaming'].get('ALL_BODYPARTS').split(','))
-
-
+adv_cfg_path = os.path.join(os.path.dirname(__file__), 'advanced_settings.ini')
+with open(adv_cfg_path) as adv_cfg_file:
+    adv_dsc_config.read_file(adv_cfg_file)
+# DeepLabCut
+deeplabcut_config = dict(dsc_config.items('DeepLabCut'))
 
 # Streaming items
 try:
@@ -39,24 +37,16 @@ except ValueError:
     print('Incorrect resolution in config!\n'
           'Using default value "RESOLUTION = 848, 480"')
     RESOLUTION = (848, 480)
+MODEL = dsc_config['Streaming'].get('MODEL')
 FRAMERATE = dsc_config['Streaming'].getint('FRAMERATE')
 OUT_DIR = dsc_config['Streaming'].get('OUTPUT_DIRECTORY')
-STREAM = dsc_config['Streaming'].getboolean('STREAM')
-MULTI_CAM = dsc_config['Streaming'].getboolean('MULTIPLE_DEVICES')
-STACK_FRAMES = dsc_config['Streaming'].getboolean('STACK_FRAMES') if dsc_config['Streaming'].getboolean(
-    'STACK_FRAMES') is not None else False
-ANIMALS_NUMBER = dsc_config['Streaming'].getint('ANIMALS_NUMBER') if dsc_config['Streaming'].getint(
-    'ANIMALS_NUMBER') is not None else 1
-STREAMS = [str(part).strip() for part in dsc_config['Streaming'].get('STREAMS').split(',')]
 CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')
-
+STREAMING_SOURCE = dsc_config['Streaming'].get('STREAMING_SOURCE')
 # Video
 VIDEO_SOURCE = dsc_config['Video'].get('VIDEO_SOURCE')
-VIDEO = dsc_config['Video'].getboolean('VIDEO')
 
 #IPWEBCAM
 PORT = dsc_config['IPWEBCAM'].get('PORT')
-IPWEBCAM = dsc_config['IPWEBCAM'].getboolean('IPWEBCAM')
 
 
 # experiment
@@ -65,4 +55,12 @@ EXP_NAME = dsc_config['Experiment'].get('EXP_NAME')
 RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
 START_TIME = time.time()
-EGG = "".join(format(ord(x), 'b') for x in "Hello there!")
+
+
+"""advanced settings"""
+STREAMS = [str(part).strip() for part in adv_dsc_config['Streaming'].get('STREAMS').split(',')]
+MULTI_CAM = adv_dsc_config['Streaming'].getboolean('MULTIPLE_DEVICES')
+STACK_FRAMES = adv_dsc_config['Streaming'].getboolean('STACK_FRAMES') if adv_dsc_config['Streaming'].getboolean(
+    'STACK_FRAMES') is not None else False
+ANIMALS_NUMBER = adv_dsc_config['Streaming'].getint('ANIMALS_NUMBER') if adv_dsc_config['Streaming'].getint(
+    'ANIMALS_NUMBER') is not None else 1

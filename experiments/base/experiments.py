@@ -289,7 +289,7 @@ class BaseOptogeneticExperiment(BaseExperiment):
 
         #loading settings
         self._exp_parameter_dict = dict(TRIGGER ='str',
-                                        INTERSTIM_TIME = 'int',
+                                        INTERTRIAL_TIME = 'int',
                                         MAX_STIM_TIME = 'int',
                                         MIN_STIM_TIME='int',
                                         MAX_TOTAL_STIM_TIME = 'int',

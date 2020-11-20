@@ -116,7 +116,7 @@ class VideoManager(GenericManager):
         infra_frames = {}
         ret, image = self._camera.read()
         self.last_frame_time = time.time()
-        print(ret)
+        #print(ret)
         if ret:
             if not self.initial_wait:
                 cv2.waitKey(1000)

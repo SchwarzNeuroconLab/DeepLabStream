@@ -9,7 +9,8 @@ Licensed under GNU General Public License v3.0
 
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
 from utils.configloader import RESOLUTION
-
+from collections import deque
+import numpy as np
 """Single posture triggers"""
 
 class HeaddirectionROITrigger:
@@ -333,15 +334,20 @@ class OutsideTrigger(RegionTrigger):
 
 class FreezeTrigger:
     """
-    Trigger to check if animal is in freezing state
+    Trigger to check if animal is moving below a certain speed
     """
-    def __init__(self, threshold: int, debug: bool = False):
+    def __init__(self, threshold: int, bodypart: str, timewindow_len:int = 2,  debug: bool = False):
         """
         Initializing trigger with given threshold
         :param threshold: int in pixel how much of a movement does not count
-        For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
+        :param bodypart: str of body part in skeleton used for speed calculation
+        For example threshold of 5 would mean that all movements more then 5 pixels in the last timewindow length frames
+        would be ignored
         """
+        self._bodypart = bodypart
         self._threshold = threshold
+        self._timewindow_len = timewindow_len
+        self._timewindow = deque(maxlen= timewindow_len)
         self._skeleton = None
         self._debug = debug  # not used in this trigger
 
@@ -354,45 +360,49 @@ class FreezeTrigger:
         """
         # choosing a point to draw near the skeleton
         org_point = skeleton[list(skeleton.keys())[0]]
-        joint_moved = []
+        joint_moved = 0
+
         if self._skeleton is None:
             result = False
-            text = 'Not freezing'
+            text = '...'
             self._skeleton = skeleton
         else:
-            for joint in skeleton:
-                joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
-                joint_moved.append(abs(joint_travel) <= self._threshold)
-            if all(joint_moved):
+            joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
+            self._timewindow.append(joint_travel)
+            if len(self._timewindow) == self._timewindow_len:
+                joint_moved = np.sum(self._timewindow)
+
+            if abs(joint_moved) <= self._threshold:
                 result = True
                 text = 'Freezing'
             else:
                 result = False
-                text = 'Not freezing'
-            self._skeleton = skeleton
-
+                text = 'Not Freezing'
+        self._skeleton = skeleton
         color = (0, 255, 0) if result else (0, 0, 255)
         response_body = {'plot': {'text': dict(text=text,
                                                org=org_point,
                                                color=color)}}
         response = (result, response_body)
-        return response
 
+        return response
 
 class SpeedTrigger:
     """
     Trigger to check if animal is moving above a certain speed
     """
-    def __init__(self, threshold: int, bodypart: str = 'any', debug: bool = False):
+    def __init__(self, threshold: int, bodypart: str, timewindow_len:int = 2,  debug: bool = False):
         """
         Initializing trigger with given threshold
         :param threshold: int in pixel how much of a movement does not count
-        :param bodypart: str or list of str, bodypart or list of bodyparts in skeleton to use for trigger,
-         if "any" will check if any bodypart reaches treshold; default "any"
-        For example threshold of 5 would mean that all movements less then 5 pixels would be ignored
+        :param bodypart: str of body part in skeleton used for speed calculation
+        For example threshold of 5 would mean that all movements less then 5 pixels in the last timewindow length frames
+        would be ignored
         """
         self._bodypart = bodypart
         self._threshold = threshold
+        self._timewindow_len = timewindow_len
+        self._timewindow = deque(maxlen= timewindow_len)
         self._skeleton = None
         self._debug = debug  # not used in this trigger
 
@@ -405,36 +415,29 @@ class SpeedTrigger:
         """
         # choosing a point to draw near the skeleton
         org_point = skeleton[list(skeleton.keys())[0]]
-        joint_moved = []
+        joint_moved = 0
+
         if self._skeleton is None:
             result = False
-            text = 'First frame'
+            text = '...'
             self._skeleton = skeleton
         else:
-            if self._bodypart is "any":
-                for joint in skeleton:
-                    joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
-                    joint_moved.append(abs(joint_travel) >= self._threshold)
+            joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
+            self._timewindow.append(joint_travel)
+            if len(self._timewindow) == self._timewindow_len:
+                joint_moved = np.sum(self._timewindow)
 
-            elif isinstance(self._bodypart, list):
-                for joint in self._bodypart:
-                    joint_travel = calculate_distance(skeleton[joint], self._skeleton[joint])
-                    joint_moved.append(abs(joint_travel) >= self._threshold)
-            else:
-                joint_travel = calculate_distance(skeleton[self._bodypart], self._skeleton[self._bodypart])
-                joint_moved.append(abs(joint_travel) >= self._threshold)
-
-            if all(joint_moved):
+            if abs(joint_moved) >= self._threshold:
                 result = True
                 text = 'Running'
             else:
                 result = False
-                text = ''
-            self._skeleton = skeleton
-
+                text = 'Not Running'
+        self._skeleton = skeleton
         color = (0, 255, 0) if result else (0, 0, 255)
         response_body = {'plot': {'text': dict(text=text,
                                                org=org_point,
                                                color=color)}}
         response = (result, response_body)
+
         return response
