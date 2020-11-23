@@ -16,13 +16,12 @@ from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTri
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img,laser_switch
-from experiments.custom.classifier import SimbaClassifier_Process, SimbaProcessPool, BsoidProcessPool
-
+from experiments.custom.classifier import SimbaProcessPool, BsoidProcessPool
 
 from utils.configloader import THRESHOLD, POOL_SIZE
 
 """ experimental classification experiment using Simba trained classifiers in a pool"""
-class SimbaBehaviorExperimentPool:
+class SimbaBehaviorExperiment:
     """
     Test experiment for Simba classification
     Simple class to contain all of the experiment properties and includes classification
@@ -130,7 +129,7 @@ class SimbaBehaviorExperimentPool:
 
 """ experimental classification experiment using BSOID trained classifiers in a pool"""
 
-class BsoidBehaviorExperimentPool:
+class BsoidBehaviorExperiment:
     """
     Test experiment for Simba classification
     Simple class to contain all of the experiment properties and includes classification
