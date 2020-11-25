@@ -74,6 +74,3 @@ def plot_triggers_response(image, response):
             cv2.rectangle(image, **plot['square'], thickness=2)
 
 
-def plot_special_peak():
-    if random.randint(0, 100000) == 1:
-        print(EGG)

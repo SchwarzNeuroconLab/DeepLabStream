@@ -11,7 +11,7 @@ import os
 import numpy as np
 from itertools import product, combinations
 from utils.analysis import calculate_distance
-from utils.plotter import plot_special_peak
+
 from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
@@ -85,7 +85,6 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
-    plot_special_peak()
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -187,3 +186,18 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons.append(create_animal_skeleton(unique_cluster))
 
     return animal_skeletons
+
+
+def transform_2skeleton(pose):
+    from utils.configloader import ALL_BODYPARTS
+    skeleton = dict()
+    counter = 0
+    for bp in pose:
+        skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
+        counter += 1
+    return skeleton
+
+
+def transform_2pose(skeleton):
+    pose = np.array([*skeleton.values()])
+    return pose

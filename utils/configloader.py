@@ -56,6 +56,14 @@ RECORD_EXP = dsc_config['Experiment'].getboolean('RECORD_EXP')
 
 START_TIME = time.time()
 
+#Classification
+PATH_TO_CLASSIFIER = dsc_config['Classification'].get('PATH_TO_CLASSIFIER')
+PIXPERMM = dsc_config['Classification'].getfloat('PIXPERMM')
+ALL_BODYPARTS = [str(part).strip() for part in dsc_config['Classification'].get('ALL_BODYPARTS').split(',')]
+THRESHOLD = dsc_config['Classification'].getfloat('THRESHOLD')
+POOL_SIZE = dsc_config['Classification'].getint('POOL_SIZE')
+TIME_WINDOW = dsc_config['Classification'].getint('TIME_WINDOW')
+
 
 """advanced settings"""
 STREAMS = [str(part).strip() for part in adv_dsc_config['Streaming'].get('STREAMS').split(',')]
