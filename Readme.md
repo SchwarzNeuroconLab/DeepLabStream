@@ -108,8 +108,9 @@ This project is licensed under the GNU General Public License v3.0. Note that th
 
 ## Authors
 
-Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
+Developed by:
+- Jens Schweihoff, jens.schweihoff@ukbonn.de
 
-Lead Developer: Matvey Loshakov, matveyloshakov@gmail.com
+- Matvey Loshakov, matveyloshakov@gmail.com
 
 Corresponding Author: Martin Schwarz, Martin.Schwarz@ukbonn.de
