@@ -16,23 +16,24 @@ from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
-from utils.configloader import deeplabcut_config
+from utils.configloader import  MODEL_ORIGIN, MODEL_NAME, MODEL_PATH
 
-MODEL = deeplabcut_config['model']
-DLC_PATH = deeplabcut_config['dlc_path']
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
-try:
-    import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
-    from deeplabcut.pose_estimation_tensorflow.config import load_config
-    models_folder = 'pose_estimation_tensorflow/models/'
-# if not DLC 2 is not installed, try import from DLC 1 the old way
-except ImportError:
-    # adding DLC posing path and loading modules from it
-    sys.path.insert(0, DLC_PATH + "/pose-tensorflow")
-    from config import load_config
-    from nnet import predict
-    models_folder = 'pose-tensorflow/models/'
+if MODEL_ORIGIN == 'DLC':
+    try:
+        import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
+        from deeplabcut.pose_estimation_tensorflow.config import load_config
+        from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+
+        models_folder = 'pose_estimation_tensorflow/models/'
+    # if not DLC 2 is not installed, try import from DLC 1 the old way
+    except ImportError:
+        # adding DLC posing path and loading modules from it
+        sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
+        from config import load_config
+        from nnet import predict
+        models_folder = 'pose-tensorflow/models/'
 
 
 def load_deeplabcut():
@@ -41,7 +42,7 @@ def load_deeplabcut():
 
     :return: tuple of DeepLabCut config, TensorFlow session, inputs and outputs
     """
-    model = os.path.join(DLC_PATH, models_folder, MODEL)
+    model = os.path.join(MODEL_PATH, models_folder, MODEL_NAME)
     cfg = load_config(os.path.join(model, 'test/pose_cfg.yaml'))
     snapshots = sorted([sn.split('.')[0] for sn in os.listdir(model + '/train/') if "index" in sn])
     cfg['init_weights'] = model + '/train/' + snapshots[-1]
@@ -85,6 +86,7 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
+
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref

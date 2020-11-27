@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import click
 
-from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
+from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME,  MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
 from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
@@ -722,7 +722,7 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
 
     if benchmark_enabled:
         import re
-        short_model = re.split('[-_]', MODEL)
+        short_model = re.split('[-_]', MODEL_NAME)
         short_model = short_model[0] + '_' + short_model[2]
         np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt', np.transpose([fps_data, whole_loop_time_data]))
 

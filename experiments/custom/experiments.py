@@ -12,17 +12,18 @@ from functools import partial
 from collections import Counter
 from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess,Timer, ExampleProtocolProcess
 from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger, SpeedTrigger,\
-    SimbaThresholdBehaviorPoolTrigger, BsoidClassBehaviorTriggerPool
+    SimbaThresholdBehaviorPoolTrigger, BsoidClassBehaviorPoolTrigger
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img,laser_switch
-from experiments.custom.classifier import SimbaClassifier_Process, SimbaProcessPool, BsoidProcessPool
+from experiments.custom.classifier import SimbaProcessPool, BsoidProcessPool
 
 
 from utils.configloader import THRESHOLD, POOL_SIZE
 
+
 """ experimental classification experiment using Simba trained classifiers in a pool"""
-class SimbaBehaviorExperimentPool:
+class SimbaBehaviorPoolExperiment:
     """
     Test experiment for Simba classification
     Simple class to contain all of the experiment properties and includes classification
@@ -130,7 +131,7 @@ class SimbaBehaviorExperimentPool:
 
 """ experimental classification experiment using BSOID trained classifiers in a pool"""
 
-class BsoidBehaviorExperimentPool:
+class BsoidBehaviorPoolExperiment:
     """
     Test experiment for Simba classification
     Simple class to contain all of the experiment properties and includes classification
@@ -144,7 +145,7 @@ class BsoidBehaviorExperimentPool:
         self._process_pool = BsoidProcessPool(POOL_SIZE)
         #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         #initiate in experiment, so that process can be started with start_experiment
-        self._behaviortrigger = BsoidClassBehaviorTriggerPool(target_class= THRESHOLD,
+        self._behaviortrigger = BsoidClassBehaviorPoolTrigger(target_class= THRESHOLD,
                                                               class_process_pool = self._process_pool)
         self._event = None
         #is not fully utilized in this experiment but is usefull to keep for further adaptation

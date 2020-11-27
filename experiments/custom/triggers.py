@@ -636,7 +636,7 @@ class BsoidClassBehaviorTrigger:
         return self._time_window_len
 
 
-class BsoidClassBehaviorTriggerPool:
+class BsoidClassBehaviorPoolTrigger:
     """
     Trigger to check if animal's behavior is classified as specific motif with BSOID trained classifier.
     """
