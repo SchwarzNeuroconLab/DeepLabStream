@@ -21,6 +21,14 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
 
  ### Read the preprint: [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
  
+ ### Contributing
+
+If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg)!
+
+We are constantly working to update and increase the capabilities of DLStream. 
+We welcome all feedback and input from your side.
+ALso, do not hesitate to contact us for collaborations.
+ 
  ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
  
  ### 2. [How to use DLStream GUI](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/How-to-use-DLStream)
