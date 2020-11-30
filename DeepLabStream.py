@@ -17,9 +17,10 @@ import numpy as np
 import pandas as pd
 import click
 
-from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL,  MULTI_CAM, STACK_FRAMES, \
+from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME,  MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
-from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
+from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons,\
+    get_ma_pose, calculate_ma_skeletons, calculate_skeletons_dlc_live, transform_2skeleton
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 
 
@@ -266,19 +267,61 @@ class DeepLabStream:
     ######################
     @staticmethod
     def get_pose_mp(input_q, output_q):
+        from utils.configloader import MODEL_ORIGIN
+        from utils.poser import get_ma_pose
+
         """
         Process to be used for each camera/DLC stream of analysis
         Designed to be run in an infinite loop
         :param input_q: index and corresponding frame
         :param output_q: index and corresponding analysis
         """
-        config, sess, inputs, outputs = load_deeplabcut()
-        while True:
-            if input_q.full():
-                index, frame = input_q.get()
-                scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                output_q.put((index, peaks))
+
+        if MODEL_ORIGIN == 'DLC' or  MODEL_ORIGIN == 'MADLC':
+            config, sess, inputs, outputs = load_deeplabcut()
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    if MODEL_ORIGIN == 'DLC':
+                        scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
+                        # TODO: REmove alterations to original
+                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        peaks = pose
+                    if MODEL_ORIGIN == 'MADLC':
+                        peaks = get_ma_pose(frame, config, sess, inputs, outputs)
+
+                    output_q.put((index, peaks))
+
+        elif MODEL_ORIGIN == 'DLC-LIVE':
+            from dlclive import DLCLive
+            from utils.configloader import MODEL_PATH
+            dlc_live = DLCLive(MODEL_PATH)
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    if not dlc_live.is_initialized:
+                        peaks = dlc_live.init_inference(frame)
+                    else:
+                        peaks = dlc_live.get_pose(frame)
+
+                    output_q.put((index, peaks))
+        elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+            from deepposekit.models import load_model
+            from utils.configloader import MODEL_PATH
+            model = load_model(MODEL_PATH)
+            predict_model = model.predict_model
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    frame = frame[..., 1][..., None]
+                    st_frame = np.stack([frame])
+                    prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
+                    peaks= prediction[0,:,:2]
+                    output_q.put((index, peaks))
+
+
+        else:
+            raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
     @staticmethod
     def create_mp_tools(devices):
@@ -366,7 +409,9 @@ class DeepLabStream:
 
                     # Getting the analysed data
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
-                    skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
+                    #TODO: REMOVE IF USELESS
+                    skeletons = [transform_2skeleton(peaks)]
+                    #skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
                     analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time
@@ -722,7 +767,7 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
 
     if benchmark_enabled:
         import re
-        short_model = re.split('[-_]', MODEL)
+        short_model = re.split('[-_]', MODEL_NAME)
         short_model = short_model[0] + '_' + short_model[2]
         np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt', np.transpose([fps_data, whole_loop_time_data]))
 

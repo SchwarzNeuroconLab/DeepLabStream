@@ -11,6 +11,9 @@ from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI
 from utils.configloader import RESOLUTION
 from collections import deque
 import numpy as np
+
+import time
+
 """Single posture triggers"""
 
 class HeaddirectionROITrigger:

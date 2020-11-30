@@ -18,6 +18,8 @@ from utils.plotter import plot_bodyparts, plot_metadata_frame, plot_triggers_res
 from utils.configloader import VIDEO_SOURCE, OUT_DIR, ANIMALS_NUMBER
 from experiments.custom.experiments import ExampleExperiment
 
+from deepposekit.models import load_model
+
 
 def create_dataframes(data_output):
     """
@@ -43,7 +45,7 @@ video_file = cv2.VideoWriter(output_file, fourcc, 30, resolution)
 
 def start_videoanalyser():
     print("Starting DeepLabCut")
-    config, sess, inputs, outputs = load_deeplabcut()
+    model = load_model(r"D:\DeepPoseKit-Data-master\datasets\fly\best_model_densenet.h5")
 
     experiment_enabled = False
     video_output = True
