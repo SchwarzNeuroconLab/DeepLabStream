@@ -85,7 +85,6 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
-    plot_special_peak()
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -243,21 +242,28 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
 """DLC LIVE & DeepPoseKit"""
 
 
-
 def transform_2skeleton(pose):
+    """Transforms pose estimation into DLStream style "skeleton" posture. If ALL_BODYPARTS is not sufficient,
+     it will autoname the bodyparts in style bp1, bp2 ..."""
     from utils.configloader import ALL_BODYPARTS
-    skeleton = dict()
-    counter = 0
-    for bp in pose:
-        skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
-        counter += 1
-    return skeleton
+    try:
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
+            counter += 1
+    except KeyError:
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2],dtype = int))
+            counter += 1
 
+    return skeleton
 
 def transform_2pose(skeleton):
     pose = np.array([*skeleton.values()])
     return pose
-
 
 
 def calculate_skeletons_dlc_live(pose ,animals_number: int = 1) -> list:

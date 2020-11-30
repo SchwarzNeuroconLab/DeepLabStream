@@ -6,22 +6,21 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 """
-import time
+import multiprocessing as mp
 import os
 import sys
-import multiprocessing as mp
+import time
 from importlib.util import find_spec
 
+import click
 import cv2
 import numpy as np
 import pandas as pd
-import click
 
-from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME,  MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
-from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons,\
-    get_ma_pose, calculate_ma_skeletons, calculate_skeletons_dlc_live, transform_2skeleton
-from utils.plotter import plot_bodyparts, plot_metadata_frame
+from utils.configloader import RESOLUTION,FRAMERATE,OUT_DIR,MODEL_NAME,MULTI_CAM,STACK_FRAMES, \
+    ANIMALS_NUMBER,STREAMS,STREAMING_SOURCE
+from utils.plotter import plot_bodyparts,plot_metadata_frame
+from utils.poser import load_deeplabcut,get_pose,calculate_skeletons
 
 
 def create_video_files(directory, devices, resolution, framerate, codec):
@@ -284,7 +283,7 @@ class DeepLabStream:
                     index, frame = input_q.get()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                        # TODO: REmove alterations to original
+                        # TODO: Remove alterations to original
                         #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
                         peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
@@ -409,9 +408,7 @@ class DeepLabStream:
 
                     # Getting the analysed data
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
-                    #TODO: REMOVE IF USELESS
-                    skeletons = [transform_2skeleton(peaks)]
-                    #skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
+                    skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
                     analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time
