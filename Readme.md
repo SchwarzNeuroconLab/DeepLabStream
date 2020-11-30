@@ -30,7 +30,7 @@ We are constantly working to update and increase the capabilities of DLStream.
 We welcome all feedback and input from your side.
 Also, do not hesitate to contact us for collaborations.
  
- ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
+ ### 1. [Updated Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
  
  ### 2. [How to use DLStream GUI](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/How-to-use-DLStream)
  

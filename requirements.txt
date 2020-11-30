@@ -1,4 +1,3 @@
-numba
 gpiozero
 pigpio
 pyserial
