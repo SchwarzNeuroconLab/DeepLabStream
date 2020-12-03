@@ -277,15 +277,15 @@ class DeepLabStream:
         """
 
         if MODEL_ORIGIN == 'DLC' or  MODEL_ORIGIN == 'MADLC':
+            from utils.poser import find_local_peaks_new
             config, sess, inputs, outputs = load_deeplabcut()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                        # TODO: Remove alterations to original
-                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                        peaks = pose
+                        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        #peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
 
