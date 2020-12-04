@@ -11,6 +11,7 @@ import os
 import numpy as np
 from itertools import product, combinations
 from utils.analysis import calculate_distance
+
 from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
@@ -85,6 +86,7 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
+
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref

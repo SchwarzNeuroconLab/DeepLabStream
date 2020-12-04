@@ -6,21 +6,21 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 """
-import multiprocessing as mp
+import time
 import os
 import sys
-import time
+import multiprocessing as mp
 from importlib.util import find_spec
 
-import click
 import cv2
 import numpy as np
 import pandas as pd
+import click
 
-from utils.configloader import RESOLUTION,FRAMERATE,OUT_DIR,MODEL_NAME,MULTI_CAM,STACK_FRAMES, \
-    ANIMALS_NUMBER,STREAMS,STREAMING_SOURCE
-from utils.plotter import plot_bodyparts,plot_metadata_frame
-from utils.poser import load_deeplabcut,get_pose,calculate_skeletons
+from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME,  MULTI_CAM, STACK_FRAMES, \
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
+from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
+from utils.plotter import plot_bodyparts, plot_metadata_frame
 
 
 def create_video_files(directory, devices, resolution, framerate, codec):
