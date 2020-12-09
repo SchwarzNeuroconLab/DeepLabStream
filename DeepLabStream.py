@@ -19,8 +19,7 @@ import click
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME,  MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE
-from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons,\
-    get_ma_pose, calculate_ma_skeletons, calculate_skeletons_dlc_live, transform_2skeleton
+from utils.poser import load_deeplabcut, get_pose, find_local_peaks_new, calculate_skeletons
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 
 
@@ -278,15 +277,15 @@ class DeepLabStream:
         """
 
         if MODEL_ORIGIN == 'DLC' or  MODEL_ORIGIN == 'MADLC':
+            from utils.poser import find_local_peaks_new
             config, sess, inputs, outputs = load_deeplabcut()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                        # TODO: REmove alterations to original
-                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                        peaks = pose
+                        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        #peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
 

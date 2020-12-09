@@ -36,9 +36,6 @@ MODEL_PATH = dsc_config['Pose Estimation'].get('MODEL_PATH')
 MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
 ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
 
-
-
-
 # Streaming items
 try:
     RESOLUTION = tuple(int(part) for part in dsc_config['Streaming'].get('RESOLUTION').split(','))
@@ -46,7 +43,7 @@ except ValueError:
     print('Incorrect resolution in config!\n'
           'Using default value "RESOLUTION = 848, 480"')
     RESOLUTION = (848, 480)
-MODEL = dsc_config['Streaming'].get('MODEL')
+
 FRAMERATE = dsc_config['Streaming'].getint('FRAMERATE')
 OUT_DIR = dsc_config['Streaming'].get('OUTPUT_DIRECTORY')
 CAMERA_SOURCE = dsc_config['Streaming'].get('CAMERA_SOURCE')

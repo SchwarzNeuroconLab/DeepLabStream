@@ -9,9 +9,10 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect)
 
-DeepLabStream is a python based multi-purpose tool that enables the realtime tracking of animals and manipulation of experiments.
-Our toolbox is adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expands on its core capabilities.
-DeepLabStreams core feature is the real-time analysis using any type of camera-based video stream (incl. multiple streams).  Building onto that, we designed a full experimental closed-loop toolkit. It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation.
+DeepLabStream is a python based multi-purpose tool that enables the realtime tracking and manipulation of animals during ongoing experiments.
+Our toolbox was orginally adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expanded on its core capabilities, but is now able to utilize a variety of different network architectures for online pose estimation
+ ([DLC + maDLC](https://github.com/AlexEMG/DeepLabCut), [DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live), [DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap)).
+DeepLabStreams core feature is the utilization of real-time tracking to orchestrate closed-loop experiments. This can be achieved using any type of camera-based video stream (incl. multiple streams).  It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation.
 
 ![DLS_Stim](docs/DLSSTim_example.gif)
 
@@ -21,7 +22,15 @@ DeepLabStreams core feature is the real-time analysis using any type of camera-b
 
  ### Read the preprint: [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
  
- ### 1. [Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
+ ### Contributing
+
+If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg)!
+
+We are constantly working to update and increase the capabilities of DLStream. 
+We welcome all feedback and input from your side.
+Also, do not hesitate to contact us for collaborations.
+ 
+ ### 1. [Updated Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
  
  ### 2. [How to use DLStream GUI](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/How-to-use-DLStream)
  
@@ -108,8 +117,9 @@ This project is licensed under the GNU General Public License v3.0. Note that th
 
 ## Authors
 
-Lead Researcher: Jens Schweihoff, jens.schweihoff@ukbonn.de
+Developed by:
+- Jens Schweihoff, jens.schweihoff@ukbonn.de
 
-Lead Developer: Matvey Loshakov, matveyloshakov@gmail.com
+- Matvey Loshakov, matveyloshakov@gmail.com
 
 Corresponding Author: Martin Schwarz, Martin.Schwarz@ukbonn.de

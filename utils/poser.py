@@ -85,6 +85,7 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
+
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -244,6 +245,8 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
 
 
 def transform_2skeleton(pose):
+    """Transforms pose estimation into DLStream style "skeleton" posture. If ALL_BODYPARTS is not sufficient,
+     it will autoname the bodyparts in style bp1, bp2 ..."""
     from utils.configloader import ALL_BODYPARTS
     try:
         skeleton = dict()
