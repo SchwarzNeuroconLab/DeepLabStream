@@ -1,5 +1,3 @@
-deeplabcut
-deepposekit
 numba
 gpiozero
 pigpio
