@@ -12,6 +12,7 @@ from utils.configloader import RESOLUTION, TIME_WINDOW
 from collections import deque
 from experiments.custom.featureextraction import SimbaFeatureExtractor, BsoidFeatureExtractor
 import numpy as np
+import time
 """Single posture triggers"""
 
 class HeaddirectionROITrigger:

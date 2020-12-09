@@ -23,7 +23,8 @@ if MODEL_ORIGIN == 'DLC' or MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'MADLC
     try:
         import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
         from deeplabcut.pose_estimation_tensorflow.config import load_config
-        from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+        if MODEL_ORIGIN == 'MADLC':
+            from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
 
         models_folder = 'pose_estimation_tensorflow/models/'
     # if not DLC 2 is not installed, try import from DLC 1 the old way
@@ -291,7 +292,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
 
     if MODEL_ORIGIN == 'DLC':
-        animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        #TODO: Remove to original
+        #animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        animal_skeletons = calculate_skeletons_dlc_live(peaks, animals_number)
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
