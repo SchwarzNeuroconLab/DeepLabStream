@@ -17,10 +17,12 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from utils.configloader import RESOLUTION,FRAMERATE,OUT_DIR,MODEL_NAME,MULTI_CAM,STACK_FRAMES, \
-    ANIMALS_NUMBER,STREAMS,STREAMING_SOURCE
-from utils.plotter import plot_bodyparts,plot_metadata_frame
-from utils.poser import load_deeplabcut,get_pose,calculate_skeletons
+from utils.generic import VideoManager, WebCamManager, GenericManager
+from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN
+from utils.plotter import plot_bodyparts, plot_metadata_frame
+from utils.poser import load_deeplabcut, load_dpk, load_dlc_live, get_pose, calculate_skeletons,\
+    find_local_peaks_new, get_ma_pose
 
 
 def create_video_files(directory, devices, resolution, framerate, codec):
@@ -127,28 +129,19 @@ class DeepLabStream:
         :return: the chosen camera manager
         """
 
-        if STREAMING_SOURCE.lower() == 'video':
-            from utils.generic import VideoManager
-            manager = VideoManager()
-            return manager
-
-        elif STREAMING_SOURCE.lower() == 'ipwebcam':
-            from utils.generic import WebCamManager
-            manager = WebCamManager()
-            return manager
-
-        elif STREAMING_SOURCE.lower() == 'camera':
+        def select_camera_manager():
+            """
+            Function to select from all available camera managers
+            """
             manager_list = []
             # loading realsense manager, if installed
-            realsense = find_spec("pyrealsense2") is not None
-            if realsense:
+            if find_spec("pyrealsense2") is not None:
                 from utils.realsense import RealSenseManager
                 realsense_manager = RealSenseManager()
                 manager_list.append(realsense_manager)
 
             # loading basler manager, if installed
-            pylon = find_spec("pypylon") is not None
-            if pylon:
+            if find_spec("pypylon") is not None:
                 from utils.pylon import PylonManager
                 pylon_manager = PylonManager()
                 manager_list.append(pylon_manager)
@@ -170,9 +163,19 @@ class DeepLabStream:
                     return manager
             else:
                 # if no camera is found, try generic openCV manager
-                from utils.generic import GenericManager
                 generic_manager = GenericManager()
                 return generic_manager
+
+        MANAGER_SOURCE = {
+            'video': VideoManager,
+            'ipwebcam': WebCamManager,
+            'camera': select_camera_manager
+        }
+
+        # initialize selected manager
+        camera_manager = MANAGER_SOURCE.get(STREAMING_SOURCE)()
+        if camera_manager is not None:
+            return camera_manager
         else:
             raise ValueError(f'Streaming source {STREAMING_SOURCE} is not a valid option. \n'
                              f'Please choose from "video", "camera" or "ipwebcam".')
@@ -266,9 +269,6 @@ class DeepLabStream:
     ######################
     @staticmethod
     def get_pose_mp(input_q, output_q):
-        from utils.configloader import MODEL_ORIGIN
-        from utils.poser import get_ma_pose
-
         """
         Process to be used for each camera/DLC stream of analysis
         Designed to be run in an infinite loop
@@ -276,7 +276,7 @@ class DeepLabStream:
         :param output_q: index and corresponding analysis
         """
 
-        if MODEL_ORIGIN == 'DLC' or  MODEL_ORIGIN == 'MADLC':
+        if MODEL_ORIGIN in ('DLC', 'MADLC'):
             config, sess, inputs, outputs = load_deeplabcut()
             while True:
                 if input_q.full():
@@ -284,17 +284,15 @@ class DeepLabStream:
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
                         # TODO: Remove alterations to original
-                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                        peaks = pose
+                        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        # peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
 
                     output_q.put((index, peaks))
 
         elif MODEL_ORIGIN == 'DLC-LIVE':
-            from dlclive import DLCLive
-            from utils.configloader import MODEL_PATH
-            dlc_live = DLCLive(MODEL_PATH)
+            dlc_live = load_dlc_live()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
@@ -304,21 +302,17 @@ class DeepLabStream:
                         peaks = dlc_live.get_pose(frame)
 
                     output_q.put((index, peaks))
+
         elif MODEL_ORIGIN == 'DEEPPOSEKIT':
-            from deepposekit.models import load_model
-            from utils.configloader import MODEL_PATH
-            model = load_model(MODEL_PATH)
-            predict_model = model.predict_model
+            predict_model = load_dpk()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
                     frame = frame[..., 1][..., None]
                     st_frame = np.stack([frame])
                     prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
-                    peaks= prediction[0,:,:2]
+                    peaks = prediction[0, :, :2]
                     output_q.put((index, peaks))
-
-
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -763,10 +757,14 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
                 print("[{0}/3000] Benchmarking in progress".format(len(analysis_time_data)))
 
     if benchmark_enabled:
-        import re
-        short_model = re.split('[-_]', MODEL_NAME)
-        short_model = short_model[0] + '_' + short_model[2]
-        np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt', np.transpose([fps_data, whole_loop_time_data]))
+        model_parts = MODEL_NAME.split('_')
+        if len(model_parts) == 3:
+            short_model = model_parts[0] + '_' + model_parts[2]
+        else:
+            short_model = MODEL_NAME
+        # the best way to save files
+        np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt',
+                   np.transpose([fps_data, whole_loop_time_data]))
 
 
 if __name__ == '__main__':
