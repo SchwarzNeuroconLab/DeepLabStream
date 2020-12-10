@@ -7,7 +7,7 @@ Licensed under GNU General Public License v3.0
 """
 
 import cv2
-from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT
+from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
 import time
 import numpy as np
 
@@ -121,6 +121,16 @@ class VideoManager(GenericManager):
             if not self.initial_wait:
                 cv2.waitKey(1000)
                 self.initial_wait = True
+            image = cv2.resize(image, RESOLUTION)
+            color_frames[self._camera_name] = image
+            running_time = time.time() - self.last_frame_time
+            if running_time <= 1 / FRAMERATE:
+                sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
+                cv2.waitKey(sleepy_time)
+        elif REPEAT_VIDEO:
+            print('One loop', '\n\n\n')
+            self._camera.set(2,0)
+            ret,image = self._camera.read()
             image = cv2.resize(image, RESOLUTION)
             color_frames[self._camera_name] = image
             running_time = time.time() - self.last_frame_time
