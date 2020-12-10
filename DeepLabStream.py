@@ -425,6 +425,7 @@ class DeepLabStream:
                         self._experiment_running = False
 
                     if self._experiment_running and not self._experiment.experiment_finished:
+                        #todo: find solution to make this work for experiments checking on more than one skeleton at a time.
                         for skeleton in skeletons:
                             self._experiment.check_skeleton(analysed_image, skeleton)
 

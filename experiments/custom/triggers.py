@@ -12,6 +12,7 @@ from utils.configloader import RESOLUTION, TIME_WINDOW
 from collections import deque
 from experiments.custom.featureextraction import SimbaFeatureExtractor, BsoidFeatureExtractor
 import numpy as np
+import time
 """Single posture triggers"""
 
 class HeaddirectionROITrigger:
@@ -476,7 +477,11 @@ class SimbaThresholdBehaviorPoolTrigger:
     def fill_time_window(self,skeleton: dict):
         """Transforms skeleton input into flat numpy array of coordinates to pass to feature extraction"""
         from utils.poser import transform_2pose
-        flat_values = transform_2pose(skeleton).flatten()
+        #TODO: REMOVE CUT OFF again (only as work around for maDLC model with additional tail tip bp)
+        pose = transform_2pose(skeleton)
+        if len(pose) > 14:
+            pose = np.delete(pose,[7,15],0)
+        flat_values = pose.flatten()
         # this appends the new row to the deque time_window, which will drop the "oldest" entry due to a maximum
         # length of time_window_len
         self._time_window.append(flat_values)

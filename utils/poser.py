@@ -241,6 +241,17 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     return animal_skeletons
 
 
+def flatten_maDLC_skeletons(skeletons):
+    """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
+    where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
+    flat_skeletons = dict()
+    for num, skeleton in enumerate(skeletons):
+        for bp, value in skeleton.items():
+            flat_skeletons[f'{num}_{bp}'] = value
+
+    return [flat_skeletons]
+
+
 """DLC LIVE & DeepPoseKit"""
 
 
@@ -268,7 +279,7 @@ def transform_2pose(skeleton):
     return pose
 
 
-def calculate_skeletons_dlc_live(pose ,animals_number: int = 1) -> list:
+def calculate_skeletons_dlc_live(pose, animals_number: int = 1) -> list:
     """
     Creating skeletons from given pose
     There could be no more skeletons than animals_number
@@ -292,7 +303,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
 
     elif MODEL_ORIGIN == 'MADLC':
+        #TODO: find solution that does not merge ma skeletons into one big bodypart collection and utilizes the seperate instances
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
+        animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         animal_skeletons = calculate_skeletons_dlc_live(peaks,  animals_number= 1)
