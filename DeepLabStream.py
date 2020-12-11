@@ -432,8 +432,13 @@ class DeepLabStream:
                         self._experiment_running = False
 
                     if self._experiment_running and not self._experiment.experiment_finished:
-                        for skeleton in skeletons:
-                            self._experiment.check_skeleton(analysed_image, skeleton)
+                        #TODO: Update to work for multiple animal and single animal experiments
+                        #Shift responsibility to experiments
+                        if ANIMALS_NUMBER > 1:
+                            self._experiment.check_skeleton(analysed_image,skeletons)
+                        else:
+                            for skeleton in skeletons:
+                                self._experiment.check_skeleton(analysed_image, skeleton)
 
                     # Gathering data as pd.Series for output
                     if self._data_output:
