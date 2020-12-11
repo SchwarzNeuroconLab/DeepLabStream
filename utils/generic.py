@@ -5,11 +5,15 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 """
+import time
+import base64
 
 import cv2
-from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
-import time
 import numpy as np
+import zmq
+
+from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
+
 
 class GenericManager:
     """
@@ -86,7 +90,6 @@ class GenericManager:
         return self._manager_name
 
 
-
 class VideoManager(GenericManager):
 
     """
@@ -97,12 +100,11 @@ class VideoManager(GenericManager):
         Generic video manager from video files
         Uses pure opencv
         """
-        self._manager_name = "generic"
+        super().__init__()
         self._camera = cv2.VideoCapture(VIDEO_SOURCE)
         self._camera_name = "Video"
         self.initial_wait = False
         self.last_frame_time = time.time()
-
 
     def get_frames(self) -> tuple:
         """
@@ -116,7 +118,6 @@ class VideoManager(GenericManager):
         infra_frames = {}
         ret, image = self._camera.read()
         self.last_frame_time = time.time()
-        #print(ret)
         if ret:
             if not self.initial_wait:
                 cv2.waitKey(1000)
@@ -128,15 +129,9 @@ class VideoManager(GenericManager):
                 sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
         elif REPEAT_VIDEO:
-            print('One loop', '\n\n\n')
-            self._camera.set(2,0)
-            ret,image = self._camera.read()
-            image = cv2.resize(image, RESOLUTION)
-            color_frames[self._camera_name] = image
-            running_time = time.time() - self.last_frame_time
-            if running_time <= 1 / FRAMERATE:
-                sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
-                cv2.waitKey(sleepy_time)
+            # cycle the video for testing purposes
+            self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            return self.get_frames()
 
         return color_frames, depth_maps, infra_frames
 
@@ -148,24 +143,23 @@ class WebCamManager(GenericManager):
         Binds the computer to a ip address and starts listening for incoming streams.
         Adapted from StreamViewer.py https://github.com/CT83/SmoothStream
         """
-        import zmq
+        super().__init__()
         self._context = zmq.Context()
         self._footage_socket = self._context.socket(zmq.SUB)
         self._footage_socket.bind('tcp://*:' + PORT)
         self._footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(''))
 
-        self._manager_name = "generic"
         self._camera = None
         self._camera_name = "webcam"
         self.initial_wait = False
         self.last_frame_time = time.time()
 
-    def string_to_image(self, string):
-        """ Taken from https://github.com/CT83/SmoothStream"""
+    @ staticmethod
+    def string_to_image(string):
+        """
+        Taken from https://github.com/CT83/SmoothStream
+        """
 
-        import numpy as np
-        import cv2
-        import base64
         img = base64.b64decode(string)
         npimg = np.fromstring(img, dtype=np.uint8)
         return cv2.imdecode(npimg, 1)

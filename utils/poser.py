@@ -8,33 +8,49 @@ Licensed under GNU General Public License v3.0
 
 import sys
 import os
-import numpy as np
+import importlib.util
 from itertools import product, combinations
-from utils.analysis import calculate_distance
 
+import numpy as np
 from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
-from utils.configloader import  MODEL_ORIGIN, MODEL_NAME, MODEL_PATH
+
+from utils.analysis import calculate_distance
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
-if MODEL_ORIGIN == 'DLC' or MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'MADLC':
+if MODEL_ORIGIN in ('DLC', 'MADLC'):
     try:
-        import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
-        from deeplabcut.pose_estimation_tensorflow.config import load_config
-        if MODEL_ORIGIN == 'MADLC':
-            from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+        # checking for DLC-core
+        if importlib.util.find_spec('deeplabcutcore') is not None:
+            import deeplabcutcore.pose_estimation_tensorflow.nnet.predict as predict
+            from deeplabcutcore.pose_estimation_tensorflow.config import load_config
+        # trying to import "classic" DLC2
+        else:
+            import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
+            from deeplabcut.pose_estimation_tensorflow.config import load_config
+
+            if MODEL_ORIGIN == 'MADLC':
+                from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
 
         models_folder = 'pose_estimation_tensorflow/models/'
     # if not DLC 2 is not installed, try import from DLC 1 the old way
     except ImportError:
         # adding DLC posing path and loading modules from it
-        sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
+        sys.path.insert(0, MODEL_PATH + "/pose-tensorflow")
         from config import load_config
         from nnet import predict
         models_folder = 'pose-tensorflow/models/'
+
+elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+    from deepposekit.models import load_model
+
+elif MODEL_ORIGIN == 'DLC-LIVE':
+    from dlclive import DLCLive
+    from utils.configloader import MODEL_PATH
 
 
 def load_deeplabcut():
@@ -52,6 +68,7 @@ def load_deeplabcut():
     return cfg, sess, inputs, outputs
 
 
+# pure DLC
 def get_pose(image, config, session, inputs, outputs):
     """
     Gets scoremap, local reference and pose from DeepLabCut using given image
@@ -87,7 +104,6 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
-
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -190,8 +206,8 @@ def calculate_dlstream_skeletons(peaks: dict, animals_number: int) -> list:
 
     return animal_skeletons
 
-"""maDLC"""
 
+# maDLC
 def get_ma_pose(image, config, session, inputs, outputs):
     """
     Gets scoremap, local reference and pose from DeepLabCut using given image
@@ -202,11 +218,13 @@ def get_ma_pose(image, config, session, inputs, outputs):
 
     :return: tuple of scoremap, local reference and pose
     """
-    scmap, locref, paf,  pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs, outall=True,
-                nms_radius=5.0,
-                det_min_score=0.1,
-                c_engine=False)
+    scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
+                                                                           outall=True,
+                                                                           nms_radius=5.0,
+                                                                           det_min_score=0.1,
+                                                                           c_engine=False)
     return pose
+
 
 def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     """
@@ -242,6 +260,15 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     return animal_skeletons
 
 
+# DLC LIVE & DeepPoseKit
+def load_dpk():
+    model = load_model(MODEL_PATH)
+    return model.predict_model
+
+
+def load_dlc_live():
+    return DLCLive(MODEL_PATH)
+
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
     where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
@@ -252,26 +279,25 @@ def flatten_maDLC_skeletons(skeletons):
 
     return [flat_skeletons]
 
-
 """DLC LIVE & DeepPoseKit"""
 
 
 def transform_2skeleton(pose):
-    """Transforms pose estimation into DLStream style "skeleton" posture. If ALL_BODYPARTS is not sufficient,
-     it will autoname the bodyparts in style bp1, bp2 ..."""
-    from utils.configloader import ALL_BODYPARTS
+    """
+    Transforms pose estimation into DLStream style "skeleton" posture.
+    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
+    """
     try:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
             counter += 1
-    except IndexError:
-        #print(ValueError('The number of bodyparts by ALL_BODYPARTS was not sufficient. Autonaming enabled...'))
+    except KeyError:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton['bp{}'.format(counter)] = tuple(np.array(bp[0:2],dtype = int))
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=int))
             counter += 1
 
     return skeleton
@@ -282,16 +308,13 @@ def transform_2pose(skeleton):
     return pose
 
 
-
-def calculate_skeletons_dlc_live(pose, animals_number: int = 1) -> list:
+def calculate_skeletons_dlc_live(pose) -> list:
     """
     Creating skeletons from given pose
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
-
     skeletons = [transform_2skeleton(pose)]
-
     return skeletons
 
 
@@ -302,7 +325,6 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     Only unique skeletons output
     adaptive to chosen model origin
     """
-
     if MODEL_ORIGIN == 'DLC':
         #TODO: Remove to original
         #animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
@@ -314,10 +336,10 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
-        animal_skeletons = calculate_skeletons_dlc_live(peaks,  animals_number= 1)
         if animals_number != 1:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
+        animal_skeletons = calculate_skeletons_dlc_live(peaks)
 
     return animal_skeletons
 
