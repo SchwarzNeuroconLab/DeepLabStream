@@ -24,7 +24,8 @@ if MODEL_ORIGIN == 'DLC' or MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'MADLC
     try:
         import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
         from deeplabcut.pose_estimation_tensorflow.config import load_config
-        from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+        if MODEL_ORIGIN == 'MADLC':
+            from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
 
         models_folder = 'pose_estimation_tensorflow/models/'
     # if not DLC 2 is not installed, try import from DLC 1 the old way
@@ -265,18 +266,21 @@ def transform_2skeleton(pose):
         for bp in pose:
             skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
             counter += 1
-    except KeyError:
+    except IndexError:
+        #print(ValueError('The number of bodyparts by ALL_BODYPARTS was not sufficient. Autonaming enabled...'))
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2],dtype = int))
+            skeleton['bp{}'.format(counter)] = tuple(np.array(bp[0:2],dtype = int))
             counter += 1
 
     return skeleton
 
+
 def transform_2pose(skeleton):
     pose = np.array([*skeleton.values()])
     return pose
+
 
 
 def calculate_skeletons_dlc_live(pose, animals_number: int = 1) -> list:
@@ -300,7 +304,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
 
     if MODEL_ORIGIN == 'DLC':
-        animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        #TODO: Remove to original
+        #animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        animal_skeletons = calculate_skeletons_dlc_live(peaks, animals_number)
 
     elif MODEL_ORIGIN == 'MADLC':
         #TODO: find solution that does not merge ma skeletons into one big bodypart collection and utilizes the seperate instances

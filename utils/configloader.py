@@ -27,6 +27,8 @@ with open(cfg_path) as cfg_file:
 adv_cfg_path = os.path.join(os.path.dirname(__file__), 'advanced_settings.ini')
 with open(adv_cfg_path) as adv_cfg_file:
     adv_dsc_config.read_file(adv_cfg_file)
+# DeepLabCut
+#deeplabcut_config = dict(dsc_config.items('DeepLabCut'))
 
 #poseestimation
 MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
