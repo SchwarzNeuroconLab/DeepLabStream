@@ -52,6 +52,10 @@ elif MODEL_ORIGIN == 'DLC-LIVE':
     from dlclive import DLCLive
     from utils.configloader import MODEL_PATH
 
+elif MODEL_ORIGIN == 'SLEAP':
+    from sleap import load_model
+    from utils.configloader import MODEL_PATH
+
 
 def load_deeplabcut():
     """
@@ -260,7 +264,7 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     return animal_skeletons
 
 
-# DLC LIVE & DeepPoseKit
+# DLC LIVE & DeepPoseKit & SLEAP
 def load_dpk():
     model = load_model(MODEL_PATH)
     return model.predict_model
@@ -268,6 +272,24 @@ def load_dpk():
 
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
+
+def flatten_maDLC_skeletons(skeletons):
+    """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
+    where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
+    flat_skeletons = dict()
+    for num, skeleton in enumerate(skeletons):
+        for bp, value in skeleton.items():
+            flat_skeletons[f'{num}_{bp}'] = value
+
+    return [flat_skeletons]
+
+
+def load_sleap():
+    #TODO: THIS IS A FIXED PATH
+    print(MODEL_PATH)
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
 
 
 def transform_2skeleton(pose):
@@ -281,7 +303,7 @@ def transform_2skeleton(pose):
         for bp in pose:
             skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
             counter += 1
-    except KeyError:
+    except IndexError:
         skeleton = dict()
         counter = 0
         for bp in pose:
@@ -305,6 +327,16 @@ def calculate_skeletons_dlc_live(pose) -> list:
     skeletons = [transform_2skeleton(pose)]
     return skeletons
 
+def calculate_sleap_skeletons(pose, animals_number)-> list:
+    """
+    Creating skeleton from sleap output
+    """
+    skeletons = []
+    for animal in range(pose.shape[0]):
+        skeleton = transform_2skeleton(pose[animal])
+        skeletons.append(skeleton)
+    return skeletons
+
 
 def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
@@ -325,6 +357,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
 
+    elif MODEL_ORIGIN == 'SLEAP':
+        animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
     return animal_skeletons
 
 
