@@ -26,9 +26,9 @@ class ExampleExperiment:
     def __init__(self):
         self.experiment_finished = False
         self._process = ExampleProtocolProcess()
-        self._green_point = (550, 163)
-        self._blue_point = (372, 163)
-        self._radius = 40
+        self._green_point = (313, 552)
+        self._blue_point = (762, 552)
+        self._radius = 80
         self._event = None
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -75,8 +75,8 @@ class ExampleExperiment:
         """
         Defining the trials
         """
-        green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, 'neck')
-        blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5, 'neck')
+        green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, 'bp1')
+        blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5, 'bp1')
         trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
                                              count=0),
                   'Bluebar_whiteback': dict(trigger=blue_roi.check_skeleton,
