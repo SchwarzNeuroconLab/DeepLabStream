@@ -667,7 +667,8 @@ class BsoidClassBehaviorPoolTrigger:
     def fill_time_window(self,skeleton):
         from utils.poser import transform_2pose
         pose = transform_2pose(skeleton)
-        self._time_window.appendleft(pose)
+
+        self._time_window.appendleft(pose.flatten())
 
     def check_skeleton(self, skeleton, target_class: int = None):
         """
