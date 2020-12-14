@@ -8,32 +8,49 @@ Licensed under GNU General Public License v3.0
 
 import sys
 import os
-import numpy as np
+import importlib.util
 from itertools import product, combinations
-from utils.analysis import calculate_distance
 
+import numpy as np
 from skimage.feature import peak_local_max
 from scipy.ndimage.measurements import label, maximum_position
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
-from utils.configloader import  MODEL_ORIGIN, MODEL_NAME, MODEL_PATH
+
+from utils.analysis import calculate_distance
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
-if MODEL_ORIGIN == 'DLC':
+if MODEL_ORIGIN in ('DLC', 'MADLC'):
     try:
-        import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
-        from deeplabcut.pose_estimation_tensorflow.config import load_config
-        from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+        # checking for DLC-core
+        if importlib.util.find_spec('deeplabcutcore') is not None:
+            import deeplabcutcore.pose_estimation_tensorflow.nnet.predict as predict
+            from deeplabcutcore.pose_estimation_tensorflow.config import load_config
+        # trying to import "classic" DLC2
+        else:
+            import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
+            from deeplabcut.pose_estimation_tensorflow.config import load_config
+
+            if MODEL_ORIGIN == 'MADLC':
+                from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
 
         models_folder = 'pose_estimation_tensorflow/models/'
     # if not DLC 2 is not installed, try import from DLC 1 the old way
     except ImportError:
         # adding DLC posing path and loading modules from it
-        sys.path.insert(0,MODEL_PATH + "/pose-tensorflow")
+        sys.path.insert(0, MODEL_PATH + "/pose-tensorflow")
         from config import load_config
         from nnet import predict
         models_folder = 'pose-tensorflow/models/'
+
+elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+    from deepposekit.models import load_model
+
+elif MODEL_ORIGIN == 'DLC-LIVE':
+    from dlclive import DLCLive
+    from utils.configloader import MODEL_PATH
 
 
 def load_deeplabcut():
@@ -51,6 +68,7 @@ def load_deeplabcut():
     return cfg, sess, inputs, outputs
 
 
+# pure DLC
 def get_pose(image, config, session, inputs, outputs):
     """
     Gets scoremap, local reference and pose from DeepLabCut using given image
@@ -86,7 +104,6 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     stride = config['stride']
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
-
     for joint_num, joint in enumerate(all_joints_names):
         all_peaks[joint] = []
         # selecting the joint in scoremap and locref
@@ -119,7 +136,7 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     return all_peaks
 
 
-def calculate_skeletons(peaks: dict, animals_number: int) -> list:
+def calculate_dlstream_skeletons(peaks: dict, animals_number: int) -> list:
     """
     Creating skeletons from given peaks
     There could be no more skeletons than animals_number
@@ -190,16 +207,124 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     return animal_skeletons
 
 
+# maDLC
+def get_ma_pose(image, config, session, inputs, outputs):
+    """
+    Gets scoremap, local reference and pose from DeepLabCut using given image
+    Pose is most probable points for each joint, and not really used later
+    Scoremap and local reference is essential to extract skeletons
+    :param image: frame which would be analyzed
+    :param config, session, inputs, outputs: DeepLabCut configuration and TensorFlow variables from load_deeplabcut()
+
+    :return: tuple of scoremap, local reference and pose
+    """
+    scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
+                                                                           outall=True,
+                                                                           nms_radius=5.0,
+                                                                           det_min_score=0.1,
+                                                                           c_engine=False)
+    return pose
+
+
+def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
+    """
+    Creating skeletons from given pose in maDLC
+    There could be no more skeletons than animals_number
+    Only unique skeletons output
+    """
+
+    def extract_to_animal_skeleton(coords):
+        """
+        Creating a easy to read skeleton from dots cluster
+        Format for each joint:
+        {'joint_name': (x,y)}
+        """
+        bodyparts = np.array(coords[0])
+        skeletons = {}
+        for bp in range(len(bodyparts)):
+            for animal_num in range(animals_number):
+                if 'Mouse'+str(animal_num+1) not in skeletons.keys():
+                    skeletons['Mouse' + str(animal_num + 1)] = {}
+                if len(bodyparts[bp]) >= animals_number:
+                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                else:
+                    if animal_num < len(bodyparts[bp]):
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                    else:
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([0,0])
+
+        return skeletons
+    animal_skeletons = extract_to_animal_skeleton(pose['coordinates'])
+    animal_skeletons = list(animal_skeletons.values())
+
+    return animal_skeletons
+
+
+# DLC LIVE & DeepPoseKit
+def load_dpk():
+    model = load_model(MODEL_PATH)
+    return model.predict_model
+
+
+def load_dlc_live():
+    return DLCLive(MODEL_PATH)
+
+
 def transform_2skeleton(pose):
-    from utils.configloader import ALL_BODYPARTS
-    skeleton = dict()
-    counter = 0
-    for bp in pose:
-        skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2],dtype = int))
-        counter += 1
+    """
+    Transforms pose estimation into DLStream style "skeleton" posture.
+    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
+    """
+    try:
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
+            counter += 1
+    except KeyError:
+        skeleton = dict()
+        counter = 0
+        for bp in pose:
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=int))
+            counter += 1
+
     return skeleton
 
 
 def transform_2pose(skeleton):
     pose = np.array([*skeleton.values()])
     return pose
+
+
+def calculate_skeletons_dlc_live(pose) -> list:
+    """
+    Creating skeletons from given pose
+    There could be no more skeletons than animals_number
+    Only unique skeletons output
+    """
+    skeletons = [transform_2skeleton(pose)]
+    return skeletons
+
+
+def calculate_skeletons(peaks: dict, animals_number: int) -> list:
+    """
+    Creating skeletons from given peaks
+    There could be no more skeletons than animals_number
+    Only unique skeletons output
+    adaptive to chosen model origin
+    """
+    if MODEL_ORIGIN == 'DLC':
+        animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+
+    elif MODEL_ORIGIN == 'MADLC':
+        animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
+
+    elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
+        if animals_number != 1:
+            raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
+                             ' If you are using differently colored animals, please refer to the bodyparts directly.')
+        animal_skeletons = calculate_skeletons_dlc_live(peaks)
+
+    return animal_skeletons
+
+

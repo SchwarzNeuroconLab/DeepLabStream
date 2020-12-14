@@ -7,7 +7,6 @@ Licensed under GNU General Public License v3.0
 """
 
 import cv2
-import random
 
 
 def plot_dots(image, coordinates, color, cond=False):
@@ -55,6 +54,16 @@ def plot_metadata_frame(image, frame_width, frame_height, current_fps, current_e
                 (int(frame_width * 0.8), int(frame_height * 0.95)), font, 1, (255, 255, 0))
     return res_image
 
+def plot_dlc_bodyparts(image, bodyparts):
+    """
+    Plots dlc bodyparts on given image
+    adapted from plotter
+    """
+
+    for bp in bodyparts:
+        center = tuple(bp.astype(int))
+        cv2.circle(image, center=center, radius=3, color=(255, 0, 0), thickness=2)
+    return image
 
 def plot_triggers_response(image, response):
     """
@@ -72,5 +81,6 @@ def plot_triggers_response(image, response):
             cv2.circle(image, **plot['circle'], thickness=2)
         if 'square' in plot:
             cv2.rectangle(image, **plot['square'], thickness=2)
+
 
 
