@@ -220,18 +220,32 @@ def get_ma_pose(image, config, session, inputs, outputs):
     """
     scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
                                                                            outall=True,
-                                                                           nms_radius=5.0,
-                                                                           det_min_score=0.1,
+                                                                           nms_radius=config['nmsradius'],
+                                                                           det_min_score=config['minconfidence'],
                                                                            c_engine=False)
+
     return pose
 
 
-def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
+def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+    def filter_mapredictions(pose):
+        detection = []
+        conf = np.array(pose['confidence'])
+        coords = np.array(pose['coordinates'])
+        for num, bp in enumerate(pose['coordinates'][0]):
+            if len(bp) > 0:
+                conf_bp = conf[num].flatten()
+                fltred_bp = bp[conf_bp >= threshold, :]
+                #todo: add function to only take top k-highest poses with k = animal number
+                detection.append(fltred_bp)
+            else:
+                detection.append(np.array([]))
+        return detection
 
     def extract_to_animal_skeleton(coords):
         """
@@ -239,7 +253,7 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
         Format for each joint:
         {'joint_name': (x,y)}
         """
-        bodyparts = np.array(coords[0])
+        bodyparts = np.array(coords)
         skeletons = {}
         for bp in range(len(bodyparts)):
             for animal_num in range(animals_number):
@@ -254,7 +268,8 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
                         skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([0,0])
 
         return skeletons
-    animal_skeletons = extract_to_animal_skeleton(pose['coordinates'])
+    detections = filter_mapredictions(pose)
+    animal_skeletons = extract_to_animal_skeleton(detections)
     animal_skeletons = list(animal_skeletons.values())
 
     return animal_skeletons
