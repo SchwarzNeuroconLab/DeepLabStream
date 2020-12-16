@@ -9,9 +9,11 @@ Licensed under GNU General Public License v3.0
 from utils.configloader import RESOLUTION
 
 import cv2
-from PyQt5.QtCore import QObject, pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QLabel
-from PyQt5.QtGui import QImage, QPixmap
+from PySide2.QtCore import QObject
+from PySide2.QtCore import Signal as pyqtSignal
+from PySide2.QtCore import Slot as pyqtSlot
+from PySide2.QtWidgets import QWidget, QLabel
+from PySide2.QtGui import QImage, QPixmap
 
 width, height = RESOLUTION
 

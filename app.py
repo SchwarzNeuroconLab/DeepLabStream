@@ -14,10 +14,9 @@ from DeepLabStream import DeepLabStream, show_stream
 from utils.configloader import MULTI_CAM, STREAMS, RECORD_EXP
 from utils.gui_image import QFrame, ImageWindow, emit_qframes
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QPushButton, QApplication, QWidget, QGridLayout
-from PyQt5.QtGui import QIcon
-
+from PySide2.QtCore import QThread
+from PySide2.QtWidgets import QPushButton, QApplication, QWidget, QGridLayout
+from PySide2.QtGui import QIcon
 
 # creating a complete thread process to work in the background
 class AThread(QThread):

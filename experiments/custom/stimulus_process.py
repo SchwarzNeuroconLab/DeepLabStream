@@ -73,7 +73,7 @@ def example_protocol_run(condition_q: mp.Queue):
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
-            show_visual_stim_img(img_type=current_trial, name='inside')
+            show_visual_stim_img(type=current_trial, name='inside')
             #dmod_device.toggle()
         else:
             show_visual_stim_img(name='inside')

@@ -32,7 +32,8 @@ with open(adv_cfg_path) as adv_cfg_file:
 
 #poseestimation
 MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
-MODEL_PATH = dsc_config['Pose Estimation'].get('MODEL_PATH')
+model_path_string = [str(part).strip() for part in dsc_config['Pose Estimation'].get('MODEL_PATH').split(',')]
+MODEL_PATH = model_path_string[0] if len(model_path_string) <= 1 else model_path_string
 MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
 ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
 

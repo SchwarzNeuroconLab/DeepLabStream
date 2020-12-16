@@ -52,6 +52,10 @@ elif MODEL_ORIGIN == 'DLC-LIVE':
     from dlclive import DLCLive
     from utils.configloader import MODEL_PATH
 
+elif MODEL_ORIGIN == 'SLEAP':
+    from sleap import load_model
+    from utils.configloader import MODEL_PATH
+
 
 def load_deeplabcut():
     """
@@ -275,7 +279,7 @@ def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> 
     return animal_skeletons
 
 
-# DLC LIVE & DeepPoseKit
+# DLC LIVE & DeepPoseKit & SLEAP
 def load_dpk():
     model = load_model(MODEL_PATH)
     return model.predict_model
@@ -294,7 +298,13 @@ def flatten_maDLC_skeletons(skeletons):
 
     return [flat_skeletons]
 
-"""DLC LIVE & DeepPoseKit"""
+
+def load_sleap():
+    #TODO: THIS IS A FIXED PATH
+    print(MODEL_PATH)
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
 
 
 def transform_2skeleton(pose):
@@ -308,7 +318,7 @@ def transform_2skeleton(pose):
         for bp in pose:
             skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
             counter += 1
-    except KeyError:
+    except IndexError:
         skeleton = dict()
         counter = 0
         for bp in pose:
@@ -330,6 +340,16 @@ def calculate_skeletons_dlc_live(pose) -> list:
     Only unique skeletons output
     """
     skeletons = [transform_2skeleton(pose)]
+    return skeletons
+
+def calculate_sleap_skeletons(pose, animals_number)-> list:
+    """
+    Creating skeleton from sleap output
+    """
+    skeletons = []
+    for animal in range(pose.shape[0]):
+        skeleton = transform_2skeleton(pose[animal])
+        skeletons.append(skeleton)
     return skeletons
 
 
@@ -356,6 +376,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
 
+    elif MODEL_ORIGIN == 'SLEAP':
+        animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
     return animal_skeletons
 
 
