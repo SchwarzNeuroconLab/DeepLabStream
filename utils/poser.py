@@ -264,12 +264,12 @@ def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> 
                 if 'Mouse'+str(animal_num+1) not in skeletons.keys():
                     skeletons['Mouse' + str(animal_num + 1)] = {}
                 if len(bodyparts[bp]) >= animals_number:
-                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                 else:
                     if animal_num < len(bodyparts[bp]):
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                     else:
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([0,0])
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([np.NaN,np.NaN])
 
         return skeletons
     detections = filter_mapredictions(pose)
@@ -312,17 +312,18 @@ def transform_2skeleton(pose):
     Transforms pose estimation into DLStream style "skeleton" posture.
     If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
     """
+    #TODO: Decide on how to handle NaN values
     try:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
     except IndexError:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
 
     return skeleton
