@@ -19,7 +19,7 @@ import pandas as pd
 
 from utils.generic import VideoManager, WebCamManager, GenericManager
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 from utils.poser import load_deeplabcut,load_dpk,load_dlc_live,get_pose,calculate_skeletons, \
     find_local_peaks_new,get_ma_pose,load_sleap
@@ -373,8 +373,12 @@ class DeepLabStream:
         c_frames, d_maps, i_frames = self._camera_manager.get_frames()
         for camera in c_frames:
             c_frames[camera] = np.asanyarray(c_frames[camera])
+            if CROP:
+                c_frames[camera] = c_frames[camera][CROP_Y[0]:CROP_Y[1],CROP_X[0]:CROP_X[1]].copy()
+
         for camera in i_frames:
             i_frames[camera] = np.asanyarray(i_frames[camera])
+
         return c_frames, d_maps, i_frames
 
     def input_frames_for_analysis(self, frames: tuple, index: int):

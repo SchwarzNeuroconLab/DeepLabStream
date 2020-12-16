@@ -80,3 +80,8 @@ ANIMALS_NUMBER = adv_dsc_config['Streaming'].getint('ANIMALS_NUMBER') if adv_dsc
     'ANIMALS_NUMBER') is not None else 1
 
 REPEAT_VIDEO = adv_dsc_config['Video'].getboolean('REPEAT_VIDEO')
+CROP = adv_dsc_config['Streaming'].getboolean('CROP')
+CROP_X = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_X').split(',')]
+CROP_Y = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_Y').split(',')]
+
+FLATTEN_MA = adv_dsc_config['Pose Estimation'].getboolean('FLATTEN_MA')

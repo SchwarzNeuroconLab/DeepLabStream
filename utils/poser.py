@@ -18,7 +18,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
@@ -368,7 +368,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     elif MODEL_ORIGIN == 'MADLC':
         #TODO: find solution that does not merge ma skeletons into one big bodypart collection and utilizes the seperate instances
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
-        animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         if animals_number != 1:
@@ -378,6 +379,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
 
     elif MODEL_ORIGIN == 'SLEAP':
         animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+
     return animal_skeletons
 
 
