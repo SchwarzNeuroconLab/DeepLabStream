@@ -300,8 +300,6 @@ def flatten_maDLC_skeletons(skeletons):
 
 
 def load_sleap():
-    #TODO: THIS IS A FIXED PATH
-    print(MODEL_PATH)
     model = load_model(MODEL_PATH)
     model.inference_model
     return model.inference_model
@@ -313,6 +311,8 @@ def transform_2skeleton(pose):
     If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
     """
     #TODO: Decide on how to handle NaN values
+    #old option would break with missing values (e.g. from sleap) that are passed as NaN.
+    #First solution pass down as float (incl. NaN) and handle this in necessary steps (e.g. in plotting)
     try:
         skeleton = dict()
         counter = 0

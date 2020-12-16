@@ -175,7 +175,11 @@ class SimbaFeatureExtractor:
             return featureList
         featureList = []
         if len(input_array) == self.input_array_length:
-            input_array = np.array(input_array).astype(int)
+            #TODO: Find solution for missing data points (e.g. NaN)
+            #work around for now, fix to 0 (SIMBA does the same):
+            input_array = np.array(input_array)
+            input_array = np.nan_to_num(input_array, nan= 0.0)
+            input_array = input_array.astype(int)
             """Start extracting features"""
             ### EUCLIDIAN DISTANCES IN SINGLE FRAMES
             distanceMeasures = EuclidianDistCalc(input_array)

@@ -35,9 +35,9 @@ MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
 model_path_string = [str(part).strip() for part in dsc_config['Pose Estimation'].get('MODEL_PATH').split(',')]
 MODEL_PATH = model_path_string[0] if len(model_path_string) <= 1 else model_path_string
 MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
-ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
 
 # Streaming items
+
 try:
     RESOLUTION = tuple(int(part) for part in dsc_config['Streaming'].get('RESOLUTION').split(','))
 except ValueError:
@@ -85,3 +85,5 @@ CROP_X = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CR
 CROP_Y = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_Y').split(',')]
 
 FLATTEN_MA = adv_dsc_config['Pose Estimation'].getboolean('FLATTEN_MA')
+
+

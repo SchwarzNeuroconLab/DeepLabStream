@@ -477,7 +477,7 @@ class SimbaThresholdBehaviorPoolTrigger:
     def fill_time_window(self,skeleton: dict):
         """Transforms skeleton input into flat numpy array of coordinates to pass to feature extraction"""
         from utils.poser import transform_2pose
-        #TODO: REMOVE CUT OFF again (only as work around for maDLC model with additional tail tip bp)
+        #TODO: REMOVE CUT OFF again (only as work around for maDLC/SLEAP model with additional tail tip bp)
         pose = transform_2pose(skeleton)
         if len(pose) > 14:
             pose = np.delete(pose,[7,15],0)
