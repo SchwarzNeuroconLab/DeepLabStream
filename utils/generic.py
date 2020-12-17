@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import zmq
 
-from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT
+from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
 
 
 class GenericManager:
@@ -128,7 +128,7 @@ class VideoManager(GenericManager):
             if running_time <= 1 / FRAMERATE:
                 sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
-        else:
+        elif REPEAT_VIDEO:
             # cycle the video for testing purposes
             self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
             return self.get_frames()
