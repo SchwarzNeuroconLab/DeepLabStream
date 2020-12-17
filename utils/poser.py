@@ -18,7 +18,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
@@ -220,18 +220,32 @@ def get_ma_pose(image, config, session, inputs, outputs):
     """
     scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
                                                                            outall=True,
-                                                                           nms_radius=5.0,
-                                                                           det_min_score=0.1,
+                                                                           nms_radius=config['nmsradius'],
+                                                                           det_min_score=config['minconfidence'],
                                                                            c_engine=False)
+
     return pose
 
 
-def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
+def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+    def filter_mapredictions(pose):
+        detection = []
+        conf = np.array(pose['confidence'])
+        coords = np.array(pose['coordinates'])
+        for num, bp in enumerate(pose['coordinates'][0]):
+            if len(bp) > 0:
+                conf_bp = conf[num].flatten()
+                fltred_bp = bp[conf_bp >= threshold, :]
+                #todo: add function to only take top k-highest poses with k = animal number
+                detection.append(fltred_bp)
+            else:
+                detection.append(np.array([]))
+        return detection
 
     def extract_to_animal_skeleton(coords):
         """
@@ -239,22 +253,23 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
         Format for each joint:
         {'joint_name': (x,y)}
         """
-        bodyparts = np.array(coords[0])
+        bodyparts = np.array(coords)
         skeletons = {}
         for bp in range(len(bodyparts)):
             for animal_num in range(animals_number):
                 if 'Mouse'+str(animal_num+1) not in skeletons.keys():
                     skeletons['Mouse' + str(animal_num + 1)] = {}
                 if len(bodyparts[bp]) >= animals_number:
-                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                 else:
                     if animal_num < len(bodyparts[bp]):
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                     else:
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([0,0])
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([np.NaN,np.NaN])
 
         return skeletons
-    animal_skeletons = extract_to_animal_skeleton(pose['coordinates'])
+    detections = filter_mapredictions(pose)
+    animal_skeletons = extract_to_animal_skeleton(detections)
     animal_skeletons = list(animal_skeletons.values())
 
     return animal_skeletons
@@ -269,6 +284,16 @@ def load_dpk():
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
 
+def flatten_maDLC_skeletons(skeletons):
+    """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
+    where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
+    flat_skeletons = dict()
+    for num, skeleton in enumerate(skeletons):
+        for bp, value in skeleton.items():
+            flat_skeletons[f'{num}_{bp}'] = value
+
+    return [flat_skeletons]
+
 
 def transform_2skeleton(pose):
     """
@@ -279,13 +304,13 @@ def transform_2skeleton(pose):
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
-    except KeyError:
+    except IndexError:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
 
     return skeleton
@@ -318,6 +343,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         if animals_number != 1:
