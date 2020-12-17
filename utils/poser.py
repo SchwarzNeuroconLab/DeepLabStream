@@ -20,6 +20,10 @@ from scipy.ndimage.filters import maximum_filter
 from utils.analysis import calculate_distance
 from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
 
+# suppressing unnecessary warnings
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
 if MODEL_ORIGIN in ('DLC', 'MADLC'):
