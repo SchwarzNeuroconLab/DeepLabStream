@@ -230,12 +230,13 @@ def get_ma_pose(image, config, session, inputs, outputs):
 
     return pose
 
-def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
+def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.1) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+
     def filter_mapredictions(pose):
         detection = []
         conf = np.array(pose['confidence'])
@@ -342,14 +343,15 @@ def handle_missing_bp(animal_skeletons: list):
     :param: animal_skeletons: list of skeletons returned by calculate skeleton
     :return animal_skeleton with handled missing values"""
     for skeleton in animal_skeletons:
-        for coordinates, bodypart in skeleton.items():
-            if any(np.isnan(coordinates)):
+        for bodypart, coordinates in skeleton.items():
+            np_coords = np.array((coordinates))
+            if any(np.isnan(np_coords)):
                 if HANDLE_MISSING == 'skip':
                     animal_skeletons.remove(skeleton)
                     break
                 elif HANDLE_MISSING == 'null':
-                    new_coordinates = np.nan_to_num(coordinates, copy = True)
-                    skeleton[bodypart] = new_coordinates
+                    new_coordinates = np.nan_to_num(np_coords, copy = True)
+                    skeleton[bodypart] = tuple(new_coordinates)
                 else:
                     animal_skeletons.remove(skeleton)
                     break
@@ -398,6 +400,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
     elif MODEL_ORIGIN == 'SLEAP':
         animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+
     animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
