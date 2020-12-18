@@ -18,7 +18,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, HANDLE_MISSING
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
@@ -321,6 +321,33 @@ def transform_2pose(skeleton):
     return pose
 
 
+def handle_missing_bp(animal_skeletons: list):
+    """handles missing bodyparts (NaN values) by selected method in advanced_settings.ini
+    If HANDLE_MISSING is skip: the complete skeleton is removed (default);
+    If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
+     where continueous monitoring of parameters is necessary.
+
+    Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
+    by triggers.
+
+
+    :param: animal_skeletons: list of skeletons returned by calculate skeleton
+    :return animal_skeleton with handled missing values"""
+    for skeleton in animal_skeletons:
+        for coordinates, bodypart in skeleton.items():
+            if any(np.isnan(coordinates)):
+                if HANDLE_MISSING == 'skip':
+                    animal_skeletons.remove(skeleton)
+                    break
+                elif HANDLE_MISSING == 'null':
+                    new_coordinates = np.nan_to_num(coordinates, copy = True)
+                    skeleton[bodypart] = new_coordinates
+                else:
+                    animal_skeletons.remove(skeleton)
+                    break
+
+    return animal_skeletons
+
 def calculate_skeletons_dlc_live(pose) -> list:
     """
     Creating skeletons from given pose
@@ -351,6 +378,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
+
+    animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
 
