@@ -288,6 +288,12 @@ def load_dpk():
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
 
+
+def load_sleap():
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
+
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
     where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
@@ -298,11 +304,7 @@ def flatten_maDLC_skeletons(skeletons):
 
     return [flat_skeletons]
 
-
-def load_sleap():
-    model = load_model(MODEL_PATH)
-    model.inference_model
-    return model.inference_model
+"""Handling and transforming output from different models to DLStream style skeletons and back"""
 
 
 def transform_2skeleton(pose):
@@ -333,6 +335,34 @@ def transform_2pose(skeleton):
     pose = np.array([*skeleton.values()])
     return pose
 
+
+def handle_missing_bp(animal_skeletons: list):
+    """handles missing bodyparts (NaN values) by selected method in advanced_settings.ini
+    If HANDLE_MISSING is skip: the complete skeleton is removed (default);
+    If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
+     where continueous monitoring of parameters is necessary.
+
+    Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
+    by triggers.
+
+
+    :param: animal_skeletons: list of skeletons returned by calculate skeleton
+    :return animal_skeleton with handled missing values"""
+    HANDLE_MISSING = 'saudb'
+    for skeleton in animal_skeletons:
+        for coordinates, bodypart in skeleton.items():
+            if any(np.isnan(coordinates)):
+                if HANDLE_MISSING == 'skip':
+                    animal_skeletons.remove(skeleton)
+                    break
+                elif HANDLE_MISSING == 'null':
+                    new_coordinates = np.nan_to_num(coordinates, copy = True)
+                    skeleton[bodypart] = new_coordinates
+                else:
+                    animal_skeletons.remove(skeleton)
+                    break
+
+    return animal_skeletons
 
 def calculate_skeletons_dlc_live(pose) -> list:
     """
@@ -382,6 +412,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
         animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
         if FLATTEN_MA:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+
+    animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
 
