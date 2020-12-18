@@ -334,7 +334,7 @@ def handle_missing_bp(animal_skeletons: list):
     :param: animal_skeletons: list of skeletons returned by calculate skeleton
     :return animal_skeleton with handled missing values"""
     for skeleton in animal_skeletons:
-        for coordinates, bodypart in skeleton.items():
+        for bodypart, coordinates in skeleton.items():
             if any(np.isnan(coordinates)):
                 if HANDLE_MISSING == 'skip':
                     animal_skeletons.remove(skeleton)
