@@ -18,7 +18,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, HANDLE_MISSING
 
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
@@ -224,11 +224,11 @@ def get_ma_pose(image, config, session, inputs, outputs):
     """
     scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
                                                                            outall=True,
-                                                                           nms_radius=5.0,
-                                                                           det_min_score=0.1,
+                                                                           nms_radius=config['nmsradius'],
+                                                                           det_min_score=config['minconfidence'],
                                                                            c_engine=False)
-    return pose
 
+    return pose
 
 def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     """
@@ -236,6 +236,19 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+    def filter_mapredictions(pose):
+        detection = []
+        conf = np.array(pose['confidence'])
+        coords = np.array(pose['coordinates'])
+        for num, bp in enumerate(pose['coordinates'][0]):
+            if len(bp) > 0:
+                conf_bp = conf[num].flatten()
+                fltred_bp = bp[conf_bp >= threshold, :]
+                #todo: add function to only take top k-highest poses with k = animal number
+                detection.append(fltred_bp)
+            else:
+                detection.append(np.array([]))
+        return detection
 
     def extract_to_animal_skeleton(coords):
         """
@@ -243,28 +256,29 @@ def calculate_ma_skeletons(pose: dict, animals_number: int) -> list:
         Format for each joint:
         {'joint_name': (x,y)}
         """
-        bodyparts = np.array(coords[0])
+        bodyparts = np.array(coords)
         skeletons = {}
         for bp in range(len(bodyparts)):
             for animal_num in range(animals_number):
                 if 'Mouse'+str(animal_num+1) not in skeletons.keys():
                     skeletons['Mouse' + str(animal_num + 1)] = {}
                 if len(bodyparts[bp]) >= animals_number:
-                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                 else:
                     if animal_num < len(bodyparts[bp]):
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(int)
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
                     else:
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([0,0])
+                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([np.NaN,np.NaN])
 
         return skeletons
-    animal_skeletons = extract_to_animal_skeleton(pose['coordinates'])
+    detections = filter_mapredictions(pose)
+    animal_skeletons = extract_to_animal_skeleton(detections)
     animal_skeletons = list(animal_skeletons.values())
 
     return animal_skeletons
 
 
-# DLC LIVE & DeepPoseKit & SLEAP
+# DLC LIVE & DeepPoseKit
 def load_dpk():
     model = load_model(MODEL_PATH)
     return model.predict_model
@@ -272,6 +286,11 @@ def load_dpk():
 
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
+
+def load_sleap():
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
 
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
@@ -284,14 +303,6 @@ def flatten_maDLC_skeletons(skeletons):
     return [flat_skeletons]
 
 
-def load_sleap():
-    #TODO: THIS IS A FIXED PATH
-    print(MODEL_PATH)
-    model = load_model(MODEL_PATH)
-    model.inference_model
-    return model.inference_model
-
-
 def transform_2skeleton(pose):
     """
     Transforms pose estimation into DLStream style "skeleton" posture.
@@ -301,13 +312,13 @@ def transform_2skeleton(pose):
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[ALL_BODYPARTS[counter]] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
     except IndexError:
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=int))
+            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
 
     return skeleton
@@ -317,6 +328,33 @@ def transform_2pose(skeleton):
     pose = np.array([*skeleton.values()])
     return pose
 
+
+def handle_missing_bp(animal_skeletons: list):
+    """handles missing bodyparts (NaN values) by selected method in advanced_settings.ini
+    If HANDLE_MISSING is skip: the complete skeleton is removed (default);
+    If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
+     where continueous monitoring of parameters is necessary.
+
+    Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
+    by triggers.
+
+
+    :param: animal_skeletons: list of skeletons returned by calculate skeleton
+    :return animal_skeleton with handled missing values"""
+    for skeleton in animal_skeletons:
+        for coordinates, bodypart in skeleton.items():
+            if any(np.isnan(coordinates)):
+                if HANDLE_MISSING == 'skip':
+                    animal_skeletons.remove(skeleton)
+                    break
+                elif HANDLE_MISSING == 'null':
+                    new_coordinates = np.nan_to_num(coordinates, copy = True)
+                    skeleton[bodypart] = new_coordinates
+                else:
+                    animal_skeletons.remove(skeleton)
+                    break
+
+    return animal_skeletons
 
 def calculate_skeletons_dlc_live(pose) -> list:
     """
@@ -350,15 +388,19 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         if animals_number != 1:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
-
     elif MODEL_ORIGIN == 'SLEAP':
         animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
+    animal_skeletons = handle_missing_bp(animal_skeletons)
+
     return animal_skeletons
+
 
 

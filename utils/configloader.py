@@ -27,6 +27,8 @@ with open(cfg_path) as cfg_file:
 adv_cfg_path = os.path.join(os.path.dirname(__file__), 'advanced_settings.ini')
 with open(adv_cfg_path) as adv_cfg_file:
     adv_dsc_config.read_file(adv_cfg_file)
+# DeepLabCut
+#deeplabcut_config = dict(dsc_config.items('DeepLabCut'))
 
 #poseestimation
 MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
@@ -36,6 +38,7 @@ MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
 ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
 
 # Streaming items
+
 try:
     RESOLUTION = tuple(int(part) for part in dsc_config['Streaming'].get('RESOLUTION').split(','))
 except ValueError:
@@ -68,3 +71,13 @@ STACK_FRAMES = adv_dsc_config['Streaming'].getboolean('STACK_FRAMES') if adv_dsc
     'STACK_FRAMES') is not None else False
 ANIMALS_NUMBER = adv_dsc_config['Streaming'].getint('ANIMALS_NUMBER') if adv_dsc_config['Streaming'].getint(
     'ANIMALS_NUMBER') is not None else 1
+
+REPEAT_VIDEO = adv_dsc_config['Video'].getboolean('REPEAT_VIDEO')
+CROP = adv_dsc_config['Streaming'].getboolean('CROP')
+CROP_X = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_X').split(',')]
+CROP_Y = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_Y').split(',')]
+
+FLATTEN_MA = adv_dsc_config['Pose Estimation'].getboolean('FLATTEN_MA')
+HANDLE_MISSING = adv_dsc_config['Pose Estimation'].get('HANDLE_MISSING')
+
+

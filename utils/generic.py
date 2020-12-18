@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import zmq
 
-from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT
+from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
 
 
 class GenericManager:
@@ -90,6 +90,7 @@ class GenericManager:
         return self._manager_name
 
 
+
 class VideoManager(GenericManager):
 
     """
@@ -106,6 +107,7 @@ class VideoManager(GenericManager):
         self.initial_wait = False
         self.last_frame_time = time.time()
 
+
     def get_frames(self) -> tuple:
         """
         Collect frames for camera and outputs it in 'color' dictionary
@@ -118,6 +120,7 @@ class VideoManager(GenericManager):
         infra_frames = {}
         ret, image = self._camera.read()
         self.last_frame_time = time.time()
+        #print(ret)
         if ret:
             if not self.initial_wait:
                 cv2.waitKey(1000)
@@ -128,7 +131,7 @@ class VideoManager(GenericManager):
             if running_time <= 1 / FRAMERATE:
                 sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
-        else:
+        elif REPEAT_VIDEO:
             # cycle the video for testing purposes
             self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
             return self.get_frames()
