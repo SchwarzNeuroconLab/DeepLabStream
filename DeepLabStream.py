@@ -10,6 +10,7 @@ import multiprocessing as mp
 import os
 import sys
 import time
+import csv
 from importlib.util import find_spec
 
 import click
@@ -19,7 +20,7 @@ import pandas as pd
 
 from utils.generic import VideoManager, WebCamManager, GenericManager
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CSV_DELIMITER
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 from utils.poser import load_deeplabcut, load_dpk, load_dlc_live, get_pose, calculate_skeletons,\
     find_local_peaks_new, get_ma_pose
@@ -57,17 +58,17 @@ def create_row(index, animal_skeletons, experiment_status, experiment_trial, sta
     # creating joints columns
     for num, animal in enumerate(animal_skeletons):
         for joint, value in animal.items():
-            row_dict[("Animal{}".format(num + 1),
-                      joint, 'x')], row_dict[("Animal{}".format(num + 1), joint, 'y')] = value
+            row_dict["Animal{}".format(num + 1) + '_' + joint + '_x'], \
+            row_dict["Animal{}".format(num + 1) + '_' + joint + '_y'] = value
     # optional time column
     if start_time is not None:
-        row_dict[('Time', '', '')] = round(time.time() - start_time, 3)
+        row_dict["Time"] = round(time.time() - start_time, 3)
     # experiment columns
-    row_dict[('Experiment', 'Status', '')] = experiment_status
+    row_dict["Experiment_Status"] = experiment_status
     if experiment_trial is None and experiment_status:
-        row_dict[('Experiment', 'Trial', '')] = 'InterTrial'
+        row_dict["Experiment_Trial"] = "InterTrial"
     else:
-        row_dict[('Experiment', 'Trial', '')] = experiment_trial
+        row_dict["Experiment_Trial"] = experiment_trial
     row = pd.Series(row_dict, name=index)
     return row
 
@@ -533,14 +534,15 @@ class DeepLabStream:
     #####################
     def create_output(self):
         """
-        Create lists to contain serialized skeletons
+        Create files to contain data output
         """
         for camera in self.enabled_cameras:
-            self._data_output[camera] = []
+            file_path = OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv'
+            self._data_output[camera] = file_path
 
     def append_row(self, camera, index, animal_skeletons, experiment_status, experiment_trial, start_time=None):
         """
-        Create a pd.Series for each frame from each camera with joints position and store it
+        Create a pd.Series for each frame from each camera with joints position and write it
         :param experiment_trial: current trial name
         :param experiment_status: current experiment status
         :param camera: camera name
@@ -548,19 +550,24 @@ class DeepLabStream:
         :param animal_skeletons: skeletons for that frame
         :param start_time: (optional) starting time point for Time column
         """
-        row = create_row(index, animal_skeletons, experiment_status, experiment_trial, start_time)
-        self._data_output[camera].append(row)
+        row = create_row(index,
+                         animal_skeletons,
+                         experiment_status,
+                         experiment_trial,
+                         start_time)
+        first_row = not os.path.exists(self._data_output[camera])
+        with open(self._data_output[camera], mode='a', newline='') as f:
+            csv_file = csv.writer(f, delimiter=CSV_DELIMITER, quoting=csv.QUOTE_NONE)
+            if first_row:
+                csv_file.writerow(["Frame", *row.index.values])
+            csv_file.writerow([index, *row.to_list()])
 
     def create_dataframes(self):
         """
         Outputting dataframes to csv
         """
-        for num, camera in enumerate(self._data_output):
-            print("Saving database for device {}".format(camera))
-            df = pd.DataFrame(self._data_output[camera])
-            df.index.name = 'Frame'
-            df.to_csv(OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
-            print("Database saved")
+        pass
+        # now there is only void
 
     ######
     # meta
