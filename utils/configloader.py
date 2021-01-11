@@ -52,6 +52,12 @@ VIDEO_SOURCE = dsc_config['Video'].get('VIDEO_SOURCE')
 #IPWEBCAM
 PORT = dsc_config['IPWEBCAM'].get('PORT')
 
+# Data output
+
+CSV_DELIMITER = dsc_config['Data Output'].get('CSV_DELIMITER')
+if len(CSV_DELIMITER) > 1 or not isinstance(CSV_DELIMITER, str):
+    CSV_DELIMITER = ';'
+
 
 # experiment
 EXP_ORIGIN = dsc_config['Experiment'].get('EXP_ORIGIN')
