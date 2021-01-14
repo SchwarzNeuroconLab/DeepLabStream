@@ -14,6 +14,9 @@ import zmq
 
 from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, PORT, REPEAT_VIDEO
 
+class MissingFrameError(Exception):
+    """Custom expection to be raised when frame is not received. Should be caught in app.py and deeplabstream.py
+     to stop dlstream gracefully"""
 
 class GenericManager:
     """
@@ -132,6 +135,8 @@ class VideoManager(GenericManager):
             # cycle the video for testing purposes
             self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
             return self.get_frames()
+        else:
+            raise MissingFrameError('The video reached the end or is damaged. Use REPEAT_VIDEO in the advanced_settings to repeat videos.')
 
         return color_frames, depth_maps, infra_frames
 

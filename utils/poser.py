@@ -325,7 +325,7 @@ def handle_missing_bp(animal_skeletons: list):
     """handles missing bodyparts (NaN values) by selected method in advanced_settings.ini
     If HANDLE_MISSING is skip: the complete skeleton is removed (default);
     If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
-     where continueous monitoring of parameters is necessary.
+     where continuous monitoring of parameters is necessary.
 
     Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
     by triggers.
