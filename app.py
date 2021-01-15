@@ -46,7 +46,7 @@ class AThread(QThread):
             try:
                 all_frames = stream_manager.get_frames()
             except MissingFrameError as e:
-                """catch missing frame, stop Thread and raise it again"""
+                """catch missing frame, stop Thread and save what can be saved"""
                 print(*e.args, '\nShutting down DLStream and saving data...')
                 stream_manager.finish_streaming()
                 stream_manager.stop_cameras()

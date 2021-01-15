@@ -83,7 +83,8 @@ class GenericManager:
         if ret:
             color_frames[self._camera_name] = image
         else:
-            raise MissingFrameError('No frame was received from the camera.')
+            raise MissingFrameError('No frame was received from the camera. Make sure that the camera is connected '
+                                    'and that the camera source is set correctly.')
 
         return color_frames, depth_maps, infra_frames
 
