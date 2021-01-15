@@ -215,6 +215,10 @@ class WebCamManager(GenericManager):
             if running_time <= 1 / FRAMERATE:
                 sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
+
+        else:
+            raise MissingFrameError('No frame was received from the webcam stream. Make sure that you started streaming on the host machine.')
+
         return color_frames, depth_maps, infra_frames
 
     def enable_stream(self, resolution, framerate, *args):
