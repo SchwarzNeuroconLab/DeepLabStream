@@ -11,7 +11,7 @@ import os
 import cv2
 
 from DeepLabStream import DeepLabStream, show_stream
-from utils.configloader import MULTI_CAM, STREAMS, RECORD_EXP
+from utils.configloader import MULTI_CAM, STREAMS, RECORD_EXP, RECORD_RAW
 from utils.gui_image import QFrame, ImageWindow, emit_qframes
 
 from PySide2.QtCore import QThread
@@ -44,10 +44,6 @@ class AThread(QThread):
             all_frames = stream_manager.get_frames()
             color_frames, depth_maps, infra_frames = all_frames
 
-            # writing the video
-            if stream_manager.recording_status():
-                stream_manager.write_video(color_frames, stream_manager.frame_index)
-
             if stream_manager.dlc_status():
                 # outputting the frames
                 res_frames, res_time = stream_manager.get_analysed_frames()
@@ -58,6 +54,13 @@ class AThread(QThread):
                     self._stream_frames(res_frames)
             else:
                 self._stream_frames(color_frames)
+
+            # writing the video
+            if stream_manager.recording_status():
+                if res_frames and not RECORD_RAW:
+                    stream_manager.write_video(res_frames, stream_manager.frame_index)
+                else:
+                    stream_manager.write_video(color_frames, stream_manager.frame_index)
 
             stream_manager.frame_index += 1
 

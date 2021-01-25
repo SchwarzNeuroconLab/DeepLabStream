@@ -90,6 +90,7 @@ class GenericManager:
         return self._manager_name
 
 
+
 class VideoManager(GenericManager):
 
     """
@@ -106,6 +107,7 @@ class VideoManager(GenericManager):
         self.initial_wait = False
         self.last_frame_time = time.time()
 
+
     def get_frames(self) -> tuple:
         """
         Collect frames for camera and outputs it in 'color' dictionary
@@ -118,6 +120,7 @@ class VideoManager(GenericManager):
         infra_frames = {}
         ret, image = self._camera.read()
         self.last_frame_time = time.time()
+        #print(ret)
         if ret:
             if not self.initial_wait:
                 cv2.waitKey(1000)

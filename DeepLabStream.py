@@ -20,7 +20,7 @@ import pandas as pd
 from utils.generic import VideoManager, WebCamManager, GenericManager
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
-from utils.plotter import plot_bodyparts, plot_metadata_frame
+from utils.plotter import plot_bodyparts,plot_metadata_frame
 from utils.poser import load_deeplabcut,load_dpk,load_dlc_live,get_pose,calculate_skeletons, \
     find_local_peaks_new,get_ma_pose,load_sleap
 
