@@ -281,6 +281,7 @@ class DeepLabStream:
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
                         # TODO: Remove alterations to original
@@ -288,37 +289,41 @@ class DeepLabStream:
                         peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
-
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
 
         elif MODEL_ORIGIN == 'DLC-LIVE':
             dlc_live = load_dlc_live()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     if not dlc_live.is_initialized:
                         peaks = dlc_live.init_inference(frame)
                     else:
                         peaks = dlc_live.get_pose(frame)
-
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
 
         elif MODEL_ORIGIN == 'DEEPPOSEKIT':
             predict_model = load_dpk()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     frame = frame[..., 1][..., None]
                     st_frame = np.stack([frame])
                     prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
                     peaks = prediction[0, :, :2]
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
 
         elif MODEL_ORIGIN == 'SLEAP':
             sleap_model = load_sleap()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     input_frame = frame[:, :, ::-1]
                     #this is weird, but without it, it does not seem to work...
                     frames = np.array([input_frame])
@@ -329,7 +334,8 @@ class DeepLabStream:
                         peaks = np.array([prediction['peaks'][0, :]])
                     else:
                         peaks = prediction['instance_peaks'][0, :]
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -422,11 +428,11 @@ class DeepLabStream:
                         self._start_time = time.time()  # getting the first frame here
 
                     # Getting the analysed data
-                    analysed_index, peaks = self._multiprocessing[camera]['output'].get()
+                    analysed_index, peaks, analysis_time = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
                     analysed_frame , depth_map, input_time = self.get_stored_frames(camera, analysed_index)
-                    analysis_time = time.time() - input_time
+                    delay_time = time.time() - input_time
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
                     frame_time = time.time() - self._start_time
