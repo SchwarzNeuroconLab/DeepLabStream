@@ -330,7 +330,7 @@ class DeepLabStream:
                     else:
                         peaks = prediction['instance_peaks'][0, :]
                     #test with frame
-                    output_q.put((index, peaks, frame))
+                    output_q.put((index, peaks))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -423,10 +423,10 @@ class DeepLabStream:
                         self._start_time = time.time()  # getting the first frame here
 
                     # Getting the analysed data
-                    analysed_index, peaks, analysed_frame = self._multiprocessing[camera]['output'].get()
+                    analysed_index, peaks = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
-                    _ , depth_map, input_time = self.get_stored_frames(camera)
+                    analysed_frame , depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
