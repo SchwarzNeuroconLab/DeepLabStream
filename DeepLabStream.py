@@ -329,7 +329,6 @@ class DeepLabStream:
                         peaks = np.array([prediction['peaks'][0, :]])
                     else:
                         peaks = prediction['instance_peaks'][0, :]
-                    #test with frame
                     output_q.put((index, peaks))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
@@ -401,9 +400,9 @@ class DeepLabStream:
                     frame_time = time.time()
                     self._multiprocessing[camera]['input'].put((index, frame))
                     if d_maps:
-                        self.store_frames(camera, frame, d_maps[camera], frame_time)
+                        self.store_frames(camera, frame, d_maps[camera], frame_time, index)
                     else:
-                        self.store_frames(camera, frame, None, frame_time)
+                        self.store_frames(camera, frame, None, frame_time, index)
 
     def get_analysed_frames(self) -> tuple:
         """
@@ -426,7 +425,7 @@ class DeepLabStream:
                     analysed_index, peaks = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
-                    analysed_frame , depth_map, input_time = self.get_stored_frames(camera)
+                    analysed_frame , depth_map, input_time = self.get_stored_frames(camera, analysed_index)
                     analysis_time = time.time() - input_time
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
@@ -456,23 +455,30 @@ class DeepLabStream:
                     analysed_frames[camera] = analysed_image
             return analysed_frames, analysis_time
 
-    def store_frames(self, camera: str, c_frame, d_map, frame_time: float):
+    def store_frames(self, camera: str, c_frame, d_map, frame_time: float, index: int):
         """
-        Store frames currently sent for analysis
+        Store frames currently sent for analysis in index based dictionary
         :param camera: camera name
         :param c_frame: color frame
         :param d_map: depth map
         :param frame_time: inputting time of frameset
+        :param index: index of frame that is currently analysed
         """
-        self._stored_frames[camera] = c_frame, d_map, frame_time
+        if camera in self._stored_frames.keys():
+            self._stored_frames[camera][index] = c_frame, d_map, frame_time
 
-    def get_stored_frames(self, camera: str):
+        else:
+            self._stored_frames[camera] = {}
+            self._stored_frames[camera][index] = c_frame, d_map, frame_time
+
+    def get_stored_frames(self, camera: str, index: int):
         """
-        Retrieve frames currently sent for analysis
+        Retrieve frames currently sent for analysis, retrieved frames will be removed (popped) from the dictionary
         :param camera: camera name
+        :param index: index of analysed frame
         :return:
         """
-        c_frame, d_map, frame_time = self._stored_frames.get(camera)
+        c_frame, d_map, frame_time = self._stored_frames[camera].pop(index, None)
         return c_frame, d_map, frame_time
 
     def convert_depth_map_to_image(self, d_map):
