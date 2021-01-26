@@ -319,13 +319,18 @@ class DeepLabStream:
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
-                    frame = frame[:, :, ::-1]
-                    #this is weird, but i without it, it does not seem to work...
-                    frames = np.array([frame])
+                    input_frame = frame[:, :, ::-1]
+                    #this is weird, but without it, it does not seem to work...
+                    frames = np.array([input_frame])
                     prediction = sleap_model.predict(frames[[0]], batch_size=1)
-                    peaks = prediction['instance_peaks'][0, :]
-                    output_q.put((index, peaks))
-
+                    #check if this is multiple animal instances or single animal model
+                    if  sleap_model.name == 'single_instance_inference_model':
+                        #get predictions (wrap it again, so the behavior is the same for both model types)
+                        peaks = np.array([prediction['peaks'][0, :]])
+                    else:
+                        peaks = prediction['instance_peaks'][0, :]
+                    #test with frame
+                    output_q.put((index, peaks, frame))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -418,12 +423,11 @@ class DeepLabStream:
                         self._start_time = time.time()  # getting the first frame here
 
                     # Getting the analysed data
-                    analysed_index, peaks = self._multiprocessing[camera]['output'].get()
+                    analysed_index, peaks, analysed_frame = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
-                    analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
+                    _ , depth_map, input_time = self.get_stored_frames(camera)
                     analysis_time = time.time() - input_time
-
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
                     frame_time = time.time() - self._start_time
