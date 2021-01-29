@@ -1,3 +1,4 @@
+PySide2
 gpiozero==1.5.1
 pigpio==1.78
 pyserial==3.5
