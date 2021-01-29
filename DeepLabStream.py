@@ -19,7 +19,7 @@ import pandas as pd
 
 from utils.generic import VideoManager, WebCamManager, GenericManager
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN
+    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 from utils.poser import load_deeplabcut, load_dpk, load_dlc_live, get_pose, calculate_skeletons,\
     find_local_peaks_new, get_ma_pose
@@ -281,6 +281,7 @@ class DeepLabStream:
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
                         # TODO: Remove alterations to original
@@ -288,31 +289,34 @@ class DeepLabStream:
                         # peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
-
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
 
         elif MODEL_ORIGIN == 'DLC-LIVE':
             dlc_live = load_dlc_live()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     if not dlc_live.is_initialized:
                         peaks = dlc_live.init_inference(frame)
                     else:
                         peaks = dlc_live.get_pose(frame)
-
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index, peaks, analysis_time))
 
         elif MODEL_ORIGIN == 'DEEPPOSEKIT':
             predict_model = load_dpk()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
+                    start_time = time.time()
                     frame = frame[..., 1][..., None]
                     st_frame = np.stack([frame])
                     prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
                     peaks = prediction[0, :, :2]
-                    output_q.put((index, peaks))
+                    analysis_time = time.time() - start_time
+                    output_q.put((index,peaks,analysis_time))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -360,8 +364,12 @@ class DeepLabStream:
         c_frames, d_maps, i_frames = self._camera_manager.get_frames()
         for camera in c_frames:
             c_frames[camera] = np.asanyarray(c_frames[camera])
+            if CROP:
+                c_frames[camera] = c_frames[camera][CROP_Y[0]:CROP_Y[1],CROP_X[0]:CROP_X[1]].copy()
+
         for camera in i_frames:
             i_frames[camera] = np.asanyarray(i_frames[camera])
+
         return c_frames, d_maps, i_frames
 
     def input_frames_for_analysis(self, frames: tuple, index: int):
@@ -379,9 +387,9 @@ class DeepLabStream:
                     frame_time = time.time()
                     self._multiprocessing[camera]['input'].put((index, frame))
                     if d_maps:
-                        self.store_frames(camera, frame, d_maps[camera], frame_time)
+                        self.store_frames(camera, frame, d_maps[camera], frame_time, index)
                     else:
-                        self.store_frames(camera, frame, None, frame_time)
+                        self.store_frames(camera, frame, None, frame_time, index)
 
     def get_analysed_frames(self) -> tuple:
         """
@@ -401,12 +409,11 @@ class DeepLabStream:
                         self._start_time = time.time()  # getting the first frame here
 
                     # Getting the analysed data
-                    analysed_index, peaks = self._multiprocessing[camera]['output'].get()
+                    analysed_index, peaks, analysis_time = self._multiprocessing[camera]['output'].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
                     print('', end='\r', flush=True)  # this is the line you should not remove
-                    analysed_frame, depth_map, input_time = self.get_stored_frames(camera)
-                    analysis_time = time.time() - input_time
-
+                    analysed_frame , depth_map, input_time = self.get_stored_frames(camera, analysed_index)
+                    delay_time = time.time() - input_time
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
                     frame_time = time.time() - self._start_time
@@ -430,23 +437,30 @@ class DeepLabStream:
                     analysed_frames[camera] = analysed_image
             return analysed_frames, analysis_time
 
-    def store_frames(self, camera: str, c_frame, d_map, frame_time: float):
+    def store_frames(self, camera: str, c_frame, d_map, frame_time: float, index: int):
         """
-        Store frames currently sent for analysis
+        Store frames currently sent for analysis in index based dictionary
         :param camera: camera name
         :param c_frame: color frame
         :param d_map: depth map
         :param frame_time: inputting time of frameset
+        :param index: index of frame that is currently analysed
         """
-        self._stored_frames[camera] = c_frame, d_map, frame_time
+        if camera in self._stored_frames.keys():
+            self._stored_frames[camera][index] = c_frame, d_map, frame_time
 
-    def get_stored_frames(self, camera: str):
+        else:
+            self._stored_frames[camera] = {}
+            self._stored_frames[camera][index] = c_frame, d_map, frame_time
+
+    def get_stored_frames(self, camera: str, index: int):
         """
-        Retrieve frames currently sent for analysis
+        Retrieve frames currently sent for analysis, retrieved frames will be removed (popped) from the dictionary
         :param camera: camera name
+        :param index: index of analysed frame
         :return:
         """
-        c_frame, d_map, frame_time = self._stored_frames.get(camera)
+        c_frame, d_map, frame_time = self._stored_frames[camera].pop(index, None)
         return c_frame, d_map, frame_time
 
     def convert_depth_map_to_image(self, d_map):

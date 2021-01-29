@@ -11,13 +11,13 @@ import os
 import cv2
 
 from DeepLabStream import DeepLabStream, show_stream
+from utils.generic import MissingFrameError
 from utils.configloader import MULTI_CAM, STREAMS, RECORD_EXP
 from utils.gui_image import QFrame, ImageWindow, emit_qframes
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QPushButton, QApplication, QWidget, QGridLayout
-from PyQt5.QtGui import QIcon
-
+from PySide2.QtCore import QThread
+from PySide2.QtWidgets import QPushButton, QApplication, QWidget, QGridLayout
+from PySide2.QtGui import QIcon
 
 # creating a complete thread process to work in the background
 class AThread(QThread):
@@ -42,7 +42,16 @@ class AThread(QThread):
         Infinite loop with all the streaming, analysis and recording logic
         """
         while self.threadactive:
-            all_frames = stream_manager.get_frames()
+            try:
+                all_frames = stream_manager.get_frames()
+            except MissingFrameError as e:
+                """catch missing frame, stop Thread and save what can be saved"""
+                print(*e.args, '\nShutting down DLStream and saving data...')
+                stream_manager.finish_streaming()
+                stream_manager.stop_cameras()
+                self.stop()
+                break
+
             color_frames, depth_maps, infra_frames = all_frames
 
             # writing the video
