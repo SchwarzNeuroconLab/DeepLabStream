@@ -20,7 +20,7 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
  ### Check out or wiki: [DLStream Wiki](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki)
 
- ### Read the preprint: [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
+ ### Read the paper: [Schweihoff, et al. 2021](https://www.nature.com/articles/s42003-021-01654-9)
  
  ### Contributing
 
@@ -110,7 +110,12 @@ If you encounter any issues or errors, you can check out the wiki article ([Help
 
 ## References:
 
-If you use this code or data please cite [Schweihoff et al, 2019](https://doi.org/10.1101/2019.12.20.884478).
+If you use this code or data please cite:
+
+
+Schweihoff, J.F., Loshakov, M., Pavlova, I. et al. DeepLabStream enables closed-loop behavioral experiments using deep learning-based markerless, real-time posture detection. 
+
+Commun Biol 4, 130 (2021). https://doi.org/10.1038/s42003-021-01654-9
 
 ## License
 This project is licensed under the GNU General Public License v3.0. Note that the software is provided "as is", without warranty of any kind, expressed or implied. 
