@@ -335,13 +335,14 @@ def handle_missing_bp(animal_skeletons: list):
     :return animal_skeleton with handled missing values"""
     for skeleton in animal_skeletons:
         for bodypart, coordinates in skeleton.items():
-            if any(np.isnan(coordinates)):
+            np_coords = np.array((coordinates))
+            if any(np.isnan(np_coords)):
                 if HANDLE_MISSING == 'skip':
                     animal_skeletons.remove(skeleton)
                     break
                 elif HANDLE_MISSING == 'null':
-                    new_coordinates = np.nan_to_num(coordinates, copy = True)
-                    skeleton[bodypart] = new_coordinates
+                    new_coordinates = np.nan_to_num(np_coords, copy = True)
+                    skeleton[bodypart] = tuple(new_coordinates)
                 else:
                     animal_skeletons.remove(skeleton)
                     break
