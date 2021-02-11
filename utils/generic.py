@@ -122,7 +122,6 @@ class VideoManager(GenericManager):
         (hopefully)
         """
         # set video to first frame
-        print('Thinking of beginning things...')
         self._camera = cv2.VideoCapture(VIDEO_SOURCE)
         self._camera.set(cv2.CAP_PROP_POS_FRAMES,0)
 
