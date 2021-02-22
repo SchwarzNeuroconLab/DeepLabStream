@@ -47,7 +47,7 @@ class SocialInteractionTrigger:
 
         :param str interaction_type: Type of interaction ('proximity' or 'distance'). Proximity is checking for distances lower than threshold,
                 while distance is checking for distances higher than threshold. Default: 'proximity'
-        :param debug: Not used in this trigger
+        :param debug: will add another reporting to reponse that is shown in the stream
          """
 
         self._threshold = threshold
@@ -74,15 +74,19 @@ class SocialInteractionTrigger:
             active_coords = skeletons[self._active_animal][active_bp]
             for passive_bp in self._identification_dict['passive']['bp']:
                 passive_coords = skeletons[self._passive_animal][passive_bp]
-                #calculate distance for all combinations
-                distance = calculate_distance(active_coords, passive_coords)
                 temp_result = False
-                if distance >= self._threshold and self._interaction_type == 'distance':
-                        temp_result = True
-                elif distance < self._threshold and self._interaction_type == 'proximity':
-                        temp_result = True
+                #calculate distance for all combinations if none of the coordinates are NaN
+                if not any(np.isnan([*active_coords, *passive_coords])):
+                    distance = calculate_distance(active_coords, passive_coords)
+                    if distance >= self._threshold and self._interaction_type == 'distance':
+                            temp_result = True
+                    elif distance < self._threshold and self._interaction_type == 'proximity':
+                            temp_result = True
+                    else:
+                        pass
                 else:
                     pass
+
                 results.append(temp_result)
 
         result = any(results)
@@ -92,15 +96,22 @@ class SocialInteractionTrigger:
         if self._debug:
             active_point_x, active_point_y = skeletons[self._active_animal][self._active_bp[0]]
             passive_point_x,  passive_point_y= skeletons[self._passive_animal][self._passive_bp[0]]
+            if not any(np.isnan([active_point_x, active_point_y,passive_point_x,  passive_point_y])):
+                response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
+                                                       org= (20 , 20),
+                                                       color= color),
+                                          'line': dict(pt1=(int(active_point_x), int(active_point_y)),
+                                                       pt2=(int(passive_point_x), int(passive_point_y)),
+                                                       color=color),
+                                          }
+                                 }
+            else:
+                response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
+                                                       org=(20,20),
+                                                       color=color)
+                                          }
+                                 }
 
-            response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
-                                                   org= (20 , 20),
-                                                   color= color),
-                                      'line': dict(pt1=(int(active_point_x), int(active_point_y)),
-                                                   pt2=(int(passive_point_x), int(passive_point_y)),
-                                                   color=color),
-                                      }
-                             }
         else:
             response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
                                                    org=(20 , 20),

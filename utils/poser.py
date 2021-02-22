@@ -362,6 +362,10 @@ def handle_missing_bp(animal_skeletons: list):
     If HANDLE_MISSING is skip: the complete skeleton is removed (default);
     If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
      where continuous monitoring of parameters is necessary.
+    If HANDLE_MISSING is pass: the missing coordinate is left NaN. This is useful to keep identities, but can yield
+        unexpected results down the line if NaN values are not caught.
+    If HANDLE_MISSING is reset: the whole skeleton is set to NaN. This is useful to keep identities, but can yield
+        unexpected results down the line if NaN values are not caught.
 
     Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
     by triggers.
@@ -370,18 +374,26 @@ def handle_missing_bp(animal_skeletons: list):
     :param: animal_skeletons: list of skeletons returned by calculate skeleton
     :return animal_skeleton with handled missing values"""
 
-    #TODO: Handle missing instance in multiple animal approach to keep identity safe!
-
     for skeleton in animal_skeletons:
         for bodypart, coordinates in skeleton.items():
             np_coords = np.array((coordinates))
             if any(np.isnan(np_coords)):
+                if HANDLE_MISSING == 'pass':
+                    #do nothing
+                    pass
                 if HANDLE_MISSING == 'skip':
+                    #remove the whole skeleton
                     animal_skeletons.remove(skeleton)
                     break
                 elif HANDLE_MISSING == 'null':
+                    #remove replace coordinates with 0,0
                     new_coordinates = np.nan_to_num(np_coords, copy = True)
                     skeleton[bodypart] = tuple(new_coordinates)
+                elif HANDLE_MISSING == 'reset':
+                    #reset complete skeleton to NaN, NaN
+                    reset_skeleton = {bp: (np.NaN, np.NaN) for bp in skeleton}
+                    animal_skeletons = [reset_skeleton if i == skeleton else i for i in animal_skeletons]
+                    break
                 else:
                     animal_skeletons.remove(skeleton)
                     break
