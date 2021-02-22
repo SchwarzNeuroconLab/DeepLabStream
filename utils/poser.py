@@ -18,7 +18,8 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, HANDLE_MISSING
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, SPLIT_MA,\
+    HANDLE_MISSING, ANIMALS_NUMBER
 
 # suppressing unnecessary warnings
 import warnings
@@ -55,6 +56,14 @@ elif MODEL_ORIGIN == 'DEEPPOSEKIT':
 elif MODEL_ORIGIN == 'DLC-LIVE':
     from dlclive import DLCLive
     from utils.configloader import MODEL_PATH
+
+elif MODEL_ORIGIN == 'SLEAP':
+    from sleap import load_model
+    from utils.configloader import MODEL_PATH
+
+
+class SkeletonError(Exception):
+    """Custom expection to be raised when issues with the skeleton is not received"""
 
 
 def load_deeplabcut():
@@ -230,13 +239,13 @@ def get_ma_pose(image, config, session, inputs, outputs):
 
     return pose
 
-
-def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> list:
+def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.1) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+
     def filter_mapredictions(pose):
         detection = []
         conf = np.array(pose['confidence'])
@@ -288,6 +297,13 @@ def load_dpk():
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
 
+
+def load_sleap():
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
+
+
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
     where animals are not identical e.g. for animals with different fur colors (SIMBA)"""
@@ -299,10 +315,26 @@ def flatten_maDLC_skeletons(skeletons):
     return [flat_skeletons]
 
 
+def split_flat_skeleton(skeletons):
+    """Splits flat multi skeletons (e.g. from flatten_maDLCskeleton) into seperate skeleton to simulate output
+    where animals are identity tracked (e.g. SLEAP)"""
+    flat_skeletons = skeletons[0]
+    split_skeletons = []
+    bp_per_animal, remainder =divmod(len(flat_skeletons), ANIMALS_NUMBER)
+    if remainder > 0:
+        raise SkeletonError(f'The number of body parts ({len(flat_skeletons)}) cannot be split equally into {ANIMALS_NUMBER} animals.')
+    else:
+        for animal in range(ANIMALS_NUMBER):
+            single_skeleton = list(flat_skeletons.keys())[bp_per_animal*animal:bp_per_animal*animal+ bp_per_animal]
+            split_skeletons.append({x: flat_skeletons[x] for x in flat_skeletons if x in single_skeleton})
+
+    return split_skeletons
+
+
 def transform_2skeleton(pose):
     """
     Transforms pose estimation into DLStream style "skeleton" posture.
-    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
+    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp0, bp1 ...
     """
     try:
         skeleton = dict()
@@ -330,6 +362,10 @@ def handle_missing_bp(animal_skeletons: list):
     If HANDLE_MISSING is skip: the complete skeleton is removed (default);
     If HANDLE_MISSING is null: the missing coordinate is set to 0.0, not recommended for experiments
      where continuous monitoring of parameters is necessary.
+    If HANDLE_MISSING is pass: the missing coordinate is left NaN. This is useful to keep identities, but can yield
+        unexpected results down the line if NaN values are not caught.
+    If HANDLE_MISSING is reset: the whole skeleton is set to NaN. This is useful to keep identities, but can yield
+        unexpected results down the line if NaN values are not caught.
 
     Missing skeletons will not be passed to the trigger, while resetting coordinates might lead to false results returned
     by triggers.
@@ -337,16 +373,27 @@ def handle_missing_bp(animal_skeletons: list):
 
     :param: animal_skeletons: list of skeletons returned by calculate skeleton
     :return animal_skeleton with handled missing values"""
+
     for skeleton in animal_skeletons:
         for bodypart, coordinates in skeleton.items():
             np_coords = np.array((coordinates))
             if any(np.isnan(np_coords)):
+                if HANDLE_MISSING == 'pass':
+                    #do nothing
+                    pass
                 if HANDLE_MISSING == 'skip':
+                    #remove the whole skeleton
                     animal_skeletons.remove(skeleton)
                     break
                 elif HANDLE_MISSING == 'null':
+                    #remove replace coordinates with 0,0
                     new_coordinates = np.nan_to_num(np_coords, copy = True)
                     skeleton[bodypart] = tuple(new_coordinates)
+                elif HANDLE_MISSING == 'reset':
+                    #reset complete skeleton to NaN, NaN
+                    reset_skeleton = {bp: (np.NaN, np.NaN) for bp in skeleton}
+                    animal_skeletons = [reset_skeleton if i == skeleton else i for i in animal_skeletons]
+                    break
                 else:
                     animal_skeletons.remove(skeleton)
                     break
@@ -362,6 +409,16 @@ def calculate_skeletons_dlc_live(pose) -> list:
     skeletons = [transform_2skeleton(pose)]
     return skeletons
 
+def calculate_sleap_skeletons(pose, animals_number)-> list:
+    """
+    Creating skeleton from sleap output
+    """
+    skeletons = []
+    for animal in range(pose.shape[0]):
+        skeleton = transform_2skeleton(pose[animal])
+        skeletons.append(skeleton)
+    return skeletons
+
 
 def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
@@ -372,6 +429,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
     if MODEL_ORIGIN == 'DLC':
         animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        if SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
@@ -379,13 +438,23 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
-        if animals_number != 1:
-            raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
-                             ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
+        if animals_number != 1 and not SPLIT_MA:
+            raise SkeletonError('Multiple animals are currently not supported by DLC-LIVE.'
+                             ' If you are using differently colored animals, please refer to the bodyparts directly (as a flattened skeleton) or use SPLIT_MA in the advanced settings.')
+        if SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
+
+    elif MODEL_ORIGIN == 'SLEAP':
+        animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+        elif SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
 
     animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
+
 
 

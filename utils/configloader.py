@@ -78,6 +78,7 @@ CROP_X = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CR
 CROP_Y = [int(str(part).strip()) for part in adv_dsc_config['Streaming'].get('CROP_Y').split(',')]
 
 FLATTEN_MA = adv_dsc_config['Pose Estimation'].getboolean('FLATTEN_MA')
+SPLIT_MA = adv_dsc_config['Pose Estimation'].getboolean('SPLIT_MA')
 HANDLE_MISSING = adv_dsc_config['Pose Estimation'].get('HANDLE_MISSING')
 
 
