@@ -17,6 +17,106 @@ from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img,laser_switch
 
 
+class ExampleSocialExperiment:
+    """
+    Simple class to contain all of the experiment properties
+    Uses multiprocess to ensure the best possible performance and
+        to showcase that it is possible to work with any type of equipment, even timer-dependent
+    """
+    def __init__(self):
+        self.experiment_finished = False
+        self._process = ExampleProtocolProcess()
+        self._green_point = (313, 552)
+        self._radius = 80
+        self._event = None
+        self._current_trial = None
+        self._trial_count = {trial: 0 for trial in self._trials}
+        self._trial_timers = {trial: Timer(10) for trial in self._trials}
+        self._exp_timer = Timer(600)
+
+    def check_skeleton(self, frame, skeletons):
+        """
+        Checking each passed animal skeleton for a pre-defined set of conditions
+        Outputting the visual representation, if exist
+        Advancing trials according to inherent logic of an experiment
+        :param frame: frame, on which animal skeleton was found
+        :param skeletons: skeletons, consisting of multiple joints of an animal
+        """
+        self.check_exp_timer()  # checking if experiment is still on
+        for trial in self._trial_count:
+            # checking if any trial hit a predefined cap
+            if self._trial_count[trial] >= 10:
+                self.stop_experiment()
+
+        if not self.experiment_finished:
+            result, response = False, None
+            for trial in self._trials:
+                # check for all trials if condition is met
+                result_list = []
+                for skeleton in skeletons:
+                    result, response = self._trials[trial]['trigger'](skeleton=skeleton)
+                    if result:
+                        break
+                plot_triggers_response(frame, response)
+                if result:
+                    if self._current_trial is None:
+                        if not self._trial_timers[trial].check_timer():
+                            self._current_trial = trial
+                            self._trial_timers[trial].reset()
+                            self._trial_count[trial] += 1
+                            print(trial, self._trial_count[trial])
+                else:
+                    if self._current_trial == trial:
+                        self._current_trial = None
+                        self._trial_timers[trial].start()
+
+            self._process.set_trial(self._current_trial)
+            return result, response
+
+    @property
+    def _trials(self):
+        """
+        Defining the trials
+        """
+        green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, 'bp1')
+        trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
+                                             count=0)}
+        return trials
+
+    def check_exp_timer(self):
+        """
+        Checking the experiment timer
+        """
+        if not self._exp_timer.check_timer():
+            print("Experiment is finished")
+            print("Time ran out.")
+            self.stop_experiment()
+
+    def start_experiment(self):
+        """
+        Start the experiment
+        """
+        self._process.start()
+        if not self.experiment_finished:
+            self._exp_timer.start()
+
+    def stop_experiment(self):
+        """
+        Stop the experiment and reset the timer
+        """
+        self.experiment_finished = True
+        print('Experiment completed!')
+        self._exp_timer.reset()
+        # don't forget to end the process!
+        self._process.end()
+
+    def get_trial(self):
+        """
+        Check which trial is going on right now
+        """
+        return self._current_trial
+
+
 class ExampleExperiment:
     """
     Simple class to contain all of the experiment properties

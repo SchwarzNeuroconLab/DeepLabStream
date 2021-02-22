@@ -68,16 +68,16 @@ class Timer:
 
 def example_protocol_run(condition_q: mp.Queue):
     current_trial = None
-    dmod_device = DigitalModDevice('Dev1/PFI0')
+    #dmod_device = DigitalModDevice('Dev1/PFI0')
     while True:
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
-            show_visual_stim_img(img_type=current_trial, name='inside')
-            dmod_device.toggle()
+            show_visual_stim_img(type=current_trial, name='inside')
+            #dmod_device.toggle()
         else:
             show_visual_stim_img(name='inside')
-            dmod_device.turn_off()
+            #dmod_device.turn_off()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

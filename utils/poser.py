@@ -56,6 +56,10 @@ elif MODEL_ORIGIN == 'DLC-LIVE':
     from dlclive import DLCLive
     from utils.configloader import MODEL_PATH
 
+elif MODEL_ORIGIN == 'SLEAP':
+    from sleap import load_model
+    from utils.configloader import MODEL_PATH
+
 
 def load_deeplabcut():
     """
@@ -230,13 +234,13 @@ def get_ma_pose(image, config, session, inputs, outputs):
 
     return pose
 
-
-def calculate_ma_skeletons(pose: dict, animals_number: int, threshold = 0.1) -> list:
+def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.1) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
     Only unique skeletons output
     """
+
     def filter_mapredictions(pose):
         detection = []
         conf = np.array(pose['confidence'])
@@ -287,6 +291,11 @@ def load_dpk():
 
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
+
+def load_sleap():
+    model = load_model(MODEL_PATH)
+    model.inference_model
+    return model.inference_model
 
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
@@ -362,6 +371,16 @@ def calculate_skeletons_dlc_live(pose) -> list:
     skeletons = [transform_2skeleton(pose)]
     return skeletons
 
+def calculate_sleap_skeletons(pose, animals_number)-> list:
+    """
+    Creating skeleton from sleap output
+    """
+    skeletons = []
+    for animal in range(pose.shape[0]):
+        skeleton = transform_2skeleton(pose[animal])
+        skeletons.append(skeleton)
+    return skeletons
+
 
 def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
@@ -383,9 +402,14 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
             raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
+    elif MODEL_ORIGIN == 'SLEAP':
+        animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
+
 
 
