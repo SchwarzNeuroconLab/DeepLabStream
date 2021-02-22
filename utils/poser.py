@@ -311,7 +311,7 @@ def flatten_maDLC_skeletons(skeletons):
 def transform_2skeleton(pose):
     """
     Transforms pose estimation into DLStream style "skeleton" posture.
-    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp1, bp2 ...
+    If ALL_BODYPARTS is not sufficient, it will autoname the bodyparts in style bp0, bp1 ...
     """
     try:
         skeleton = dict()

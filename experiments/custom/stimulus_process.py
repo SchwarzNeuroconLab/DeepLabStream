@@ -73,10 +73,10 @@ def example_protocol_run(condition_q: mp.Queue):
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
-            show_visual_stim_img(type=current_trial, name='inside')
+            show_visual_stim_img(type=current_trial, name='DlStream')
             #dmod_device.toggle()
         else:
-            show_visual_stim_img(name='inside')
+            show_visual_stim_img(name='DlStream')
             #dmod_device.turn_off()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
