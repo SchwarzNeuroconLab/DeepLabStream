@@ -11,24 +11,33 @@
 
 DeepLabStream is a python based multi-purpose tool that enables the realtime tracking and manipulation of animals during ongoing experiments.
 Our toolbox was orginally adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expanded on its core capabilities, but is now able to utilize a variety of different network architectures for online pose estimation
- ([DLC + maDLC](https://github.com/AlexEMG/DeepLabCut), [DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live), [DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap)).
+ ([SLEAP](https://github.com/murthylab/sleap), [DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live), [DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap)).
+
 DeepLabStreams core feature is the utilization of real-time tracking to orchestrate closed-loop experiments. This can be achieved using any type of camera-based video stream (incl. multiple streams).  It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation.
 
 ![DLS_Stim](docs/DLSSTim_example.gif)
 
+## New features:
+
+#### 02/2021: Multiple Animal Experiments: Full [SLEAP](https://github.com/murthylab/sleap) integration (Tutorials coming soon!)
+
+#### 01/2021: DLStream was published in [Communications Biology](https://www.nature.com/articles/s42003-021-01654-9)
+
+#### 12/2021: New pose estimation model integration ([DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live)) and pre-release of further integration ([DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap))
+
 ## Quick Reference:
 
- ### Check out or wiki: [DLStream Wiki](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki)
+ #### Check out or wiki: [DLStream Wiki](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki)
 
- ### Read the paper: [Schweihoff, et al. 2021](https://www.nature.com/articles/s42003-021-01654-9)
+ #### Read the paper: [Schweihoff, et al. 2021](https://www.nature.com/articles/s42003-021-01654-9)
  
- ### Contributing
+ #### Contributing
 
 If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg)!
 
 We are constantly working to update and increase the capabilities of DLStream. 
 We welcome all feedback and input from your side.
-Also, do not hesitate to contact us for collaborations.
+
  
  ### 1. [Updated Installation & Testing](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing)
  
@@ -49,7 +58,7 @@ Also, do not hesitate to contact us for collaborations.
  ### 7. [Adapting an existing experiment to your own needs](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Adapting-an-existing-experiment-to-your-own-needs)
  
 
- 
+
 ### How to use DeepLabStream
 
 Just run 
