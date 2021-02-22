@@ -18,7 +18,8 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, HANDLE_MISSING
+from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, SPLIT_MA,\
+    HANDLE_MISSING, ANIMALS_NUMBER
 
 # suppressing unnecessary warnings
 import warnings
@@ -59,6 +60,10 @@ elif MODEL_ORIGIN == 'DLC-LIVE':
 elif MODEL_ORIGIN == 'SLEAP':
     from sleap import load_model
     from utils.configloader import MODEL_PATH
+
+
+class SkeletonError(Exception):
+    """Custom expection to be raised when issues with the skeleton is not received"""
 
 
 def load_deeplabcut():
@@ -292,10 +297,12 @@ def load_dpk():
 def load_dlc_live():
     return DLCLive(MODEL_PATH)
 
+
 def load_sleap():
     model = load_model(MODEL_PATH)
     model.inference_model
     return model.inference_model
+
 
 def flatten_maDLC_skeletons(skeletons):
     """Flattens maDLC multi skeletons into one skeleton to simulate dlc output
@@ -306,6 +313,22 @@ def flatten_maDLC_skeletons(skeletons):
             flat_skeletons[f'{num}_{bp}'] = value
 
     return [flat_skeletons]
+
+
+def split_flat_skeleton(skeletons):
+    """Splits flat multi skeletons (e.g. from flatten_maDLCskeleton) into seperate skeleton to simulate output
+    where animals are identity tracked (e.g. SLEAP)"""
+    flat_skeletons = skeletons[0]
+    split_skeletons = []
+    bp_per_animal, remainder =divmod(len(flat_skeletons), ANIMALS_NUMBER)
+    if remainder > 0:
+        raise SkeletonError(f'The number of body parts ({len(flat_skeletons)}) cannot be split equally into {ANIMALS_NUMBER} animals.')
+    else:
+        for animal in range(ANIMALS_NUMBER):
+            single_skeleton = list(flat_skeletons.keys())[bp_per_animal*animal:bp_per_animal*animal+ bp_per_animal]
+            split_skeletons.append({x: flat_skeletons[x] for x in flat_skeletons if x in single_skeleton})
+
+    return split_skeletons
 
 
 def transform_2skeleton(pose):
@@ -346,6 +369,9 @@ def handle_missing_bp(animal_skeletons: list):
 
     :param: animal_skeletons: list of skeletons returned by calculate skeleton
     :return animal_skeleton with handled missing values"""
+
+    #TODO: Handle missing instance in multiple animal approach to keep identity safe!
+
     for skeleton in animal_skeletons:
         for bodypart, coordinates in skeleton.items():
             np_coords = np.array((coordinates))
@@ -391,6 +417,8 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
     if MODEL_ORIGIN == 'DLC':
         animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        if SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
@@ -398,14 +426,19 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
-        if animals_number != 1:
-            raise ValueError('Multiple animals are currently not supported by DLC-LIVE.'
-                             ' If you are using differently colored animals, please refer to the bodyparts directly.')
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
+        if animals_number != 1 and not SPLIT_MA:
+            raise SkeletonError('Multiple animals are currently not supported by DLC-LIVE.'
+                             ' If you are using differently colored animals, please refer to the bodyparts directly (as a flattened skeleton) or use SPLIT_MA in the advanced settings.')
+        if SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
+
     elif MODEL_ORIGIN == 'SLEAP':
         animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
         if FLATTEN_MA:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+        elif SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
 
     animal_skeletons = handle_missing_bp(animal_skeletons)
 
