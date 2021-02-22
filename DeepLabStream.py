@@ -323,11 +323,16 @@ class DeepLabStream:
                 if input_q.full():
                     index, frame = input_q.get()
                     start_time = time.time()
-                    frame = frame[:, :, ::-1]
-                    #this is weird, but i without it, it does not seem to work...
-                    frames = np.array([frame])
+                    input_frame = frame[:, :, ::-1]
+                    #this is weird, but without it, it does not seem to work...
+                    frames = np.array([input_frame])
                     prediction = sleap_model.predict(frames[[0]], batch_size=1)
-                    peaks = prediction['instance_peaks'][0, :]
+                    #check if this is multiple animal instances or single animal model
+                    if  sleap_model.name == 'single_instance_inference_model':
+                        #get predictions (wrap it again, so the behavior is the same for both model types)
+                        peaks = np.array([prediction['peaks'][0, :]])
+                    else:
+                        peaks = prediction['instance_peaks'][0, :]
                     analysis_time = time.time() - start_time
                     output_q.put((index,peaks,analysis_time))
         else:
