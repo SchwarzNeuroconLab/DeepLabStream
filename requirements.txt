@@ -10,4 +10,4 @@ numpy>=1.14.5
 pandas==1.1.4
 matplotlib==3.3.4
 scikit-image==0.17.2
-scipy==1.5.4
+scipy==1.4.1
