@@ -19,7 +19,7 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 ## New features:
 
-#### 02/2021: Multiple Animal Experiments: Full [SLEAP](https://github.com/murthylab/sleap) integration (Tutorials coming soon!)
+#### 02/2021: Multiple Animal Experiments: Full [SLEAP](https://github.com/murthylab/sleap) integration (Tutorials & models coming soon!)
 
 #### 01/2021: DLStream was published in [Communications Biology](https://www.nature.com/articles/s42003-021-01654-9)
 
