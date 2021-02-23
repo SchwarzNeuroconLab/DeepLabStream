@@ -17,7 +17,8 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from utils.generic import VideoManager, WebCamManager, GenericManager
+from utils.generic import VideoManager, GenericManager
+
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
     ANIMALS_NUMBER, FLATTEN_MA, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
 from utils.plotter import plot_bodyparts,plot_metadata_frame
@@ -145,6 +146,7 @@ class DeepLabStream:
                 pylon_manager = PylonManager()
                 manager_list.append(pylon_manager)
 
+
             def check_for_cameras(camera_manager):
                 """
                 Helper method to get cameras, connected to that camera manager
@@ -167,9 +169,13 @@ class DeepLabStream:
 
         MANAGER_SOURCE = {
             'video': VideoManager,
-            'ipwebcam': WebCamManager,
             'camera': select_camera_manager
         }
+
+        # loading WebCam manager, if installed
+        if find_spec("pyzmq") is not None:
+            from utils.webcam import WebCamManager
+            MANAGER_SOURCE['ipwebcam'] = WebCamManager()
 
         # initialize selected manager
         camera_manager = MANAGER_SOURCE.get(STREAMING_SOURCE)()
@@ -177,7 +183,7 @@ class DeepLabStream:
             return camera_manager
         else:
             raise ValueError(f'Streaming source {STREAMING_SOURCE} is not a valid option. \n'
-                             f'Please choose from "video", "camera" or "ipwebcam".')
+                             f'Please choose from "video", "camera" or "ipwebcam". Make sure that if you are using "ipwebcam" you installed the additional dependencies.')
 
     @property
     def cameras(self):
