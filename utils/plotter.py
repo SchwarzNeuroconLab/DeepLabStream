@@ -9,7 +9,6 @@ Licensed under GNU General Public License v3.0
 import cv2
 import numpy as np
 
-
 def plot_dots(image, coordinates, color, cond=False):
     """
     Takes the image and positional arguments from pose to plot corresponding dot
@@ -55,10 +54,11 @@ def plot_metadata_frame(image, frame_width, frame_height, current_fps, current_e
     """
     res_image = image.copy()
     font = cv2.FONT_HERSHEY_PLAIN
+
     cv2.putText(res_image, 'Time: ' + str(round(current_elapsed_time, 2)),
                 (int(frame_width * 0.8), int(frame_height * 0.9)), font, 1, (255, 255, 0))
     cv2.putText(res_image, 'FPS: ' + str(round(current_fps, 1)),
-                (int(frame_width * 0.8), int(frame_height * 0.95)), font, 1, (255, 255, 0))
+                (int(frame_width * 0.8), int(frame_height * 0.94)), font, 1, (255, 255, 0))
     return res_image
 
 def plot_dlc_bodyparts(image, bodyparts):

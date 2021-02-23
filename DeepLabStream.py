@@ -426,7 +426,13 @@ class DeepLabStream:
         if self._dlc_running:
             analysed_frames = {}
             analysis_time = None
-            frame_width, frame_height = RESOLUTION
+
+            if CROP:
+                frame_height = CROP_Y[1] - CROP_Y[0]
+                frame_width = CROP_X[1] - CROP_X[0]
+            else:
+                frame_width,frame_height = RESOLUTION
+
             for camera in self._multiprocessing:
                 if self._multiprocessing[camera]['output'].full():
                     if self._start_time is None:
