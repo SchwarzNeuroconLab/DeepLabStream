@@ -381,7 +381,7 @@ def handle_missing_bp(animal_skeletons: list):
                 if HANDLE_MISSING == 'pass':
                     #do nothing
                     pass
-                if HANDLE_MISSING == 'skip':
+                elif HANDLE_MISSING == 'skip':
                     #remove the whole skeleton
                     animal_skeletons.remove(skeleton)
                     break
@@ -409,7 +409,7 @@ def calculate_skeletons_dlc_live(pose) -> list:
     skeletons = [transform_2skeleton(pose)]
     return skeletons
 
-def calculate_sleap_skeletons(pose, animals_number)-> list:
+def calculate_sleap_skeletons(pose)-> list:
     """
     Creating skeleton from sleap output
     """
@@ -429,28 +429,36 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     """
     if MODEL_ORIGIN == 'DLC':
         animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
-        if SPLIT_MA:
+        if animals_number != 1 and SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
+        else:
+            pass
 
     elif MODEL_ORIGIN == 'MADLC':
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
         if FLATTEN_MA:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+        else:
+            pass
 
     elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
         if animals_number != 1 and not SPLIT_MA:
             raise SkeletonError('Multiple animals are currently not supported by DLC-LIVE.'
                              ' If you are using differently colored animals, please refer to the bodyparts directly (as a flattened skeleton) or use SPLIT_MA in the advanced settings.')
-        if SPLIT_MA:
-            animal_skeletons = split_flat_skeleton(animal_skeletons)
-
-    elif MODEL_ORIGIN == 'SLEAP':
-        animal_skeletons = calculate_sleap_skeletons(peaks, animals_number)
-        if FLATTEN_MA:
-            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
         elif SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
+        else:
+            pass
+
+    elif MODEL_ORIGIN == 'SLEAP':
+        animal_skeletons = calculate_sleap_skeletons(peaks)
+        if FLATTEN_MA:
+            animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
+        elif animals_number != 1 and SPLIT_MA:
+            animal_skeletons = split_flat_skeleton(animal_skeletons)
+        else:
+            pass
 
     animal_skeletons = handle_missing_bp(animal_skeletons)
 

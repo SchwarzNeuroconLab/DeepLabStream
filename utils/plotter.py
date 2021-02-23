@@ -43,6 +43,8 @@ def plot_bodyparts(image, skeletons):
             if not any(np.isnan(animal[part])):
                 plot_dots(res_image, tuple(map(int, animal[part])), colors_list[num])
                 #plot_dots(res_image, tuple(animal[part]), colors[part])
+            else:
+                pass
     return res_image
 
 
