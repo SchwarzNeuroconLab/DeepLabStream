@@ -51,7 +51,8 @@ def show_visual_stim_img(type='background', name='vistim'):
     # Show image when called
     visual = {'background': dict(path=r"./experiments/src/whiteback_1920_1080.png"),
               'Greenbar_whiteback': dict(path=r"./experiments/src/greenbar_whiteback_1920_1080.png"),
-              'Bluebar_whiteback': dict(path=r"./experiments/src/bluebar_whiteback_1920_1080.png")}
+              'Bluebar_whiteback': dict(path=r"./experiments/src/bluebar_whiteback_1920_1080.png"),
+              'DLStream_test': dict(path=r"./experiments/src/stuckinaloop.jpg")}
     # load image unchanged (-1), greyscale (0) or color (1)
     img = cv2.imread(visual[type]['path'], -1)
     converted_image = np.uint8(img)

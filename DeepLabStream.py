@@ -19,11 +19,10 @@ import pandas as pd
 
 from utils.generic import VideoManager, WebCamManager, GenericManager
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
-from utils.plotter import plot_bodyparts, plot_metadata_frame
-from utils.poser import load_deeplabcut, load_dpk, load_dlc_live, get_pose, calculate_skeletons,\
-    find_local_peaks_new, get_ma_pose
-
+    ANIMALS_NUMBER, FLATTEN_MA, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
+from utils.plotter import plot_bodyparts,plot_metadata_frame
+from utils.poser import load_deeplabcut,load_dpk,load_dlc_live,load_sleap, get_pose,calculate_skeletons, \
+    find_local_peaks_new,get_ma_pose
 
 def create_video_files(directory, devices, resolution, framerate, codec):
     """
@@ -317,6 +316,25 @@ class DeepLabStream:
                     peaks = prediction[0, :, :2]
                     analysis_time = time.time() - start_time
                     output_q.put((index,peaks,analysis_time))
+
+        elif MODEL_ORIGIN == 'SLEAP':
+            sleap_model = load_sleap()
+            while True:
+                if input_q.full():
+                    index, frame = input_q.get()
+                    start_time = time.time()
+                    input_frame = frame[:, :, ::-1]
+                    #this is weird, but without it, it does not seem to work...
+                    frames = np.array([input_frame])
+                    prediction = sleap_model.predict(frames[[0]], batch_size=1)
+                    #check if this is multiple animal instances or single animal model
+                    if  sleap_model.name == 'single_instance_inference_model':
+                        #get predictions (wrap it again, so the behavior is the same for both model types)
+                        peaks = np.array([prediction['peaks'][0, :]])
+                    else:
+                        peaks = prediction['instance_peaks'][0, :]
+                    analysis_time = time.time() - start_time
+                    output_q.put((index,peaks,analysis_time))
         else:
             raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
 
@@ -426,8 +444,11 @@ class DeepLabStream:
                         self._experiment_running = False
 
                     if self._experiment_running and not self._experiment.experiment_finished:
-                        for skeleton in skeletons:
-                            self._experiment.check_skeleton(analysed_image, skeleton)
+                        if ANIMALS_NUMBER > 1 and not FLATTEN_MA:
+                            self._experiment.check_skeleton(analysed_image,skeletons)
+                        else:
+                            for skeleton in skeletons:
+                                self._experiment.check_skeleton(analysed_image, skeleton)
 
                     # Gathering data as pd.Series for output
                     if self._data_output:
