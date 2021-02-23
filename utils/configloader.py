@@ -71,6 +71,7 @@ STACK_FRAMES = adv_dsc_config['Streaming'].getboolean('STACK_FRAMES') if adv_dsc
     'STACK_FRAMES') is not None else False
 ANIMALS_NUMBER = adv_dsc_config['Streaming'].getint('ANIMALS_NUMBER') if adv_dsc_config['Streaming'].getint(
     'ANIMALS_NUMBER') is not None else 1
+PASS_SEPARATE = adv_dsc_config['Streaming'].getboolean('PASS_SEPARATE')
 
 REPEAT_VIDEO = adv_dsc_config['Video'].getboolean('REPEAT_VIDEO')
 CROP = adv_dsc_config['Streaming'].getboolean('CROP')

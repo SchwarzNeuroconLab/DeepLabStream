@@ -20,7 +20,7 @@ import pandas as pd
 from utils.generic import VideoManager, GenericManager
 
 from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, FLATTEN_MA, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
+    ANIMALS_NUMBER, FLATTEN_MA, PASS_SEPARATE, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
 from utils.plotter import plot_bodyparts,plot_metadata_frame
 from utils.poser import load_deeplabcut,load_dpk,load_dlc_live,load_sleap, get_pose,calculate_skeletons, \
     find_local_peaks_new,get_ma_pose
@@ -456,7 +456,7 @@ class DeepLabStream:
                         self._experiment_running = False
 
                     if self._experiment_running and not self._experiment.experiment_finished:
-                        if ANIMALS_NUMBER > 1 and not FLATTEN_MA:
+                        if ANIMALS_NUMBER > 1 and not FLATTEN_MA and not PASS_SEPARATE:
                             self._experiment.check_skeleton(analysed_image,skeletons)
                         else:
                             for skeleton in skeletons:
