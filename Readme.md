@@ -19,7 +19,11 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 ## New features:
 
-#### 02/2021: Multiple Animal Experiments: Full [SLEAP](https://github.com/murthylab/sleap) integration (Tutorials & models coming soon!)
+#### 02/2021: Multiple Animal Experiments (Pre-release): Full [SLEAP](https://github.com/murthylab/sleap) integration (Full release coming soon!)
+
+- Updated [Installation](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing) (for SLEAP support)
+- Single Instance and Multiple Instance models (TopDown & BottomUp) integration (SLEAP v1.1.0a10), more coming soon!
+- [New Multiple Animal Experiment Tutorial](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Multiple-Animal-Experiments)
 
 #### 01/2021: DLStream was published in [Communications Biology](https://www.nature.com/articles/s42003-021-01654-9)
 
