@@ -15,7 +15,117 @@ import numpy as np
 
 import time
 
-"""Single posture triggers"""
+"""Multiple Animal, Social Interaction Triggers
+can only be used with multiple animals/skeletons (e.g. with SLEAP)
+Note that currently"""
+
+
+class SocialInteractionTrigger:
+    """Trigger to check if one animal's body part is close to (Proximity trigger) far away from (distance trigger) another animal's body part
+    This trigger can be easily adapted to incorporate more complicated social interaction matching.
+    Note that this Trigger can be used without realtime identity tracking (e.g. with maDLC or DeepPoseKit) but is less effective
+     because no distinction between active/passive interaction partners can be made."""
+
+    def __init__(self, threshold: float
+                 , identification_dict: dict
+                 , interaction_type: str = 'proximity',  debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param float threshold: minimum distance between selected body parts for trigger to activate
+        :param dict identification_dict: nested dictionary that specifies which animal/instance is taken as "active"/acting interaction partner and which is "passive"/recieving.
+                    Identification of animal ('name') has to match DLStream naming parameters for calculate skeleton (default is 'Animal1', 'Animal2', etc.).
+                    Idenification of relevant bodyparts ('bp') has to match Dlstream autonaming (default is 'bp1', 'bp2', etc.) or model specific bodypart naming,
+                    whichever applies. This can be a single body part (e.g. ['nose']) or a list of body parts (e.g. ['nose', 'paw_left', 'paw_right']
+
+                    Example: identification_dict = dict(
+                                                        active = {'animal': 0,
+                                                                   'bp': ['nose']]
+                                                                   }
+                                                        ,passive = {'animal': 1,
+                                                                   'bp': ['center','tail_root']
+                                                                   }
+                                                        )
+
+        :param str interaction_type: Type of interaction ('proximity' or 'distance'). Proximity is checking for distances lower than threshold,
+                while distance is checking for distances higher than threshold. Default: 'proximity'
+        :param debug: will add another reporting to reponse that is shown in the stream
+         """
+
+        self._threshold = threshold
+        self._identification_dict = identification_dict
+        #for easier use
+        self._active_animal = self._identification_dict['active']['animal']
+        self._active_bp = self._identification_dict['active']['bp']
+        self._passive_animal = self._identification_dict['passive']['animal']
+        self._passive_bp = self._identification_dict['passive']['bp']
+
+        self._interaction_type = interaction_type
+        self._debug = debug
+
+    def check_skeleton(self, skeletons: dict):
+        """
+        Checking skeletons for trigger
+        :param skeletons: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+
+        results = []
+        for active_bp in self._identification_dict['active']['bp']:
+            active_coords = skeletons[self._active_animal][active_bp]
+            for passive_bp in self._identification_dict['passive']['bp']:
+                passive_coords = skeletons[self._passive_animal][passive_bp]
+                temp_result = False
+                #calculate distance for all combinations if none of the coordinates are NaN
+                if not any(np.isnan([*active_coords, *passive_coords])):
+                    distance = calculate_distance(active_coords, passive_coords)
+                    if distance >= self._threshold and self._interaction_type == 'distance':
+                            temp_result = True
+                    elif distance < self._threshold and self._interaction_type == 'proximity':
+                            temp_result = True
+                    else:
+                        pass
+                else:
+                    pass
+
+                results.append(temp_result)
+
+        result = any(results)
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+
+        if self._debug:
+            active_point_x, active_point_y = skeletons[self._active_animal][self._active_bp[0]]
+            passive_point_x,  passive_point_y= skeletons[self._passive_animal][self._passive_bp[0]]
+            if not any(np.isnan([active_point_x, active_point_y,passive_point_x,  passive_point_y])):
+                response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
+                                                       org= (20 , 20),
+                                                       color= color),
+                                          'line': dict(pt1=(int(active_point_x), int(active_point_y)),
+                                                       pt2=(int(passive_point_x), int(passive_point_y)),
+                                                       color=color),
+                                          }
+                                 }
+            else:
+                response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
+                                                       org=(20,20),
+                                                       color=color)
+                                          }
+                                 }
+
+        else:
+            response_body = {'plot': {'text': dict(text=f'{self._interaction_type}: {result}',
+                                                   org=(20 , 20),
+                                                   color= color)
+                                      }
+                             }
+        response = (result, response_body)
+        return response
+
+
+"""Single posture triggers
+can be used in single animal or multiple animal experiments
+"""
 
 class HeaddirectionROITrigger:
     """Trigger to check if animal is turning its head in a specific angle to a reference point (center of the region of interest)
@@ -390,6 +500,7 @@ class FreezeTrigger:
         response = (result, response_body)
 
         return response
+
 
 class SpeedTrigger:
     """

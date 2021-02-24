@@ -7,7 +7,7 @@ Licensed under GNU General Public License v3.0
 """
 
 import cv2
-
+import numpy as np
 
 def plot_dots(image, coordinates, color, cond=False):
     """
@@ -29,15 +29,21 @@ def plot_bodyparts(image, skeletons):
     # predefined colors list
     colors_list = [(0, 0, 255), (0, 255, 0), (0, 255, 255), (255, 0, 0), (255, 0, 255), (255, 255, 0), (255, 255, 128),
                    (0, 0, 128), (0, 128, 0), (0, 128, 128), (0, 128, 255), (0, 255, 128), (128, 0, 0), (128, 0, 128),
-                   (128, 0, 255), (128, 128, 0), (128, 128, 128), (128, 128, 255), (128, 255, 0), (128, 255, 128),
-                   (128, 255, 255), (255, 0, 128), (255, 128, 0), (255, 128, 128), (255, 128, 255)]
+                    (128, 0, 255), (128, 128, 0), (128, 128, 128), (128, 128, 255), (128, 255, 0), (128, 255, 128),
+                    (128, 255, 255), (255, 0, 128), (255, 128, 0), (255, 128, 128), (255, 128, 255)]
+    #color = (255, 0, 0)
 
-    for animal in skeletons:
+    for num, animal in enumerate(skeletons):
         bodyparts = animal.keys()
         bp_count = len(bodyparts)
-        colors = dict(zip(bodyparts, colors_list[:bp_count]))
+        #colors = dict(zip(bodyparts, colors_list[:bp_count]))
         for part in animal:
-            plot_dots(res_image, tuple(animal[part]), colors[part])
+            #check for NaNs and skip
+            if not any(np.isnan(animal[part])):
+                plot_dots(res_image, tuple(map(int, animal[part])), colors_list[num])
+                #plot_dots(res_image, tuple(animal[part]), colors[part])
+            else:
+                pass
     return res_image
 
 
@@ -48,10 +54,11 @@ def plot_metadata_frame(image, frame_width, frame_height, current_fps, current_e
     """
     res_image = image.copy()
     font = cv2.FONT_HERSHEY_PLAIN
+
     cv2.putText(res_image, 'Time: ' + str(round(current_elapsed_time, 2)),
                 (int(frame_width * 0.8), int(frame_height * 0.9)), font, 1, (255, 255, 0))
     cv2.putText(res_image, 'FPS: ' + str(round(current_fps, 1)),
-                (int(frame_width * 0.8), int(frame_height * 0.95)), font, 1, (255, 255, 0))
+                (int(frame_width * 0.8), int(frame_height * 0.94)), font, 1, (255, 255, 0))
     return res_image
 
 def plot_dlc_bodyparts(image, bodyparts):
