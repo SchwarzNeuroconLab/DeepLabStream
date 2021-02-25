@@ -70,9 +70,11 @@ def example_protocol_run(condition_q: mp.Queue):
     current_trial = None
     #dmod_device = DigitalModDevice('Dev1/PFI0')
     while True:
+        # if no protocol is selected, running default picture (background)
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
+            print('IM HEEEEERE!')
             show_visual_stim_img(type=current_trial, name='DlStream')
             #dmod_device.toggle()
         else:

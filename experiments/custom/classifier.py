@@ -8,6 +8,7 @@ Licensed under GNU General Public License v3.0
 
 import multiprocessing as mp
 import time
+import pickle
 
 from utils.configloader import PATH_TO_CLASSIFIER
 
@@ -24,7 +25,7 @@ class Classifier:
     @staticmethod
     def load_classifier(path_to_sav):
         """Load saved classifier"""
-        import pickle
+        #import pickle
         file = open(path_to_sav,'rb')
         classifier = pickle.load(file)
         file.close()
@@ -44,6 +45,37 @@ class Classifier:
         return self._win_len
 
 
+
+class PureSiMBAClassifier:
+    """SiMBA base class for simple behavior classification trigger. Loads pretrained classifier, gets passed features
+    from SimbaFeatureExtractor. Returns probability of prediction that can be incorporated into triggers."""
+
+    def __init__(self):
+        self._classifier = self.load_classifier(PATH_TO_CLASSIFIER)
+        self.last_result = 0.0
+
+    @staticmethod
+    def load_classifier(path_to_sav):
+        """Load saved classifier"""
+        # load pickled pure-predict model
+        with open(path_to_sav,"rb") as f:
+            classifier = pickle.load(f)
+        return classifier
+
+    def classify(self, features):
+        """predicts motif probability from features"""
+        #pure-predict needs a list instead of a numpy array
+        prediction = self._classifier.predict_proba(list(features))
+        #pure-predict returns a nested list
+        probability = prediction[0][1]
+        self.last_result = probability
+        return probability
+
+    def get_last_result(self):
+        """Returns predicted last prediction"""
+        return self.last_result
+
+
 class SiMBAClassifier:
     """SiMBA base class for simple behavior classification trigger. Loads pretrained classifier, gets passed features
     from SimbaFeatureExtractor. Returns probability of prediction that can be incorporated into triggers."""
@@ -55,7 +87,7 @@ class SiMBAClassifier:
     @staticmethod
     def load_classifier(path_to_sav):
         """Load saved classifier"""
-        import pickle
+        #import pickle
         file = open(path_to_sav,'rb')
         classifier = pickle.load(file)
         file.close()
@@ -261,7 +293,24 @@ def simba_classifier_pool_run(input_q: mp.Queue,output_q: mp.Queue):
             last_prob = classifier.classify(features)
             output_q.put((last_prob,feature_id))
             end_time = time.time()
-            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+            #print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+        else:
+            pass
+
+
+def pure_simba_classifier_pool_run(input_q: mp.Queue,output_q: mp.Queue):
+    classifier = PureSiMBAClassifier()  # initialize classifier
+    while True:
+        features = None
+        feature_id = 0
+        if input_q.full():
+            features,feature_id = input_q.get()
+        if features is not None:
+            start_time = time.time()
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob,feature_id))
+            end_time = time.time()
+            print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
         else:
             pass
 
@@ -278,8 +327,8 @@ def bsoid_classifier_pool_run(input_q: mp.Queue,output_q: mp.Queue):
             last_prob = classifier.classify(features)
             output_q.put((last_prob,feature_id))
             end_time = time.time()
-            print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
-            print("Feature ID: "+ feature_id)
+            #print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+            #print("Feature ID: "+ feature_id)
 
         else:
             pass
@@ -376,6 +425,21 @@ class ClassifierProcessPool:
                     print('Output',process['process'].name,'ID: ' + str(result[1]))
                 break
         return result
+
+
+class PureSimbaProcessPool(ClassifierProcessPool):
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self,pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        super().__init__(pool_size)
+        self._process_pool = super().initiate_pool(pure_simba_classifier_pool_run, pool_size)
+
 
 
 class SimbaProcessPool(ClassifierProcessPool):

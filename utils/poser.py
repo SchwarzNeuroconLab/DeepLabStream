@@ -479,7 +479,9 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     adaptive to chosen model origin
     """
     if MODEL_ORIGIN == 'DLC':
-        animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        animal_skeletons = calculate_skeletons_dlc_live(peaks)
+        #TODO: alter back to original
+        #animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
         if animals_number != 1 and SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
         else:

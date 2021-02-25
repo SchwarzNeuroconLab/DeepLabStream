@@ -17,10 +17,126 @@ from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTri
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img,laser_switch
-from experiments.custom.classifier import SimbaProcessPool, BsoidProcessPool
+from experiments.custom.classifier import SimbaProcessPool, BsoidProcessPool, PureSimbaProcessPool
 
 
 from utils.configloader import THRESHOLD, POOL_SIZE
+
+
+""" experimental classification experiment using Simba trained classifiers in a pool which are converted using the pure-predict package"""
+
+class PureSimbaBehaviorPoolExperiment:
+    """
+    Test experiment for Simba classification with pure-predict conversion
+    Simple class to contain all of the experiment properties and includes classification
+    Uses multiprocess to ensure the best possible performance and
+        to showcase that it is possible to work with any type of equipment, even timer-dependant
+    """
+
+    def __init__(self):
+        """Classifier process and initiation of behavior trigger"""
+        self.experiment_finished = False
+        self._process_experiment = ExampleProtocolProcess()
+        self._process_pool = PureSimbaProcessPool(POOL_SIZE)
+        #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
+        #initiate in experiment, so that process can be started with start_experiment
+        self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(prob_threshold= THRESHOLD,
+                                                                  class_process_pool = self._process_pool,
+                                                                  debug=False)
+        self._event = None
+        #is not fully utilized in this experiment but is usefull to keep for further adaptation
+        self._current_trial = None
+        self._max_reps = 999
+        self._trial_count = {trial: 0 for trial in self._trials}
+        self._trial_timers = {trial: Timer(0) for trial in self._trials}
+        self._exp_timer = Timer(9999)
+
+    def check_skeleton(self, frame, skeleton):
+        """
+        Checking each passed animal skeleton for a pre-defined set of conditions
+        Outputting the visual representation, if exist
+        Advancing trials according to inherent logic of an experiment
+        :param frame: frame, on which animal skeleton was found
+        :param skeleton: skeleton, consisting of multiple joints of an animal
+        """
+        self.check_exp_timer()  # checking if experiment is still on
+        for trial in self._trial_count:
+            # checking if any trial hit a predefined cap
+            if self._trial_count[trial] >= self._max_reps:
+                self.stop_experiment()
+
+        if not self.experiment_finished:
+            for trial in self._trials:
+                # check for all trials if condition is met
+                #this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
+                #are passed to the classifier process
+                result, response = self._trials[trial]['trigger'](skeleton, target_prob = self._trials[trial]['target_prob'])
+                plot_triggers_response(frame, response)
+                #if the trigger is reporting back that the behavior is found: do something
+                #currently nothing is done, expect counting the occurances
+                if result:
+                    if self._current_trial is None:
+                        if not self._trial_timers[trial].check_timer():
+                            self._current_trial = trial
+                            self._trial_timers[trial].reset()
+                            self._trial_count[trial] += 1
+                            print(trial, self._trial_count[trial])
+                else:
+                    if self._current_trial == trial:
+                        self._current_trial = None
+                        self._trial_timers[trial].start()
+
+            self._process_experiment.set_trial(self._current_trial)
+
+    @property
+    def _trials(self):
+        """
+        Defining the trials
+        """
+        trials = {'DLStream_test': dict(trigger=self._behaviortrigger.check_skeleton,
+                                    target_prob = None,
+                                    count=0)}
+        return trials
+
+    def check_exp_timer(self):
+        """
+        Checking the experiment timer
+        """
+        if not self._exp_timer.check_timer():
+            print("Experiment is finished")
+            print("Time ran out.")
+            self.stop_experiment()
+
+    def start_experiment(self):
+        """
+        Start the experiment
+        """
+        self._process_experiment.start()
+        self._process_pool.start()
+        if not self.experiment_finished:
+            self._exp_timer.start()
+
+    def stop_experiment(self):
+        """
+        Stop the experiment and reset the timer
+        """
+        self.experiment_finished = True
+        self._process_experiment.end()
+        self._process_pool.end()
+        print('Experiment completed!')
+        self._exp_timer.reset()
+
+    def get_trial(self):
+        """
+        Check which trial is going on right now
+        """
+        return self._event
+
+    def get_info(self):
+        """ returns optional info"""
+        info = self._behaviortrigger.get_last_prob()
+        return info
+
 
 
 """ experimental classification experiment using Simba trained classifiers in a pool"""
@@ -39,7 +155,8 @@ class SimbaBehaviorPoolExperiment:
         #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         #initiate in experiment, so that process can be started with start_experiment
         self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(prob_threshold= THRESHOLD,
-                                                                  class_process_pool = self._process_pool)
+                                                                  class_process_pool = self._process_pool,
+                                                                  debug=False)
         self._event = None
         #is not fully utilized in this experiment but is usefull to keep for further adaptation
         self._current_trial = None

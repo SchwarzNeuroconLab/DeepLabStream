@@ -289,9 +289,10 @@ class DeepLabStream:
                     start_time = time.time()
                     if MODEL_ORIGIN == 'DLC':
                         scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                        peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
                         #Use the line below to use raw DLC output rather then DLStream optimization
-                        # peaks = pose
+                        #TODO: return to original
+                        peaks = pose
                     if MODEL_ORIGIN == 'MADLC':
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
                     analysis_time = time.time() - start_time

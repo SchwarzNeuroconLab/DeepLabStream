@@ -6,7 +6,7 @@ https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 """
 
-
+from utils.poser import transform_2pose
 from utils.analysis import angle_between_vectors, calculate_distance, EllipseROI, RectangleROI
 from utils.configloader import RESOLUTION, TIME_WINDOW
 from collections import deque
@@ -589,7 +589,6 @@ class SimbaThresholdBehaviorPoolTrigger:
 
     def fill_time_window(self,skeleton: dict):
         """Transforms skeleton input into flat numpy array of coordinates to pass to feature extraction"""
-        from utils.poser import transform_2pose
         flat_values = transform_2pose(skeleton).flatten()
         # this appends the new row to the deque time_window, which will drop the "oldest" entry due to a maximum
         # length of time_window_len
