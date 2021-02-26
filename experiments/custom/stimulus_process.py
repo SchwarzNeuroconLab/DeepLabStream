@@ -74,7 +74,6 @@ def example_protocol_run(condition_q: mp.Queue):
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
-            print('IM HEEEEERE!')
             show_visual_stim_img(type=current_trial, name='DlStream')
             #dmod_device.toggle()
         else:

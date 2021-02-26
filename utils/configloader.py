@@ -35,7 +35,7 @@ MODEL_ORIGIN = dsc_config['Pose Estimation'].get('MODEL_ORIGIN')
 model_path_string = [str(part).strip() for part in dsc_config['Pose Estimation'].get('MODEL_PATH').split(',')]
 MODEL_PATH = model_path_string[0] if len(model_path_string) <= 1 else model_path_string
 MODEL_NAME = dsc_config['Pose Estimation'].get('MODEL_NAME')
-ALL_BODYPARTS = tuple(part for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
+ALL_BODYPARTS = tuple(part.strip() for part in dsc_config['Pose Estimation'].get('ALL_BODYPARTS').split(','))
 
 # Streaming items
 

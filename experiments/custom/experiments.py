@@ -422,10 +422,10 @@ class ExampleSocialInteractionExperiment:
         Defining the trials
         """
         identification_dict = dict(active={'animal': 1
-                                            , 'bp': ['bp0']
+                                            , 'bp': ['bp2']
                                            }
                                 ,passive = {'animal': 0
-                                            , 'bp': ['bp2']
+                                            , 'bp': ['bp6']
                                                 }
                                 )
 
