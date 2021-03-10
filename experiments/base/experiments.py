@@ -10,17 +10,21 @@ import time
 
 from experiments.base.stimulation import BaseStimulation
 from experiments.base.stimulus_process import Timer
-from experiments.utils.exp_setup import get_experiment_settings, setup_trigger, setup_process
+from experiments.utils.exp_setup import (
+    get_experiment_settings,
+    setup_trigger,
+    setup_process,
+)
 from utils.plotter import plot_triggers_response
 import random
 
 
 class BaseExperiment:
     """
-        Base class for standard experiments"""
+    Base class for standard experiments"""
 
     def __init__(self):
-        self._name = 'BaseExperiment'
+        self._name = "BaseExperiment"
         self._settings_dict = {}
         self.experiment_finished = False
         self._process = None
@@ -37,7 +41,6 @@ class BaseExperiment:
         :param skeleton: skeleton, consisting of multiple joints of an animal
         """
         pass
-
 
     def check_exp_timer(self):
         """
@@ -62,7 +65,7 @@ class BaseExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to end the process!
         if self._process is not None:
@@ -80,7 +83,7 @@ class BaseExperiment:
 class BaseTrialExperiment(BaseExperiment):
     def __init__(self):
         super().__init__()
-        self._name = 'BaseTrialExperiment'
+        self._name = "BaseTrialExperiment"
         self.experiment_finished = False
         self._event = None
         self._print_check = False
@@ -88,44 +91,48 @@ class BaseTrialExperiment(BaseExperiment):
         self._result_list = []
         self._success_count = 0
 
-        self._parameter_dict = dict(TRIGGER = 'str',
-                                    PROCESS = 'str',
-                                    INTERTRIAL_TIME = 'int',
-                                    TRIAL_NAME = 'str',
-                                    TRIAL_TRIGGER = 'str',
-                                    TRIAL_TIME = 'int',
-                                    STIMULUS_TIME = 'int',
-                                    RESULT_FUNC = 'str',
-                                    EXP_LENGTH = 'int',
-                                    EXP_COMPLETION = 'int',
-                                    EXP_TIME = 'int')
+        self._parameter_dict = dict(
+            TRIGGER="str",
+            PROCESS="str",
+            INTERTRIAL_TIME="int",
+            TRIAL_NAME="str",
+            TRIAL_TRIGGER="str",
+            TRIAL_TIME="int",
+            STIMULUS_TIME="int",
+            RESULT_FUNC="str",
+            EXP_LENGTH="int",
+            EXP_COMPLETION="int",
+            EXP_TIME="int",
+        )
 
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
-        self._process = setup_process(self._settings_dict['PROCESS'])
-        self._init_trigger = setup_trigger(self._settings_dict['TRIGGER'])
-        self._trials_list = self.generate_trials_list(self._trials, self._settings_dict['EXP_LENGTH'])
-        self._trial_timer = Timer(self._settings_dict['TRIAL_TIME'])
-        self._exp_timer = Timer(self._settings_dict['EXP_TIME'])
-        self._intertrial_timer = Timer(self._settings_dict['INTERTRIAL_TIME'])
+        self._process = setup_process(self._settings_dict["PROCESS"])
+        self._init_trigger = setup_trigger(self._settings_dict["TRIGGER"])
+        self._trials_list = self.generate_trials_list(
+            self._trials, self._settings_dict["EXP_LENGTH"]
+        )
+        self._trial_timer = Timer(self._settings_dict["TRIAL_TIME"])
+        self._exp_timer = Timer(self._settings_dict["EXP_TIME"])
+        self._intertrial_timer = Timer(self._settings_dict["INTERTRIAL_TIME"])
 
     def check_skeleton(self, frame, skeleton):
         status, trial = self._process.get_status()
         if status:
             current_trial = self._trials[trial]
-            condition, response = current_trial['trigger'].check_skeleton(skeleton)
+            condition, response = current_trial["trigger"].check_skeleton(skeleton)
             self._process.put(condition)
             result = self._process.get_result()
             if result is not None:
                 self.process_result(result, trial)
                 self._current_trial = None
                 # check if all trials were successful until completion
-                if self._success_count >= self._settings_dict['EXP_COMPLETION']:
+                if self._success_count >= self._settings_dict["EXP_COMPLETION"]:
                     print("Experiment is finished")
                     print("Trial reached required amount of successes")
                     self.stop_experiment()
 
                 # if not continue
-                print(' Going into Intertrial time.')
+                print(" Going into Intertrial time.")
                 self._intertrial_timer.reset()
                 self._intertrial_timer.start()
             result = None
@@ -133,7 +140,7 @@ class BaseTrialExperiment(BaseExperiment):
 
         elif not self._intertrial_timer.check_timer():
             if self._current_trial is None:
-                self._current_trial = next(self._trials_list,False)
+                self._current_trial = next(self._trials_list, False)
             elif not self._current_trial:
                 print("Experiment is finished due to max. trial repetition.")
                 print(self._result_list)
@@ -142,11 +149,20 @@ class BaseTrialExperiment(BaseExperiment):
                 init_result, response_body = self._init_trigger.check_skeleton(skeleton)
                 if init_result:
                     # check trial start triggers
-                    self._process.put_trial(self._trials[self._current_trial], self._current_trial)
+                    self._process.put_trial(
+                        self._trials[self._current_trial], self._current_trial
+                    )
                     self._print_check = False
                 elif not self._print_check:
-                    print('Next trial: #' + str(len(self._result_list) + 1) + ' ' + self._current_trial)
-                    print('Animal is not meeting trial start criteria, the start of trial is delayed.')
+                    print(
+                        "Next trial: #"
+                        + str(len(self._result_list) + 1)
+                        + " "
+                        + self._current_trial
+                    )
+                    print(
+                        "Animal is not meeting trial start criteria, the start of trial is delayed."
+                    )
                     self._print_check = True
         # if experimental time ran out, finish experiments
         super().check_exp_timer()
@@ -160,10 +176,10 @@ class BaseTrialExperiment(BaseExperiment):
         """
         self._result_list.append((trial, result))
         if result is True:
-            self._success_count +=1
-            print('Trial successful!')
+            self._success_count += 1
+            print("Trial successful!")
         else:
-            print('Trial failed.')
+            print("Trial failed.")
             #
 
     @staticmethod
@@ -176,17 +192,23 @@ class BaseTrialExperiment(BaseExperiment):
     @property
     def _trials(self):
 
-        trigger = setup_trigger(self._settings_dict['TRIAL_TRIGGER'])
-        if self._settings_dict['RESULT_FUNC'] == 'all':
+        trigger = setup_trigger(self._settings_dict["TRIAL_TRIGGER"])
+        if self._settings_dict["RESULT_FUNC"] == "all":
             result_func = all
-        elif self._settings_dict['RESULT_FUNC'] == 'any':
+        elif self._settings_dict["RESULT_FUNC"] == "any":
             result_func = any
         else:
-            raise ValueError(f'Result function can only be "all" or "any", not {self._settings_dict["RESULT_FUNC"]}.')
-        trials = {self._settings_dict['TRIAL_NAME']: dict(stimulus_timer=Timer(self._settings_dict['STIMULUS_TIME']),
-                               success_timer=Timer(self._settings_dict['TRIAL_TIME']),
-                               trigger=trigger,
-                               result_func=result_func)}
+            raise ValueError(
+                f'Result function can only be "all" or "any", not {self._settings_dict["RESULT_FUNC"]}.'
+            )
+        trials = {
+            self._settings_dict["TRIAL_NAME"]: dict(
+                stimulus_timer=Timer(self._settings_dict["STIMULUS_TIME"]),
+                success_timer=Timer(self._settings_dict["TRIAL_TIME"]),
+                trigger=trigger,
+                result_func=result_func,
+            )
+        }
 
         return trials
 
@@ -197,25 +219,28 @@ class BaseConditionalExperiment(BaseExperiment):
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
+
     def __init__(self):
         super().__init__()
-        self._name = 'BaseConditionalExperiment'
-        self._parameter_dict = dict(TRIGGER = 'str',
-                                    PROCESS = 'str',
-                                    INTERTRIAL_TIME = 'int',
-                                    EXP_LENGTH = 'int',
-                                    EXP_TIME = 'int')
+        self._name = "BaseConditionalExperiment"
+        self._parameter_dict = dict(
+            TRIGGER="str",
+            PROCESS="str",
+            INTERTRIAL_TIME="int",
+            EXP_LENGTH="int",
+            EXP_TIME="int",
+        )
         self._settings_dict = get_experiment_settings(self._name, self._parameter_dict)
         self.experiment_finished = False
-        self._process = setup_process(self._settings_dict['PROCESS'])
+        self._process = setup_process(self._settings_dict["PROCESS"])
         self._event = None
         self._event_count = 0
         self._current_trial = None
 
-        self._exp_timer = Timer(self._settings_dict['EXP_TIME'])
-        self._intertrial_timer = Timer(self._settings_dict['INTERTRIAL_TIME'])
+        self._exp_timer = Timer(self._settings_dict["EXP_TIME"])
+        self._intertrial_timer = Timer(self._settings_dict["INTERTRIAL_TIME"])
 
-        self._trigger = setup_trigger(self._settings_dict['TRIGGER'])
+        self._trigger = setup_trigger(self._settings_dict["TRIGGER"])
 
     def check_skeleton(self, frame, skeleton):
         """
@@ -227,7 +252,7 @@ class BaseConditionalExperiment(BaseExperiment):
         """
         self.check_exp_timer()  # checking if experiment is still on
 
-        if self._event_count >= self._settings_dict['EXP_LENGTH']:
+        if self._event_count >= self._settings_dict["EXP_LENGTH"]:
             self.stop_experiment()
 
         elif not self.experiment_finished:
@@ -236,7 +261,7 @@ class BaseConditionalExperiment(BaseExperiment):
                 result, response = self._trigger.check_skeleton(skeleton=skeleton)
                 if result:
                     self._event_count += 1
-                    print('Stimulation #{self._event_count}'.format())
+                    print("Stimulation #{self._event_count}".format())
                     self._intertrial_timer.reset()
                     self._intertrial_timer.start()
 
@@ -264,7 +289,7 @@ class BaseConditionalExperiment(BaseExperiment):
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to end the process!
         self._process.end()
@@ -285,35 +310,42 @@ class BaseOptogeneticExperiment(BaseExperiment):
     def __init__(self):
         super().__init__()
         self.experiment_finished = False
-        self._name = 'BaseOptogeneticExperiment'
+        self._name = "BaseOptogeneticExperiment"
 
-        #loading settings
-        self._exp_parameter_dict = dict(TRIGGER ='str',
-                                        INTERTRIAL_TIME = 'int',
-                                        MAX_STIM_TIME = 'int',
-                                        MIN_STIM_TIME='int',
-                                        MAX_TOTAL_STIM_TIME = 'int',
-                                        EXP_TIME = 'int',
-                                        PROCESS = 'str')
-        self._settings_dict = get_experiment_settings(self._name, self._exp_parameter_dict)
-        self._process = setup_process(self._settings_dict['PROCESS'])
-        self._intertrial_timer = Timer(self._settings_dict['INTERTRIAL_TIME'])
-        self._exp_timer = Timer(self._settings_dict['EXP_TIME'])
+        # loading settings
+        self._exp_parameter_dict = dict(
+            TRIGGER="str",
+            INTERTRIAL_TIME="int",
+            MAX_STIM_TIME="int",
+            MIN_STIM_TIME="int",
+            MAX_TOTAL_STIM_TIME="int",
+            EXP_TIME="int",
+            PROCESS="str",
+        )
+        self._settings_dict = get_experiment_settings(
+            self._name, self._exp_parameter_dict
+        )
+        self._process = setup_process(self._settings_dict["PROCESS"])
+        self._intertrial_timer = Timer(self._settings_dict["INTERTRIAL_TIME"])
+        self._exp_timer = Timer(self._settings_dict["EXP_TIME"])
         self._event = False
         self._event_start = None
 
-        #setting limits
-        self._max_trial_time = self._settings_dict['MAX_STIM_TIME']
-        self._min_trial_time = self._settings_dict['MIN_STIM_TIME']
-        self._max_total_time = self._settings_dict['MAX_TOTAL_STIM_TIME'] if self._settings_dict['MAX_TOTAL_STIM_TIME']\
-                                                                     is not None else self._settings_dict['EXP_TIME'] + 1
+        # setting limits
+        self._max_trial_time = self._settings_dict["MAX_STIM_TIME"]
+        self._min_trial_time = self._settings_dict["MIN_STIM_TIME"]
+        self._max_total_time = (
+            self._settings_dict["MAX_TOTAL_STIM_TIME"]
+            if self._settings_dict["MAX_TOTAL_STIM_TIME"] is not None
+            else self._settings_dict["EXP_TIME"] + 1
+        )
 
-        #keeping count
+        # keeping count
         self._results = []
         self._total_time = 0
         self._trial_time = 0
-        #trigger
-        self._trigger = setup_trigger(self._settings_dict['TRIGGER'])
+        # trigger
+        self._trigger = setup_trigger(self._settings_dict["TRIGGER"])
 
     def check_skeleton(self, frame, skeleton):
 
@@ -369,7 +401,6 @@ class BaseOptogeneticExperiment(BaseExperiment):
                                 self._intertrial_timer.start()
             self._process.put(self._event)
 
-
         else:
             # if maximum experiment time was reached, stop experiment
             print("Ending experiment, timer ran out")
@@ -380,14 +411,9 @@ class BaseOptogeneticExperiment(BaseExperiment):
 
     def stop_experiment(self):
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         print("Total event duration", sum(self._results))
         print(self._results)
 
     def get_trial(self):
         return self._event
-
-
-
-
-

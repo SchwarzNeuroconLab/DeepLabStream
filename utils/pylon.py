@@ -14,6 +14,7 @@ class PylonManager:
     """
     Basler cameras manager class
     """
+
     def __init__(self):
         self._manager_name = "Basler Pylon"
         self._factory = pylon.TlFactory.GetInstance()
@@ -28,7 +29,10 @@ class PylonManager:
         """
         Create a dict with all connected devices from self._factory
         """
-        return {device.GetSerialNumber(): device for device in self._factory.EnumerateDevices()}
+        return {
+            device.GetSerialNumber(): device
+            for device in self._factory.EnumerateDevices()
+        }
 
     def get_connected_devices(self) -> list:
         """
@@ -47,7 +51,9 @@ class PylonManager:
         """
         Camera starter
         """
-        camera = pylon.InstantCamera(self._factory.CreateDevice(self._connected_devices[device_serial]))
+        camera = pylon.InstantCamera(
+            self._factory.CreateDevice(self._connected_devices[device_serial])
+        )
         self._enabled_devices[camera.DeviceInfo.GetSerialNumber()] = camera
         # grabbing continuously (video) with minimal delay
         camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
@@ -75,7 +81,9 @@ class PylonManager:
         depth_maps = {}
         infra_frames = {}
         for camera_name, camera in self._enabled_devices.items():
-            grabbed_frame = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            grabbed_frame = camera.RetrieveResult(
+                5000, pylon.TimeoutHandling_ThrowException
+            )
             # converting to opencv bgr format
             image = self._converter.Convert(grabbed_frame)
             img = image.GetArray()

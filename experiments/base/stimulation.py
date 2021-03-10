@@ -14,162 +14,195 @@ from experiments.utils.exp_setup import get_stimulation_settings
 
 
 class BaseStimulation:
-
     def __init__(self):
-        self._name = 'BaseStimulation'
-        self._parameter_dict = dict(TYPE='str',
-                                    PORT='str',
-                                    IP = 'str',
-                                    STIM_TIME='float')
+        self._name = "BaseStimulation"
+        self._parameter_dict = dict(TYPE="str", PORT="str", IP="str", STIM_TIME="float")
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
-        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['PORT'], self._settings_dict['IP'])
+        self._stim_device = self._setup_device(
+            self._settings_dict["TYPE"],
+            self._settings_dict["PORT"],
+            self._settings_dict["IP"],
+        )
 
     @staticmethod
     def _setup_device(type, port, ip):
         device = None
-        if type == 'NI':
+        if type == "NI":
             from experiments.utils.DAQ_output import DigitalModDevice
+
             device = DigitalModDevice(port)
 
-        if type == 'RASPBERRY':
+        if type == "RASPBERRY":
             from experiments.utils.gpio_control import DigitalPiDevice
+
             device = DigitalPiDevice(port)
 
-        if type == 'RASP_NETWORK':
+        if type == "RASP_NETWORK":
             from experiments.utils.gpio_control import DigitalPiDevice
+
             if ip is not None:
                 device = DigitalPiDevice(port, ip)
             else:
-                raise ValueError('IP required for remote GPIO control.')
+                raise ValueError("IP required for remote GPIO control.")
 
-        if type == 'ARDUINO':
+        if type == "ARDUINO":
             from experiments.utils.gpio_control import DigitalArduinoDevice
-            device = DigitalArduinoDevice(port)
 
+            device = DigitalArduinoDevice(port)
 
         return device
 
     def stimulate(self):
         """Run stimulation and stop after being done"""
-        if self._settings_dict['STIM_TIME'] is not None:
-            print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['STIM_TIME']))
+        if self._settings_dict["STIM_TIME"] is not None:
+            print(
+                "Stimulation: {} for {}.".format(
+                    self._name, self._settings_dict["STIM_TIME"]
+                )
+            )
             self._stim_device.turn_on()
             self._running = True
-            time.sleep(self._settings_dict['STIM_TIME'])
+            time.sleep(self._settings_dict["STIM_TIME"])
             self._stim_device.turn_off()
             self._running = False
         else:
-            print('Stimulation: {} does not support stimulate().'.format(self._name))
+            print("Stimulation: {} does not support stimulate().".format(self._name))
 
     def remove(self):
         """remove stimulation (e.g. reward) and stop after being done"""
-        print('Stimulation: {} does not support remove().'.format(self._name))
+        print("Stimulation: {} does not support remove().".format(self._name))
 
     def start(self):
 
         if not self._running:
-            print('Stimulation: {} ON.'.format(self._name))
+            print("Stimulation: {} ON.".format(self._name))
             self._stim_device.turn_on()
             self._running = True
         else:
-            print('Stimulation was already ON.')
+            print("Stimulation was already ON.")
 
     def stop(self):
         if self._running:
-            print('Stimulation: {} OFF.'.format(self._name))
+            print("Stimulation: {} OFF.".format(self._name))
             self._stim_device.turn_off()
             self._running = False
         else:
-            print('Stimulation was already OFF.')
+            print("Stimulation was already OFF.")
 
 
 class RewardDispenser(BaseStimulation):
-
     def __init__(self):
-        self._name = 'RewardDispenser'
-        self._parameter_dict = dict(TYPE = 'str',
-                                    IP = 'str',
-                                    STIM_PORT= 'str',
-                                    REMOVAL_PORT = 'str',
-                                    STIM_TIME = 'float',
-                                    REMOVAL_TIME = 'float')
+        self._name = "RewardDispenser"
+        self._parameter_dict = dict(
+            TYPE="str",
+            IP="str",
+            STIM_PORT="str",
+            REMOVAL_PORT="str",
+            STIM_TIME="float",
+            REMOVAL_TIME="float",
+        )
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
-        self._stim_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['STIM_PORT'],
-                                               self._settings_dict['IP'])
-        self._removal_device = self._setup_device(self._settings_dict['TYPE'], self._settings_dict['REMOVAL_PORT'],
-                                                  self._settings_dict['IP'])
-
+        self._stim_device = self._setup_device(
+            self._settings_dict["TYPE"],
+            self._settings_dict["STIM_PORT"],
+            self._settings_dict["IP"],
+        )
+        self._removal_device = self._setup_device(
+            self._settings_dict["TYPE"],
+            self._settings_dict["REMOVAL_PORT"],
+            self._settings_dict["IP"],
+        )
 
     @staticmethod
     def _setup_device(type, port, ip):
         device = None
-        if type == 'NI':
+        if type == "NI":
             from experiments.utils.DAQ_output import DigitalModDevice
+
             device = DigitalModDevice(port)
 
-        if type == 'RASPBERRY':
+        if type == "RASPBERRY":
             from experiments.utils.gpio_control import DigitialPiBoardDevice
+
             device = DigitialPiBoardDevice(port)
 
-        if type == 'RASP_NETWORK':
+        if type == "RASP_NETWORK":
             from experiments.utils.gpio_control import DigitialPiBoardDevice
+
             if ip is not None:
                 device = DigitialPiBoardDevice(port, ip)
             else:
-                raise ValueError('IP required for remote GPIO control.')
-
+                raise ValueError("IP required for remote GPIO control.")
 
         return device
 
     def stimulate(self):
         """Run stimulation and stop after being done"""
-        print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['STIM_TIME']))
+        print(
+            "Stimulation: {} for {}.".format(
+                self._name, self._settings_dict["STIM_TIME"]
+            )
+        )
         self._stim_device.turn_on()
         self._running = True
-        time.sleep(self._settings_dict['STIM_TIME'])
+        time.sleep(self._settings_dict["STIM_TIME"])
         self._stim_device.turn_off()
         self._running = False
 
     def remove(self):
         """remove stimulation (e.g. reward) and stop after being done"""
-        print('Stimulation: {} for {}.'.format(self._name, self._settings_dict['REMOVAL_TIME']))
+        print(
+            "Stimulation: {} for {}.".format(
+                self._name, self._settings_dict["REMOVAL_TIME"]
+            )
+        )
         self._removal_device.turn_on()
         self._running = True
-        time.sleep(self._settings_dict['REMOVAL_TIME'])
+        time.sleep(self._settings_dict["REMOVAL_TIME"])
         self._removal_device.turn_off()
         self._running = False
 
     def start(self):
-        print('Stimulation: {} does not support start(). Did you mean stimulate()?'.format(self._name))
+        print(
+            "Stimulation: {} does not support start(). Did you mean stimulate()?".format(
+                self._name
+            )
+        )
 
     def stop(self):
-        print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
+        print(
+            "Stimulation: {} does not support stop(). Did you mean remove()?".format(
+                self._name
+            )
+        )
 
 
 class ScreenStimulation(BaseStimulation):
-
     def __init__(self):
-        self._name = 'ScreenStimulation'
-        self._parameter_dict = dict(TYPE='str',
-                                    STIM_PATH='str',
-                                    BACKGROUND_PATH='str')
+        self._name = "ScreenStimulation"
+        self._parameter_dict = dict(TYPE="str", STIM_PATH="str", BACKGROUND_PATH="str")
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
         self._stim_device = None
 
-        self._background = self._setup_stimulus(self._settings_dict['BACKGROUND_PATH'], type = 'image') \
-            if self._settings_dict['BACKGROUND_PATH'] is not None else None
-        self._stimulus = self._setup_stimulus(self._settings_dict['STIM_PATH'], type = self._settings_dict['TYPE'])
+        self._background = (
+            self._setup_stimulus(self._settings_dict["BACKGROUND_PATH"], type="image")
+            if self._settings_dict["BACKGROUND_PATH"] is not None
+            else None
+        )
+        self._stimulus = self._setup_stimulus(
+            self._settings_dict["STIM_PATH"], type=self._settings_dict["TYPE"]
+        )
         self._window = None
 
     @staticmethod
-    def _setup_stimulus(path, type = 'image'):
-        if type == 'image':
+    def _setup_stimulus(path, type="image"):
+        if type == "image":
             img = cv2.imread(path, -1)
             stimulus = np.uint8(img)
-        elif type == 'video':
+        elif type == "video":
             stimulus = cv2.VideoCapture(path)
 
         return stimulus
@@ -181,10 +214,10 @@ class ScreenStimulation(BaseStimulation):
         """Run stimulation and stop after being done"""
         if self._window is None:
             self._setup_window()
-        if self._settings_dict['TYPE'] == 'image':
+        if self._settings_dict["TYPE"] == "image":
             cv2.imshow(self._name, self._stimulus)
 
-        elif self._settings_dict['TYPE'] == 'video':
+        elif self._settings_dict["TYPE"] == "video":
             while self._stimulus.isOpened():
                 self._running = True
                 ret, frame = self._stimulus.read()
@@ -192,7 +225,7 @@ class ScreenStimulation(BaseStimulation):
                     cv2.imshow(self._name, frame)
                 else:
                     break
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
             self._running = False
             self._stimulus.release()
@@ -205,8 +238,15 @@ class ScreenStimulation(BaseStimulation):
         cv2.imshow(self._name, self._background)
 
     def start(self):
-        print('Stimulation: {} does not support start(). Did you mean stimulate()?'.format(self._name))
+        print(
+            "Stimulation: {} does not support start(). Did you mean stimulate()?".format(
+                self._name
+            )
+        )
 
     def stop(self):
-        print('Stimulation: {} does not support stop(). Did you mean remove()?'.format(self._name))
-
+        print(
+            "Stimulation: {} does not support stop(). Did you mean remove()?".format(
+                self._name
+            )
+        )

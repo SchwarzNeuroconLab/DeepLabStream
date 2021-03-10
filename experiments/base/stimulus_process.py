@@ -8,13 +8,14 @@ Licensed under GNU General Public License v3.0
 
 import time
 import multiprocessing as mp
-from experiments.utils.exp_setup import get_process_settings,setup_stimulation
+from experiments.utils.exp_setup import get_process_settings, setup_stimulation
 
 
 class Timer:
     """
     Very simple timer
     """
+
     def __init__(self, seconds):
         """
         Setting the time the timer needs to run
@@ -88,7 +89,9 @@ def base_conditional_supply_protocol_run(condition_q: mp.Queue, stimulus_name):
             stimulation.remove()
 
 
-def base_trial_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, stimulation_name):
+def base_trial_protocol_run(
+    trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, stimulation_name
+):
     """
     The function to use in ProtocolProcess class
     Designed to be run continuously alongside the main loop
@@ -108,69 +111,79 @@ def base_trial_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q:
             current_trial = trial_q.get()
             finished_trial = False
             # starting timers
-            current_trial['stimulus_timer'].start()
-            current_trial['success_timer'].start()
-            print('Starting protocol {}'.format(current_trial))
+            current_trial["stimulus_timer"].start()
+            current_trial["success_timer"].start()
+            print("Starting protocol {}".format(current_trial))
             condition_list = []
             # this branch is for already running protocol
         elif current_trial is not None:
             # checking for stimulus timer and outputting correct image
-            if current_trial['stimulus_timer'].check_timer():
+            if current_trial["stimulus_timer"].check_timer():
                 # if stimulus timer is running, show stimulus
                 stimulation.start()
             else:
                 # if the timer runs out, finish protocol and reset timer
                 stimulation.stop()
-                current_trial['stimulus_timer'].reset()
+                current_trial["stimulus_timer"].reset()
                 current_trial = None
 
             # checking if any condition was passed
             if condition_q.full():
                 stimulus_condition = condition_q.get()
                 # checking if timer for condition is running and condition=True
-                if current_trial['success_timer'].check_timer():
+                if current_trial["success_timer"].check_timer():
                     condition_list.append(stimulus_condition)
 
             # checking if the timer for condition has run out
-            if not current_trial['success_timer'].check_timer() and not finished_trial:
-                    # resetting the timer
-                    print('Timer for condition run out')
-                    finished_trial = True
-                    # outputting the result, whatever it is
-                    success = current_trial['result_func'](condition_list)
-                    success_q.put(success)
-                    current_trial['success_timer'].reset()
+            if not current_trial["success_timer"].check_timer() and not finished_trial:
+                # resetting the timer
+                print("Timer for condition run out")
+                finished_trial = True
+                # outputting the result, whatever it is
+                success = current_trial["result_func"](condition_list)
+                success_q.put(success)
+                current_trial["success_timer"].reset()
 
 
 class BaseProtocolProcess:
     """
     Class to help work with protocol function in multiprocessing
     """
+
     def __init__(self):
         """
         Setting up the three queues and the process itself
         """
-        self._name = 'BaseProtocolProcess'
-        self._parameter_dict = dict(TYPE='str',
-                                    STIMULATION ='str')
+        self._name = "BaseProtocolProcess"
+        self._parameter_dict = dict(TYPE="str", STIMULATION="str")
         self._settings_dict = get_process_settings(self._name, self._parameter_dict)
 
-        if self._settings_dict['TYPE'] == 'trial':
+        if self._settings_dict["TYPE"] == "trial":
             self._trial_queue = mp.Queue(1)
             self._success_queue = mp.Queue(1)
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_trial_protocol_run,
-                                                args=(self._trial_queue, self._condition_queue,
-                                                self._success_queue, self._settings_dict['STIMULATION']))
-        elif self._settings_dict['TYPE'] == 'switch':
+            self._protocol_process = mp.Process(
+                target=base_trial_protocol_run,
+                args=(
+                    self._trial_queue,
+                    self._condition_queue,
+                    self._success_queue,
+                    self._settings_dict["STIMULATION"],
+                ),
+            )
+        elif self._settings_dict["TYPE"] == "switch":
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_conditional_switch_protocol_run,
-                                                args=(self._condition_queue, self._settings_dict['STIMULATION']))
+            self._protocol_process = mp.Process(
+                target=base_conditional_switch_protocol_run,
+                args=(self._condition_queue, self._settings_dict["STIMULATION"]),
+            )
 
-        elif self._settings_dict['TYPE'] == 'supply':
+        elif self._settings_dict["TYPE"] == "supply":
             self._condition_queue = mp.Queue(1)
-            self._protocol_process = mp.Process(target=base_conditional_supply_protocol_run,
-                                                args=(self._condition_queue, self._settings_dict['STIMULATION']))
+            self._protocol_process = mp.Process(
+                target=base_conditional_supply_protocol_run,
+                args=(self._condition_queue, self._settings_dict["STIMULATION"]),
+            )
 
         self._running = False
         self._current_trial = None
@@ -185,9 +198,12 @@ class BaseProtocolProcess:
         """
         Ending the process
         """
-        if self._settings_dict['TYPE'] == 'switch' or self._settings_dict['TYPE'] == 'supply':
+        if (
+            self._settings_dict["TYPE"] == "switch"
+            or self._settings_dict["TYPE"] == "supply"
+        ):
             self._condition_queue.close()
-        elif self._settings_dict['TYPE'] == 'trial':
+        elif self._settings_dict["TYPE"] == "trial":
             self._trial_queue.close()
             self._success_queue.close()
 
@@ -211,18 +227,17 @@ class BaseProtocolProcess:
         """
         Passing the condition to the process
         """
-        if self._settings_dict['TYPE'] == 'trial':
+        if self._settings_dict["TYPE"] == "trial":
             if self._trial_queue.empty() and self._success_queue.empty():
                 self._trial_queue.put(trial)
                 self._running = True
                 self._current_trial = trial_name
 
-
     def get_result(self) -> bool:
         """
         Getting result from the process
         """
-        if self._settings_dict['TYPE'] == 'trial':
+        if self._settings_dict["TYPE"] == "trial":
             if self._success_queue.full():
                 self._running = False
                 return self._success_queue.get()
