@@ -18,19 +18,28 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 from scipy.ndimage.filters import maximum_filter
 
 from utils.analysis import calculate_distance
-from utils.configloader import MODEL_ORIGIN, MODEL_NAME, MODEL_PATH, ALL_BODYPARTS, FLATTEN_MA, SPLIT_MA,\
-    HANDLE_MISSING, ANIMALS_NUMBER
+from utils.configloader import (
+    MODEL_ORIGIN,
+    MODEL_NAME,
+    MODEL_PATH,
+    ALL_BODYPARTS,
+    FLATTEN_MA,
+    SPLIT_MA,
+    HANDLE_MISSING,
+    ANIMALS_NUMBER,
+)
 
 # suppressing unnecessary warnings
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=DeprecationWarning)
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action="ignore", category=DeprecationWarning)
 
 # trying importing functions using deeplabcut module, if DLC 2 is installed correctly
-if MODEL_ORIGIN in ('DLC', 'MADLC'):
+if MODEL_ORIGIN in ("DLC", "MADLC"):
     try:
         # checking for DLC-core
-        if importlib.util.find_spec('deeplabcutcore') is not None:
+        if importlib.util.find_spec("deeplabcutcore") is not None:
             import deeplabcutcore.pose_estimation_tensorflow.nnet.predict as predict
             from deeplabcutcore.pose_estimation_tensorflow.config import load_config
         # trying to import "classic" DLC2
@@ -38,26 +47,29 @@ if MODEL_ORIGIN in ('DLC', 'MADLC'):
             import deeplabcut.pose_estimation_tensorflow.nnet.predict as predict
             from deeplabcut.pose_estimation_tensorflow.config import load_config
 
-            if MODEL_ORIGIN == 'MADLC':
-                from deeplabcut.pose_estimation_tensorflow.nnet import predict_multianimal
+            if MODEL_ORIGIN == "MADLC":
+                from deeplabcut.pose_estimation_tensorflow.nnet import (
+                    predict_multianimal,
+                )
 
-        models_folder = 'pose_estimation_tensorflow/models/'
+        models_folder = "pose_estimation_tensorflow/models/"
     # if not DLC 2 is not installed, try import from DLC 1 the old way
     except ImportError:
         # adding DLC posing path and loading modules from it
         sys.path.insert(0, MODEL_PATH + "/pose-tensorflow")
         from config import load_config
         from nnet import predict
-        models_folder = 'pose-tensorflow/models/'
 
-elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+        models_folder = "pose-tensorflow/models/"
+
+elif MODEL_ORIGIN == "DEEPPOSEKIT":
     from deepposekit.models import load_model
 
-elif MODEL_ORIGIN == 'DLC-LIVE':
+elif MODEL_ORIGIN == "DLC-LIVE":
     from dlclive import DLCLive
     from utils.configloader import MODEL_PATH
 
-elif MODEL_ORIGIN == 'SLEAP':
+elif MODEL_ORIGIN == "SLEAP":
     from sleap import load_model
     from utils.configloader import MODEL_PATH
 
@@ -73,9 +85,11 @@ def load_deeplabcut():
     :return: tuple of DeepLabCut config, TensorFlow session, inputs and outputs
     """
     model = os.path.join(MODEL_PATH, models_folder, MODEL_NAME)
-    cfg = load_config(os.path.join(model, 'test/pose_cfg.yaml'))
-    snapshots = sorted([sn.split('.')[0] for sn in os.listdir(model + '/train/') if "index" in sn])
-    cfg['init_weights'] = model + '/train/' + snapshots[-1]
+    cfg = load_config(os.path.join(model, "test/pose_cfg.yaml"))
+    snapshots = sorted(
+        [sn.split(".")[0] for sn in os.listdir(model + "/train/") if "index" in sn]
+    )
+    cfg["init_weights"] = model + "/train/" + snapshots[-1]
 
     sess, inputs, outputs = predict.setup_pose_prediction(cfg)
     return cfg, sess, inputs, outputs
@@ -96,7 +110,9 @@ def get_pose(image, config, session, inputs, outputs):
     return scmap, locref, pose
 
 
-def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, animal_number: int, config: dict) -> dict:
+def find_local_peaks_new(
+    scoremap: np.ndarray, local_reference: np.ndarray, animal_number: int, config: dict
+) -> dict:
     """
     Function for finding local peaks for each joint on provided scoremap
     :param scoremap: scmap from get_pose function
@@ -110,11 +126,11 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
     """
 
     # loading animal joints from config
-    all_joints_names = config['all_joints_names']
+    all_joints_names = config["all_joints_names"]
     # critical_joints = ['neck', 'tailroot']
     all_peaks = {}
     # loading stride from config
-    stride = config['stride']
+    stride = config["stride"]
     # filtering scoremap
     scoremap[scoremap < 0.1] = 0
     for joint_num, joint in enumerate(all_joints_names):
@@ -127,24 +143,35 @@ def find_local_peaks_new(scoremap: np.ndarray, local_reference: np.ndarray, anim
         sm_max_filter = maximum_filter(sm_joint, footprint=neighborhood)
         # eroding filtered scoremap
         erosion_structure = generate_binary_structure(2, 3)
-        sm_max_filter_eroded = binary_erosion(sm_max_filter, structure=erosion_structure).astype(sm_max_filter.dtype)
+        sm_max_filter_eroded = binary_erosion(
+            sm_max_filter, structure=erosion_structure
+        ).astype(sm_max_filter.dtype)
         # labeling eroded filtered scoremap
         labeled_sm_eroded, num = label(sm_max_filter_eroded)
         # if joint is 'critical' and we have too few labels then we try a workaround to ensure maximum found peaks
         # for all other joints - normal procedure with cutoff point at animal_number
-        peaks = maximum_position(sm_joint, labels=labeled_sm_eroded, index=range(1, num + 1))
+        peaks = maximum_position(
+            sm_joint, labels=labeled_sm_eroded, index=range(1, num + 1)
+        )
         if num != animal_number:
-            peaks = [tuple(peak) for peak in peak_local_max(sm_joint, min_distance=4, num_peaks=animal_number)]
+            peaks = [
+                tuple(peak)
+                for peak in peak_local_max(
+                    sm_joint, min_distance=4, num_peaks=animal_number
+                )
+            ]
 
         if len(peaks) > animal_number:
-            peaks = peaks[:animal_number + 1]
+            peaks = peaks[: animal_number + 1]
 
         # using scoremap peaks to get the coordinates on original image
         for peak in peaks:
             offset = lr_joint[peak]
             prob = sm_joint[peak]  # not used
             # some weird DLC magic with stride and offsets
-            coordinates = np.floor(np.array(peak)[::-1] * stride + 0.5 * stride + offset)
+            coordinates = np.floor(
+                np.array(peak)[::-1] * stride + 0.5 * stride + offset
+            )
             all_peaks[joint].append([tuple(coordinates.astype(int)), joint])
     return all_peaks
 
@@ -166,11 +193,15 @@ def calculate_dlstream_skeletons(peaks: dict, animals_number: int) -> list:
         # extracting dots coordinates from given list
         dots_coordinates = (dot[0] for dot in dots_cluster)
         # calculating sum of each dots cluster
-        product_sum = sum(calculate_distance(*c) for c in combinations(dots_coordinates, 2))
+        product_sum = sum(
+            calculate_distance(*c) for c in combinations(dots_coordinates, 2)
+        )
         return product_sum
 
     # sorting groups by their sum
-    sorted_product = sorted(cartesian_p, key=lambda c: calculate_closest_distances(c), reverse=False)
+    sorted_product = sorted(
+        cartesian_p, key=lambda c: calculate_closest_distances(c), reverse=False
+    )
 
     # creating skeletons from top dots cluster
     def compare_clusters(unique_clusters: list, new_cluster: tuple) -> bool:
@@ -207,7 +238,10 @@ def calculate_dlstream_skeletons(peaks: dict, animals_number: int) -> list:
         top_unique_clusters.append(sorted_product[0])
         for cluster in sorted_product[1:]:
             # check if cluster is unique and we have a room for it
-            if compare_clusters(top_unique_clusters, cluster) and len(top_unique_clusters) < animals_number:
+            if (
+                compare_clusters(top_unique_clusters, cluster)
+                and len(top_unique_clusters) < animals_number
+            ):
                 top_unique_clusters.append(cluster)
             # there couldn't be more clusters then animal_number limit
             elif len(top_unique_clusters) == animals_number:
@@ -231,15 +265,24 @@ def get_ma_pose(image, config, session, inputs, outputs):
 
     :return: tuple of scoremap, local reference and pose
     """
-    scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(image, config, session, inputs, outputs,
-                                                                           outall=True,
-                                                                           nms_radius=config['nmsradius'],
-                                                                           det_min_score=config['minconfidence'],
-                                                                           c_engine=False)
+    scmap, locref, paf, pose = predict_multianimal.get_detectionswithcosts(
+        image,
+        config,
+        session,
+        inputs,
+        outputs,
+        outall=True,
+        nms_radius=config["nmsradius"],
+        det_min_score=config["minconfidence"],
+        c_engine=False,
+    )
 
     return pose
 
-def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.1) -> list:
+
+def calculate_ma_skeletons(
+    pose: dict, animals_number: int, threshold: float = 0.1
+) -> list:
     """
     Creating skeletons from given pose in maDLC
     There could be no more skeletons than animals_number
@@ -248,13 +291,13 @@ def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.
 
     def filter_mapredictions(pose):
         detection = []
-        conf = np.array(pose['confidence'])
-        coords = np.array(pose['coordinates'])
-        for num, bp in enumerate(pose['coordinates'][0]):
+        conf = np.array(pose["confidence"])
+        coords = np.array(pose["coordinates"])
+        for num, bp in enumerate(pose["coordinates"][0]):
             if len(bp) > 0:
                 conf_bp = conf[num].flatten()
                 fltred_bp = bp[conf_bp >= threshold, :]
-                #todo: add function to only take top k-highest poses with k = animal number
+                # todo: add function to only take top k-highest poses with k = animal number
                 detection.append(fltred_bp)
             else:
                 detection.append(np.array([]))
@@ -270,17 +313,24 @@ def calculate_ma_skeletons(pose: dict, animals_number: int, threshold:float = 0.
         skeletons = {}
         for bp in range(len(bodyparts)):
             for animal_num in range(animals_number):
-                if 'Mouse'+str(animal_num+1) not in skeletons.keys():
-                    skeletons['Mouse' + str(animal_num + 1)] = {}
+                if "Mouse" + str(animal_num + 1) not in skeletons.keys():
+                    skeletons["Mouse" + str(animal_num + 1)] = {}
                 if len(bodyparts[bp]) >= animals_number:
-                    skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
+                    skeletons["Mouse" + str(animal_num + 1)][
+                        "bp" + str(bp + 1)
+                    ] = bodyparts[bp][animal_num].astype(float)
                 else:
                     if animal_num < len(bodyparts[bp]):
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = bodyparts[bp][animal_num].astype(float)
+                        skeletons["Mouse" + str(animal_num + 1)][
+                            "bp" + str(bp + 1)
+                        ] = bodyparts[bp][animal_num].astype(float)
                     else:
-                        skeletons['Mouse'+str(animal_num+1)]['bp' + str(bp + 1)] = np.array([np.NaN,np.NaN])
+                        skeletons["Mouse" + str(animal_num + 1)][
+                            "bp" + str(bp + 1)
+                        ] = np.array([np.NaN, np.NaN])
 
         return skeletons
+
     detections = filter_mapredictions(pose)
     animal_skeletons = extract_to_animal_skeleton(detections)
     animal_skeletons = list(animal_skeletons.values())
@@ -310,7 +360,7 @@ def flatten_maDLC_skeletons(skeletons):
     flat_skeletons = dict()
     for num, skeleton in enumerate(skeletons):
         for bp, value in skeleton.items():
-            flat_skeletons[f'{num}_{bp}'] = value
+            flat_skeletons[f"{num}_{bp}"] = value
 
     return [flat_skeletons]
 
@@ -320,13 +370,19 @@ def split_flat_skeleton(skeletons):
     where animals are identity tracked (e.g. SLEAP)"""
     flat_skeletons = skeletons[0]
     split_skeletons = []
-    bp_per_animal, remainder =divmod(len(flat_skeletons), ANIMALS_NUMBER)
+    bp_per_animal, remainder = divmod(len(flat_skeletons), ANIMALS_NUMBER)
     if remainder > 0:
-        raise SkeletonError(f'The number of body parts ({len(flat_skeletons)}) cannot be split equally into {ANIMALS_NUMBER} animals.')
+        raise SkeletonError(
+            f"The number of body parts ({len(flat_skeletons)}) cannot be split equally into {ANIMALS_NUMBER} animals."
+        )
     else:
         for animal in range(ANIMALS_NUMBER):
-            single_skeleton = list(flat_skeletons.keys())[bp_per_animal*animal:bp_per_animal*animal+ bp_per_animal]
-            split_skeletons.append({x: flat_skeletons[x] for x in flat_skeletons if x in single_skeleton})
+            single_skeleton = list(flat_skeletons.keys())[
+                bp_per_animal * animal : bp_per_animal * animal + bp_per_animal
+            ]
+            split_skeletons.append(
+                {x: flat_skeletons[x] for x in flat_skeletons if x in single_skeleton}
+            )
 
     return split_skeletons
 
@@ -346,7 +402,7 @@ def transform_2skeleton(pose):
         skeleton = dict()
         counter = 0
         for bp in pose:
-            skeleton[f'bp{counter}'] = tuple(np.array(bp[0:2], dtype=float))
+            skeleton[f"bp{counter}"] = tuple(np.array(bp[0:2], dtype=float))
             counter += 1
 
     return skeleton
@@ -378,27 +434,30 @@ def handle_missing_bp(animal_skeletons: list):
         for bodypart, coordinates in skeleton.items():
             np_coords = np.array((coordinates))
             if any(np.isnan(np_coords)):
-                if HANDLE_MISSING == 'pass':
-                    #do nothing
+                if HANDLE_MISSING == "pass":
+                    # do nothing
                     pass
-                elif HANDLE_MISSING == 'skip':
-                    #remove the whole skeleton
+                elif HANDLE_MISSING == "skip":
+                    # remove the whole skeleton
                     animal_skeletons.remove(skeleton)
                     break
-                elif HANDLE_MISSING == 'null':
-                    #remove replace coordinates with 0,0
-                    new_coordinates = np.nan_to_num(np_coords, copy = True)
+                elif HANDLE_MISSING == "null":
+                    # remove replace coordinates with 0,0
+                    new_coordinates = np.nan_to_num(np_coords, copy=True)
                     skeleton[bodypart] = tuple(new_coordinates)
-                elif HANDLE_MISSING == 'reset':
-                    #reset complete skeleton to NaN, NaN
+                elif HANDLE_MISSING == "reset":
+                    # reset complete skeleton to NaN, NaN
                     reset_skeleton = {bp: (np.NaN, np.NaN) for bp in skeleton}
-                    animal_skeletons = [reset_skeleton if i == skeleton else i for i in animal_skeletons]
+                    animal_skeletons = [
+                        reset_skeleton if i == skeleton else i for i in animal_skeletons
+                    ]
                     break
                 else:
                     animal_skeletons.remove(skeleton)
                     break
 
     return animal_skeletons
+
 
 def calculate_skeletons_dlc_live(pose) -> list:
     """
@@ -409,7 +468,8 @@ def calculate_skeletons_dlc_live(pose) -> list:
     skeletons = [transform_2skeleton(pose)]
     return skeletons
 
-def calculate_sleap_skeletons(pose)-> list:
+
+def calculate_sleap_skeletons(pose) -> list:
     """
     Creating skeleton from sleap output
     """
@@ -427,31 +487,33 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     Only unique skeletons output
     adaptive to chosen model origin
     """
-    if MODEL_ORIGIN == 'DLC':
+    if MODEL_ORIGIN == "DLC":
         animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
         if animals_number != 1 and SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
         else:
             pass
 
-    elif MODEL_ORIGIN == 'MADLC':
+    elif MODEL_ORIGIN == "MADLC":
         animal_skeletons = calculate_ma_skeletons(peaks, animals_number)
         if FLATTEN_MA:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
         else:
             pass
 
-    elif MODEL_ORIGIN == 'DLC-LIVE' or MODEL_ORIGIN == 'DEEPPOSEKIT':
+    elif MODEL_ORIGIN == "DLC-LIVE" or MODEL_ORIGIN == "DEEPPOSEKIT":
         animal_skeletons = calculate_skeletons_dlc_live(peaks)
         if animals_number != 1 and not SPLIT_MA:
-            raise SkeletonError('Multiple animals are currently not supported by DLC-LIVE.'
-                             ' If you are using differently colored animals, please refer to the bodyparts directly (as a flattened skeleton) or use SPLIT_MA in the advanced settings.')
+            raise SkeletonError(
+                "Multiple animals are currently not supported by DLC-LIVE."
+                " If you are using differently colored animals, please refer to the bodyparts directly (as a flattened skeleton) or use SPLIT_MA in the advanced settings."
+            )
         elif SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
         else:
             pass
 
-    elif MODEL_ORIGIN == 'SLEAP':
+    elif MODEL_ORIGIN == "SLEAP":
         animal_skeletons = calculate_sleap_skeletons(peaks)
         if FLATTEN_MA:
             animal_skeletons = flatten_maDLC_skeletons(animal_skeletons)
@@ -463,6 +525,3 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     animal_skeletons = handle_missing_bp(animal_skeletons)
 
     return animal_skeletons
-
-
-

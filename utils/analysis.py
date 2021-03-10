@@ -24,15 +24,19 @@ class ROI:
     name (optional) - name for ROI
     """
 
-    def __init__(self, center: tuple, h: int, k: int, name: str = 'ROI'):
+    def __init__(self, center: tuple, h: int, k: int, name: str = "ROI"):
         self._name = name
         self._x_center, self._y_center = center
         self._x_radius = k
         self._y_radius = h
 
         # creating a coordinates box
-        self._box = [self._x_center - self._x_radius, self._y_center - self._y_radius,
-                     self._x_center + self._x_radius, self._y_center + self._y_radius]
+        self._box = [
+            self._x_center - self._x_radius,
+            self._y_center - self._y_radius,
+            self._x_center + self._x_radius,
+            self._y_center + self._y_radius,
+        ]
 
     def get_box(self):
         """
@@ -79,7 +83,8 @@ class RectangleROI(ROI):
     k - radius by X-axis
     name (optional) - name for ROI
     """
-    def __init__(self, center: tuple, h: int, k: int, name: str = 'RectangleROI'):
+
+    def __init__(self, center: tuple, h: int, k: int, name: str = "RectangleROI"):
         super().__init__(center, h, k, name)
 
     def check_point(self, x: int, y: int):
@@ -87,8 +92,9 @@ class RectangleROI(ROI):
         Checking if point with given coordinates x,y is inside ROI
         Returns True or False
         """
-        check = (-self._x_radius <= x - self._x_center <= self._x_radius) and\
-                (-self._y_radius <= y - self._y_center <= self._y_radius)
+        check = (-self._x_radius <= x - self._x_center <= self._x_radius) and (
+            -self._y_radius <= y - self._y_center <= self._y_radius
+        )
         return check
 
 
@@ -100,7 +106,8 @@ class EllipseROI(ROI):
     k - radius by X-axis
     name (optional) - name for ROI
     """
-    def __init__(self, center: tuple, h: int, k: int, name: str = 'EllipseROI'):
+
+    def __init__(self, center: tuple, h: int, k: int, name: str = "EllipseROI"):
         super().__init__(center, h, k, name)
 
     def check_point(self, x: int, y: int):
@@ -108,7 +115,9 @@ class EllipseROI(ROI):
         Checking if point with given coordinates x,y is inside ROI
         Returns True or False
         """
-        check = ((x - self._x_center) ** 2 / self._x_radius ** 2) + ((y - self._y_center) ** 2 / self._y_radius ** 2)
+        check = ((x - self._x_center) ** 2 / self._x_radius ** 2) + (
+            (y - self._y_center) ** 2 / self._y_radius ** 2
+        )
         return check <= 1
 
 
@@ -124,7 +133,9 @@ def calculate_distance(point1: tuple, point2: tuple) -> float:
     return distance
 
 
-def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
+def calculate_distance_for_bodyparts(
+    dataframe: pd.DataFrame, body_parts: Union[List[str], str]
+) -> List[pd.Series]:
     """
     Calculating distances traveled for each frame for desired body parts
     :param dataframe DataFrame: dataframe to calculate distances on
@@ -143,15 +154,22 @@ def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[
         """
         Function to actually calculate distance
         """
-        return math.sqrt(row['{}_travel_X'.format(bodypart)] ** 2 + row['{}_travel_Y'.format(bodypart)] ** 2)
+        return math.sqrt(
+            row["{}_travel_X".format(bodypart)] ** 2
+            + row["{}_travel_Y".format(bodypart)] ** 2
+        )
 
     def calc_distance(bodypart):
         """
         Function to create temporary dataframe columns and do calculations on them
         Then append the resulting series to results list
         """
-        temp_df['{}_travel_X'.format(bodypart)] = df['{}_X'.format(bodypart)].diff().astype(float)
-        temp_df['{}_travel_Y'.format(bodypart)] = df['{}_Y'.format(bodypart)].diff().astype(float)
+        temp_df["{}_travel_X".format(bodypart)] = (
+            df["{}_X".format(bodypart)].diff().astype(float)
+        )
+        temp_df["{}_travel_Y".format(bodypart)] = (
+            df["{}_Y".format(bodypart)].diff().astype(float)
+        )
         results.append(temp_df.apply(distance_func, axis=1, args=(bodypart,)))
 
     # checking if provided body_parts is list or not
@@ -165,7 +183,9 @@ def calculate_distance_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[
     return results
 
 
-def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[List[str], str]) -> List[pd.Series]:
+def calculate_speed_for_bodyparts(
+    dataframe: pd.DataFrame, body_parts: Union[List[str], str]
+) -> List[pd.Series]:
     """
     Calculating speed in pixels per seconds for each frame for desired body parts
     :param dataframe DataFrame: dataframe to calculate speeds on
@@ -178,7 +198,7 @@ def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[Lis
     # creating temporary dataframe for calculations
     temp_df = pd.DataFrame()
     # calculating time differences between each frame
-    temp_df['Time_diff'] = df['Time'].diff().astype(float)
+    temp_df["Time_diff"] = df["Time"].diff().astype(float)
     # creating empty list for results
     results = []
 
@@ -186,8 +206,8 @@ def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[Lis
         """
         Function to actually calculate speed
         """
-        if row['Time_diff'] != 0:
-            return row['distance_{}'.format(bodypart)] / row['Time_diff']
+        if row["Time_diff"] != 0:
+            return row["distance_{}".format(bodypart)] / row["Time_diff"]
         else:
             return np.nan
 
@@ -197,10 +217,12 @@ def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[Lis
         If true, copy it to temp_df
         Otherwise, raise ValueError exception
         """
-        if 'distance_{}'.format(bodypart) in df.columns:
-            temp_df['distance_{}'.format(bodypart)] = df['distance_{}'.format(bodypart)]
+        if "distance_{}".format(bodypart) in df.columns:
+            temp_df["distance_{}".format(bodypart)] = df["distance_{}".format(bodypart)]
         else:
-            raise ValueError('Distances travelled should be calculated beforehand for each bodypart')
+            raise ValueError(
+                "Distances travelled should be calculated beforehand for each bodypart"
+            )
 
     # checking if provided body_parts is list or not
     if isinstance(body_parts, list):
@@ -214,7 +236,10 @@ def calculate_speed_for_bodyparts(dataframe: pd.DataFrame, body_parts: Union[Lis
         results.append(temp_df.apply(speed_func, axis=1, args=(body_parts,)))
     return results
 
-def angle_between_vectors(xa: int, ya: int, xb: int, yb: int, xc: int, yc: int) -> Tuple[str, float]:
+
+def angle_between_vectors(
+    xa: int, ya: int, xb: int, yb: int, xc: int, yc: int
+) -> Tuple[str, float]:
     """
     Calculating angle between vectors, defined by coordinates
     Returns angle and direction (left, right, forward or backward)
@@ -232,23 +257,23 @@ def angle_between_vectors(xa: int, ya: int, xb: int, yb: int, xc: int, yc: int) 
     angle = rad_angle
     if pi < angle:
         angle -= 2 * pi
-    elif - pi > angle:
+    elif -pi > angle:
         angle += 2 * pi
     angle = math.degrees(angle)
 
     # defining the direction
     if 180 > angle > 0:
-        direction = 'left'
+        direction = "left"
     elif -180 < angle < 0:
-        direction = 'right'
+        direction = "right"
     elif abs(angle) == 180:
-        direction = 'backwards'
+        direction = "backwards"
     else:
-        direction = 'forward'
+        direction = "forward"
 
     return direction, angle
 
+
 ## miscellaneous ##
 def cls():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
+    os.system("cls" if os.name == "nt" else "clear")

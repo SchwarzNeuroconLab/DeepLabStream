@@ -23,6 +23,7 @@ class ImageWindow(QWidget):
     Image window is used to show an image within PyQt GUI
     This example is hardcoded for width and height of currently defined resolution
     """
+
     def __init__(self, name):
         super().__init__()
         self.title = name
@@ -79,6 +80,7 @@ class QFrame(QObject):
 
     ! Probably have a tax on the performance
     """
+
     signal = pyqtSignal(QImage)
 
 

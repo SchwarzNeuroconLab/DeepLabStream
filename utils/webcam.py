@@ -19,7 +19,6 @@ from utils.configloader import RESOLUTION, FRAMERATE, PORT
 
 
 class WebCamManager(GenericManager):
-
     def __init__(self):
         """
         Binds the computer to a ip address and starts listening for incoming streams.
@@ -28,15 +27,15 @@ class WebCamManager(GenericManager):
         super().__init__()
         self._context = zmq.Context()
         self._footage_socket = self._context.socket(zmq.SUB)
-        self._footage_socket.bind('tcp://*:' + PORT)
-        self._footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(''))
+        self._footage_socket.bind("tcp://*:" + PORT)
+        self._footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(""))
 
         self._camera = None
         self._camera_name = "webcam"
         self.initial_wait = False
         self.last_frame_time = time.time()
 
-    @ staticmethod
+    @staticmethod
     def string_to_image(string):
         """
         Taken from https://github.com/CT83/SmoothStream
@@ -74,11 +73,13 @@ class WebCamManager(GenericManager):
             color_frames[self._camera_name] = image
             running_time = time.time() - self.last_frame_time
             if running_time <= 1 / FRAMERATE:
-                sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
+                sleepy_time = int(np.ceil(1000 / FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
 
         else:
-            raise MissingFrameError('No frame was received from the webcam stream. Make sure that you started streaming on the host machine.')
+            raise MissingFrameError(
+                "No frame was received from the webcam stream. Make sure that you started streaming on the host machine."
+            )
 
         return color_frames, depth_maps, infra_frames
 
