@@ -9,7 +9,14 @@ Licensed under GNU General Public License v3.0
 import time
 import cv2
 import multiprocessing as mp
-from experiments.custom.stimulation import show_visual_stim_img, deliver_liqreward, deliver_tone_shock, withdraw_liqreward, DigitalModDevice
+from experiments.custom.stimulation import (
+    show_visual_stim_img,
+    deliver_liqreward,
+    deliver_tone_shock,
+    withdraw_liqreward,
+    DigitalModDevice,
+)
+from experiments.utils.gpio_control import DigitalArduinoDevice
 import random
 
 
@@ -17,6 +24,7 @@ class Timer:
     """
     Very simple timer
     """
+
     def __init__(self, seconds):
         """
         Setting the time the timer needs to run
@@ -68,19 +76,22 @@ class Timer:
 
 def example_protocol_run(condition_q: mp.Queue):
     current_trial = None
-    #dmod_device = DigitalModDevice('Dev1/PFI0')
+    # dmod_device = DigitalModDevice('Dev1/PFI0')
+    led_machine = DigitalArduinoDevice("COM5")
     while True:
         # if no protocol is selected, running default picture (background)
         if condition_q.full():
             current_trial = condition_q.get()
         if current_trial is not None:
-            show_visual_stim_img(type=current_trial, name='DlStream')
-            #dmod_device.toggle()
+            show_visual_stim_img(type=current_trial, name="DlStream")
+            # dmod_device.toggle()
+            led_machine.turn_on()
         else:
-            show_visual_stim_img(name='DlStream')
-            #dmod_device.turn_off()
+            show_visual_stim_img(name="DlStream")
+            # dmod_device.turn_off()
+            led_machine.turn_off()
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
 
@@ -88,6 +99,7 @@ class ProtocolProcess:
     """
     Class to help work with protocol function in multiprocessing
     """
+
     def __init__(self):
         """
         Setting up the three queues and the process itself
@@ -149,13 +161,15 @@ class ExampleProtocolProcess(ProtocolProcess):
     """
     Class to help work with protocol function in multiprocessing with simple stimulation
     """
+
     def __init__(self):
         """
         Setting up the three queues and the process itself
         """
         super().__init__()
-        self._protocol_process = mp.Process(target=example_protocol_run, args=(self._trial_queue,))
-
+        self._protocol_process = mp.Process(
+            target=example_protocol_run, args=(self._trial_queue,)
+        )
 
 
 """The following is the original protocols we used for our experiments! If you are interested in using this, 
@@ -164,10 +178,12 @@ your own experiment into DLStream!"""
 
 
 def start_unconditional(protocol):
-    print('Running some stuff, water or sound for {} protocol'.format(protocol))
+    print("Running some stuff, water or sound for {} protocol".format(protocol))
 
 
-def classic_protocol_run_old(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, trials: dict):
+def classic_protocol_run_old(
+    trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, trials: dict
+):
     """
     The function to use in ProtocolProcess class
     Designed to be run continuously alongside the main loop
@@ -184,15 +200,15 @@ def classic_protocol_run_old(trial_q: mp.Queue, condition_q: mp.Queue, success_q
         # if no protocol is selected, running default picture (background)
         if trial_q.empty() and current_trial is None:
             # print('No protocol running')
-            show_visual_stim_img(name='inside')
+            show_visual_stim_img(name="inside")
         # if some protocol is passed, set up protocol timers and variables
         elif trial_q.full():
             current_trial = trial_q.get()
             finished_trial = False
             # starting timers
-            stimulus_timer = trials[current_trial]['stimulus_timer']
-            success_timer = trials[current_trial]['success_timer']
-            print('Starting protocol {}'.format(current_trial))
+            stimulus_timer = trials[current_trial]["stimulus_timer"]
+            success_timer = trials[current_trial]["success_timer"]
+            print("Starting protocol {}".format(current_trial))
             stimulus_timer.start()
             success_timer.start()
             condition_list = []
@@ -201,10 +217,10 @@ def classic_protocol_run_old(trial_q: mp.Queue, condition_q: mp.Queue, success_q
             # checking for stimulus timer and outputting correct image
             if stimulus_timer.check_timer():
                 # if stimulus timer is running, show stimulus
-                show_visual_stim_img(current_trial, name='inside')
+                show_visual_stim_img(current_trial, name="inside")
             else:
                 # if the timer runs out, finish protocol and reset timer
-                trials[current_trial]['stimulus_timer'].reset()
+                trials[current_trial]["stimulus_timer"].reset()
                 current_trial = None
 
             # checking if any condition was passed
@@ -221,59 +237,61 @@ def classic_protocol_run_old(trial_q: mp.Queue, condition_q: mp.Queue, success_q
             # checking if the timer for condition has run out
             if not success_timer.check_timer() and not finished_trial:
                 if CTRL:
-                    #start a random time interval
-                    #TODO: working ctrl timer that does not set new time each frame...
-                    ctrl_time = random.randint(0, INTERTRIAL_TIME+1)
+                    # start a random time interval
+                    # TODO: working ctrl timer that does not set new time each frame...
+                    ctrl_time = random.randint(0, INTERTRIAL_TIME + 1)
                     ctrl_timer = Timer(ctrl_time)
                     ctrl_timer.start()
-                    print('Waiting for extra' + str(ctrl_time) + ' sec')
+                    print("Waiting for extra" + str(ctrl_time) + " sec")
                     if not ctrl_timer.check_timer():
                         # in ctrl just randomly decide between the two
-                        print('Random choice between both stimuli')
+                        print("Random choice between both stimuli")
                         if random.random() >= 0.5:
                             # very fast random choice between TRUE and FALSE
                             deliver_liqreward()
-                            print('Delivered Reward')
+                            print("Delivered Reward")
 
                         else:
                             deliver_tone_shock()
-                            print('Delivered Aversive')
+                            print("Delivered Aversive")
 
                         ctrl_timer.reset()
                         finished_trial = True
                         # outputting the result, whatever it is
-                        success = trials[current_trial]['result_func'](condition_list)
+                        success = trials[current_trial]["result_func"](condition_list)
                         success_q.put(success)
-                        trials[current_trial]['success_timer'].reset()
+                        trials[current_trial]["success_timer"].reset()
 
                 else:
-                    if current_trial == 'Bluebar_whiteback':
+                    if current_trial == "Bluebar_whiteback":
                         deliver_tone_shock()
-                        print('Delivered Aversive')
-                    elif current_trial == 'Greenbar_whiteback':
-                        if trials[current_trial]['random_reward']:
+                        print("Delivered Aversive")
+                    elif current_trial == "Greenbar_whiteback":
+                        if trials[current_trial]["random_reward"]:
                             if random.random() >= 0.5:
-                                #very fast random choice between TRUE and FALSE
+                                # very fast random choice between TRUE and FALSE
                                 deliver_liqreward()
-                                print('Delivered Reward')
+                                print("Delivered Reward")
                             else:
-                                print('No Reward')
+                                print("No Reward")
                         else:
                             deliver_liqreward()
                     # resetting the timer
-                    print('Timer for condition run out')
+                    print("Timer for condition run out")
                     finished_trial = True
                     # outputting the result, whatever it is
-                    success = trials[current_trial]['result_func'](condition_list)
+                    success = trials[current_trial]["result_func"](condition_list)
                     success_q.put(success)
-                    trials[current_trial]['success_timer'].reset()
+                    trials[current_trial]["success_timer"].reset()
 
         # don't delete that
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
 
-def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, trials: dict):
+def classic_protocol_run(
+    trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp.Queue, trials: dict
+):
     """
     The function to use in ProtocolProcess class
     Designed to be run continuously alongside the main loop
@@ -290,7 +308,7 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
         # if no protocol is selected, running default picture (background)
         if trial_q.empty() and current_trial is None:
             # print('No protocol running')
-            show_visual_stim_img(name='inside')
+            show_visual_stim_img(name="inside")
         # if some protocol is passed, set up protocol timers and variables
         elif trial_q.full():
             current_trial = trial_q.get()
@@ -298,13 +316,13 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
             delivery = False
             reward_del = False
             # starting timers
-            stimulus_timer = trials[current_trial]['stimulus_timer']
-            collection_timer = trials[current_trial]['collection_timer']
-            success_timer = trials[current_trial]['success_timer']
+            stimulus_timer = trials[current_trial]["stimulus_timer"]
+            collection_timer = trials[current_trial]["collection_timer"]
+            success_timer = trials[current_trial]["success_timer"]
             delivery_timer = Timer(3.5)
             shock_timer = Timer(3.5)
             # withdraw_timer = Timer(3.5)
-            print('Starting protocol {}'.format(current_trial))
+            print("Starting protocol {}".format(current_trial))
             stimulus_timer.start()
             success_timer.start()
             condition_list = []
@@ -314,11 +332,11 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
             # checking for stimulus timer and outputting correct image
             if stimulus_timer.check_timer():
                 # if stimulus timer is running, show stimulus
-                show_visual_stim_img(current_trial, name='inside')
+                show_visual_stim_img(current_trial, name="inside")
             else:
                 # if the timer runs out, finish protocol and reset timer
-                trials[current_trial]['stimulus_timer'].reset()
-                show_visual_stim_img(name='inside')
+                trials[current_trial]["stimulus_timer"].reset()
+                show_visual_stim_img(name="inside")
             # checking if any condition was passed
             if condition_q.full():
                 stimulus_condition = condition_q.get()
@@ -333,23 +351,23 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
 
                 if not delivery:
                     if current_trial is not None:
-                        print('Timer for condition ran out')
+                        print("Timer for condition ran out")
                         print_check = True
-                        #check wether animal collected within success timer
-                        success = trials[current_trial]['result_func'](condition_list)
-                        trials[current_trial]['success_timer'].reset()
+                        # check wether animal collected within success timer
+                        success = trials[current_trial]["result_func"](condition_list)
+                        trials[current_trial]["success_timer"].reset()
 
-                        print('Stimulation.')
+                        print("Stimulation.")
 
-                        if current_trial == 'Bluebar_whiteback':
+                        if current_trial == "Bluebar_whiteback":
                             deliver_tone_shock()
-                            print('Aversive')
+                            print("Aversive")
                             shock_timer.start()
-                        elif current_trial == 'Greenbar_whiteback':
+                        elif current_trial == "Greenbar_whiteback":
                             deliver_liqreward()
                             delivery_timer.start()
                             reward_del = True
-                            print('Reward')
+                            print("Reward")
                         delivery = True
                         collection_timer.start()
                 elif delivery:
@@ -362,18 +380,23 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
                             # if the animal didnt go to collect reward, withdraw reward again.
                             withdraw_liqreward()
                             # withdraw_timer.start()
-                        trials[current_trial]['collection_timer'].reset()
+                        trials[current_trial]["collection_timer"].reset()
                         current_trial = None
                         # put success in queue and finish trial
                         success_q.put(success)
 
-            if not delivery_timer.check_timer() and delivery_timer.get_start_time() is not None:
+            if (
+                not delivery_timer.check_timer()
+                and delivery_timer.get_start_time() is not None
+            ):
                 deliver_liqreward()
                 delivery_timer.reset()
-            if not shock_timer.check_timer() and shock_timer.get_start_time()is not None:
+            if (
+                not shock_timer.check_timer()
+                and shock_timer.get_start_time() is not None
+            ):
                 deliver_tone_shock()
                 shock_timer.reset()
-
 
             # if not withdraw_timer.check_timer() and withdraw_timer.get_start_time() is not None:
             #     withdraw_liqreward(False)
@@ -381,7 +404,7 @@ def classic_protocol_run(trial_q: mp.Queue, condition_q: mp.Queue, success_q: mp
             #     delivery = False
 
         # don't delete that
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
 
@@ -404,7 +427,7 @@ def simple_protocol_run(trial_q: mp.Queue, success_q: mp.Queue, trials: dict):
             print(current_trial)
             # this branch is for already running protocol
         elif current_trial is not None:
-            print('Stimulating...')
+            print("Stimulating...")
             current_trial = None
             success_q.put(True)
             deliver_liqreward()
@@ -416,6 +439,7 @@ class ClassicProtocolProcess:
     """
     Class to help work with protocol function in multiprocessing
     """
+
     def __init__(self, trials):
         """
         Setting up the three queues and the process itself
@@ -423,10 +447,15 @@ class ClassicProtocolProcess:
         self._trial_queue = mp.Queue(1)
         self._success_queue = mp.Queue(1)
         self._condition_queue = mp.Queue(1)
-        self._protocol_process = mp.Process(target=classic_protocol_run, args=(self._trial_queue,
-                                                                               self._condition_queue,
-                                                                               self._success_queue,
-                                                                               trials))
+        self._protocol_process = mp.Process(
+            target=classic_protocol_run,
+            args=(
+                self._trial_queue,
+                self._condition_queue,
+                self._success_queue,
+                trials,
+            ),
+        )
         self._running = False
         self._current_trial = None
 
@@ -480,11 +509,13 @@ class SimpleProtocolProcess(ClassicProtocolProcess):
     """
     Class to help work with protocol function in multiprocessing with simple stimulation
     """
+
     def __init__(self, trials):
         """
         Setting up the three queues and the process itself
         """
         super().__init__(trials)
-        self._protocol_process = mp.Process(target=simple_protocol_run, args=(self._trial_queue,
-                                                                              self._success_queue,
-                                                                              trials))
+        self._protocol_process = mp.Process(
+            target=simple_protocol_run,
+            args=(self._trial_queue, self._success_queue, trials),
+        )
