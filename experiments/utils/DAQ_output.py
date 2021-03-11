@@ -18,6 +18,7 @@ class Device:
     """
     Modulated devices connected to the DAQ Board
     """
+
     def __init__(self, port):
         """
         :param port: output port on the DAQ board connected to the Device
@@ -117,7 +118,7 @@ class AnalogModDevice(Device):
         super().__init__(AO_DAQ_PORT)
 
     def amod_decive(self, V):
-        """ Changes Output current of Analog Output Port defined amount in Volt
+        """Changes Output current of Analog Output Port defined amount in Volt
 
         :param V: Amount of Current as float if turned ON
         """

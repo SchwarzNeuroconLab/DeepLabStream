@@ -4,7 +4,6 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 import serial
 
 
-
 class DigitalPiDevice:
     """
     Digital modulated devices in combination with Raspberry Pi GPIO
@@ -17,8 +16,8 @@ class DigitalPiDevice:
         :param BOARD_IP:  IP adress of board connected to the Device
         """
         if BOARD_IP is not None:
-            self._factory = PiGPIOFactory(host = BOARD_IP)
-            self._device = DigitalOutputDevice(PIN, pin_factory = self._factory)
+            self._factory = PiGPIOFactory(host=BOARD_IP)
+            self._device = DigitalOutputDevice(PIN, pin_factory=self._factory)
         else:
             self._factory = None
             self._device = DigitalOutputDevice(PIN)
@@ -52,11 +51,11 @@ class DigitalArduinoDevice:
         self._running = False
 
     def turn_on(self):
-        self._device.write(b'H')
+        self._device.write(b"H")
         self._running = True
 
     def turn_off(self):
-        self._device.write(b'L')
+        self._device.write(b"L")
         self._running = False
 
     def toggle(self):

@@ -19,11 +19,35 @@ import pandas as pd
 
 from utils.generic import VideoManager, GenericManager
 
-from utils.configloader import RESOLUTION, FRAMERATE, OUT_DIR, MODEL_NAME, MULTI_CAM, STACK_FRAMES, \
-    ANIMALS_NUMBER, FLATTEN_MA, PASS_SEPARATE, STREAMS, STREAMING_SOURCE, MODEL_ORIGIN, CROP, CROP_X, CROP_Y
-from utils.plotter import plot_bodyparts,plot_metadata_frame
-from utils.poser import load_deeplabcut,load_dpk,load_dlc_live,load_sleap, get_pose,calculate_skeletons, \
-    find_local_peaks_new,get_ma_pose
+from utils.configloader import (
+    RESOLUTION,
+    FRAMERATE,
+    OUT_DIR,
+    MODEL_NAME,
+    MULTI_CAM,
+    STACK_FRAMES,
+    ANIMALS_NUMBER,
+    FLATTEN_MA,
+    PASS_SEPARATE,
+    STREAMS,
+    STREAMING_SOURCE,
+    MODEL_ORIGIN,
+    CROP,
+    CROP_X,
+    CROP_Y,
+)
+from utils.plotter import plot_bodyparts, plot_metadata_frame
+from utils.poser import (
+    load_deeplabcut,
+    load_dpk,
+    load_dlc_live,
+    load_sleap,
+    get_pose,
+    calculate_skeletons,
+    find_local_peaks_new,
+    get_ma_pose,
+)
+
 
 def create_video_files(directory, devices, resolution, framerate, codec):
     """
@@ -37,14 +61,18 @@ def create_video_files(directory, devices, resolution, framerate, codec):
     """
     files = {}
     for device in devices:
-        file_name = 'VideoOutput' + device + '-' + time.strftime('%d%m%Y-%H%M%S') + '.avi'
+        file_name = (
+            "VideoOutput" + device + "-" + time.strftime("%d%m%Y-%H%M%S") + ".avi"
+        )
         output_file = os.path.join(directory, file_name)
         out = cv2.VideoWriter(output_file, codec, framerate, resolution)
         files[device] = out
     return files
 
 
-def create_row(index, animal_skeletons, experiment_status, experiment_trial, start_time=None):
+def create_row(
+    index, animal_skeletons, experiment_status, experiment_trial, start_time=None
+):
     """
     Create a pd.Series for each frame from each camera with joints position
     :param experiment_trial: current trial name
@@ -57,17 +85,19 @@ def create_row(index, animal_skeletons, experiment_status, experiment_trial, sta
     # creating joints columns
     for num, animal in enumerate(animal_skeletons):
         for joint, value in animal.items():
-            row_dict[("Animal{}".format(num + 1),
-                      joint, 'x')], row_dict[("Animal{}".format(num + 1), joint, 'y')] = value
+            (
+                row_dict[("Animal{}".format(num + 1), joint, "x")],
+                row_dict[("Animal{}".format(num + 1), joint, "y")],
+            ) = value
     # optional time column
     if start_time is not None:
-        row_dict[('Time', '', '')] = round(time.time() - start_time, 3)
+        row_dict[("Time", "", "")] = round(time.time() - start_time, 3)
     # experiment columns
-    row_dict[('Experiment', 'Status', '')] = experiment_status
+    row_dict[("Experiment", "Status", "")] = experiment_status
     if experiment_trial is None and experiment_status:
-        row_dict[('Experiment', 'Trial', '')] = 'InterTrial'
+        row_dict[("Experiment", "Trial", "")] = "InterTrial"
     else:
-        row_dict[('Experiment', 'Trial', '')] = experiment_trial
+        row_dict[("Experiment", "Trial", "")] = experiment_trial
     row = pd.Series(row_dict, name=index)
     return row
 
@@ -80,17 +110,17 @@ def show_stream(frames):
     if STACK_FRAMES:
         if len(frames.values()) >= 2:
             stack = np.hstack(frames.values())
-            cv2.imshow('stacked stream', stack.copy())
+            cv2.imshow("stacked stream", stack.copy())
     else:
         for camera in frames:
-            cv2.imshow(str(camera) + ' stream', frames[camera])
+            cv2.imshow(str(camera) + " stream", frames[camera])
 
 
 def cls():
     """
     Clear the screen
     """
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 class DeepLabStream:
@@ -103,10 +133,16 @@ class DeepLabStream:
         Initializing the DeepLabStream class with some predefined variables
         (more information for each below)
         """
-        self._camera_manager = self.set_camera_manager()  # camera manager, used to get frames from the camera
-        self._video_codec = cv2.VideoWriter_fourcc(*'DIVX')  # codec in which we output the videofiles
+        self._camera_manager = (
+            self.set_camera_manager()
+        )  # camera manager, used to get frames from the camera
+        self._video_codec = cv2.VideoWriter_fourcc(
+            *"DIVX"
+        )  # codec in which we output the videofiles
         self._start_time = None  # time of initialization
-        self._data_row = {camera: {} for camera in self.cameras}  # dictionary for creating row of data for each frame
+        self._data_row = {
+            camera: {} for camera in self.cameras
+        }  # dictionary for creating row of data for each frame
         self._data_output = {}  # dictionary for storing rows for dataframes
         self._stored_frames = {}  # dictionary for storing frames
         self._dlc_running = False  # has DeepLabCut started?
@@ -137,15 +173,16 @@ class DeepLabStream:
             # loading realsense manager, if installed
             if find_spec("pyrealsense2") is not None:
                 from utils.realsense import RealSenseManager
+
                 realsense_manager = RealSenseManager()
                 manager_list.append(realsense_manager)
 
             # loading basler manager, if installed
             if find_spec("pypylon") is not None:
                 from utils.pylon import PylonManager
+
                 pylon_manager = PylonManager()
                 manager_list.append(pylon_manager)
-
 
             def check_for_cameras(camera_manager):
                 """
@@ -153,7 +190,11 @@ class DeepLabStream:
                 """
                 cameras = camera_manager.get_connected_devices()
                 if cameras:
-                    print("Found {} {} camera(s)!".format(len(cameras), camera_manager.get_name()))
+                    print(
+                        "Found {} {} camera(s)!".format(
+                            len(cameras), camera_manager.get_name()
+                        )
+                    )
                     return True
                 else:
                     return False
@@ -167,23 +208,23 @@ class DeepLabStream:
                 generic_manager = GenericManager()
                 return generic_manager
 
-        MANAGER_SOURCE = {
-            'video': VideoManager,
-            'camera': select_camera_manager
-        }
+        MANAGER_SOURCE = {"video": VideoManager, "camera": select_camera_manager}
 
         # loading WebCam manager, if installed
         if find_spec("pyzmq") is not None:
             from utils.webcam import WebCamManager
-            MANAGER_SOURCE['ipwebcam'] = WebCamManager()
+
+            MANAGER_SOURCE["ipwebcam"] = WebCamManager()
 
         # initialize selected manager
         camera_manager = MANAGER_SOURCE.get(STREAMING_SOURCE)()
         if camera_manager is not None:
             return camera_manager
         else:
-            raise ValueError(f'Streaming source {STREAMING_SOURCE} is not a valid option. \n'
-                             f'Please choose from "video", "camera" or "ipwebcam". Make sure that if you are using "ipwebcam" you installed the additional dependencies.')
+            raise ValueError(
+                f"Streaming source {STREAMING_SOURCE} is not a valid option. \n"
+                f'Please choose from "video", "camera" or "ipwebcam". Make sure that if you are using "ipwebcam" you installed the additional dependencies.'
+            )
 
     @property
     def cameras(self):
@@ -207,13 +248,15 @@ class DeepLabStream:
         Enabling streams if they are recognized
         :param streams: list of stream names
         """
-        available_streams = ['color', 'depth', 'infrared']
+        available_streams = ["color", "depth", "infrared"]
         for stream in streams:
             if stream in available_streams:
                 self._camera_manager.enable_stream(RESOLUTION, FRAMERATE, stream)
             else:
-                print('Stream type {} not found!\n'
-                      'Allowed stream types: {}'.format(stream, available_streams))
+                print(
+                    "Stream type {} not found!\n"
+                    "Allowed stream types: {}".format(stream, available_streams)
+                )
 
     def start_cameras(self, streams: list, multi_cam: bool = True):
         """
@@ -255,7 +298,9 @@ class DeepLabStream:
         """
         Create video files dictionary by cameras names
         """
-        self._video_files = create_video_files(OUT_DIR, self.enabled_cameras, RESOLUTION, FRAMERATE, self._video_codec)
+        self._video_files = create_video_files(
+            OUT_DIR, self.enabled_cameras, RESOLUTION, FRAMERATE, self._video_codec
+        )
 
     def write_video(self, frames: dict, index: int):
         """
@@ -281,24 +326,26 @@ class DeepLabStream:
         :param output_q: index and corresponding analysis
         """
 
-        if MODEL_ORIGIN in ('DLC', 'MADLC'):
+        if MODEL_ORIGIN in ("DLC", "MADLC"):
             config, sess, inputs, outputs = load_deeplabcut()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
                     start_time = time.time()
-                    if MODEL_ORIGIN == 'DLC':
-                        scmap, locref, pose = get_pose(frame, config, sess, inputs, outputs)
-                        #peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
-                        #Use the line below to use raw DLC output rather then DLStream optimization
-                        #TODO: return to original
+                    if MODEL_ORIGIN == "DLC":
+                        scmap, locref, pose = get_pose(
+                            frame, config, sess, inputs, outputs
+                        )
+                        # peaks = find_local_peaks_new(scmap, locref, ANIMALS_NUMBER, config)
+                        # Use the line below to use raw DLC output rather then DLStream optimization
+                        # TODO: return to original
                         peaks = pose
-                    if MODEL_ORIGIN == 'MADLC':
+                    if MODEL_ORIGIN == "MADLC":
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
                     analysis_time = time.time() - start_time
                     output_q.put((index, peaks, analysis_time))
 
-        elif MODEL_ORIGIN == 'DLC-LIVE':
+        elif MODEL_ORIGIN == "DLC-LIVE":
             dlc_live = load_dlc_live()
             while True:
                 if input_q.full():
@@ -311,7 +358,7 @@ class DeepLabStream:
                     analysis_time = time.time() - start_time
                     output_q.put((index, peaks, analysis_time))
 
-        elif MODEL_ORIGIN == 'DEEPPOSEKIT':
+        elif MODEL_ORIGIN == "DEEPPOSEKIT":
             predict_model = load_dpk()
             while True:
                 if input_q.full():
@@ -319,31 +366,33 @@ class DeepLabStream:
                     start_time = time.time()
                     frame = frame[..., 1][..., None]
                     st_frame = np.stack([frame])
-                    prediction = predict_model.predict(st_frame, batch_size=1, verbose=True)
+                    prediction = predict_model.predict(
+                        st_frame, batch_size=1, verbose=True
+                    )
                     peaks = prediction[0, :, :2]
                     analysis_time = time.time() - start_time
-                    output_q.put((index,peaks,analysis_time))
+                    output_q.put((index, peaks, analysis_time))
 
-        elif MODEL_ORIGIN == 'SLEAP':
+        elif MODEL_ORIGIN == "SLEAP":
             sleap_model = load_sleap()
             while True:
                 if input_q.full():
                     index, frame = input_q.get()
                     start_time = time.time()
                     input_frame = frame[:, :, ::-1]
-                    #this is weird, but without it, it does not seem to work...
+                    # this is weird, but without it, it does not seem to work...
                     frames = np.array([input_frame])
                     prediction = sleap_model.predict(frames[[0]], batch_size=1)
-                    #check if this is multiple animal instances or single animal model
-                    if  sleap_model.name == 'single_instance_inference_model':
-                        #get predictions (wrap it again, so the behavior is the same for both model types)
-                        peaks = np.array([prediction['peaks'][0, :]])
+                    # check if this is multiple animal instances or single animal model
+                    if sleap_model.name == "single_instance_inference_model":
+                        # get predictions (wrap it again, so the behavior is the same for both model types)
+                        peaks = np.array([prediction["peaks"][0, :]])
                     else:
-                        peaks = prediction['instance_peaks'][0, :]
+                        peaks = prediction["instance_peaks"][0, :]
                     analysis_time = time.time() - start_time
-                    output_q.put((index,peaks,analysis_time))
+                    output_q.put((index, peaks, analysis_time))
         else:
-            raise ValueError(f'Model origin {MODEL_ORIGIN} not available.')
+            raise ValueError(f"Model origin {MODEL_ORIGIN} not available.")
 
     @staticmethod
     def create_mp_tools(devices):
@@ -355,13 +404,15 @@ class DeepLabStream:
         device_mps = {}
         for device in devices:
             # creating queues
-            device_mps[device] = {'input': mp.Queue(1), 'output': mp.Queue(1)}
+            device_mps[device] = {"input": mp.Queue(1), "output": mp.Queue(1)}
 
             # creating process
-            process = mp.Process(target=DeepLabStream.get_pose_mp, args=(device_mps[device]['input'],
-                                                                         device_mps[device]['output']),
-                                 name=device)
-            device_mps[device]['process'] = process
+            process = mp.Process(
+                target=DeepLabStream.get_pose_mp,
+                args=(device_mps[device]["input"], device_mps[device]["output"]),
+                name=device,
+            )
+            device_mps[device]["process"] = process
         return device_mps
 
     def set_up_multiprocessing(self):
@@ -375,7 +426,7 @@ class DeepLabStream:
         Starting DLC in stand-alone process for each available camera
         """
         for camera in self.enabled_cameras:
-            self._multiprocessing[camera]['process'].start()
+            self._multiprocessing[camera]["process"].start()
         self._dlc_running = True
 
     #####################
@@ -390,7 +441,9 @@ class DeepLabStream:
         for camera in c_frames:
             c_frames[camera] = np.asanyarray(c_frames[camera])
             if CROP:
-                c_frames[camera] = c_frames[camera][CROP_Y[0]:CROP_Y[1],CROP_X[0]:CROP_X[1]].copy()
+                c_frames[camera] = c_frames[camera][
+                    CROP_Y[0] : CROP_Y[1], CROP_X[0] : CROP_X[1]
+                ].copy()
 
         for camera in i_frames:
             i_frames[camera] = np.asanyarray(i_frames[camera])
@@ -406,13 +459,15 @@ class DeepLabStream:
         if self._dlc_running:
             c_frames, d_maps, i_frames = frames
             for camera in self._multiprocessing:
-                if self._multiprocessing[camera]['input'].empty():
+                if self._multiprocessing[camera]["input"].empty():
                     # passes color frame to analysis
                     frame = c_frames[camera]
                     frame_time = time.time()
-                    self._multiprocessing[camera]['input'].put((index, frame))
+                    self._multiprocessing[camera]["input"].put((index, frame))
                     if d_maps:
-                        self.store_frames(camera, frame, d_maps[camera], frame_time, index)
+                        self.store_frames(
+                            camera, frame, d_maps[camera], frame_time, index
+                        )
                     else:
                         self.store_frames(camera, frame, None, frame_time, index)
 
@@ -432,41 +487,65 @@ class DeepLabStream:
                 frame_height = CROP_Y[1] - CROP_Y[0]
                 frame_width = CROP_X[1] - CROP_X[0]
             else:
-                frame_width,frame_height = RESOLUTION
+                frame_width, frame_height = RESOLUTION
 
             for camera in self._multiprocessing:
-                if self._multiprocessing[camera]['output'].full():
+                if self._multiprocessing[camera]["output"].full():
                     if self._start_time is None:
                         self._start_time = time.time()  # getting the first frame here
 
                     # Getting the analysed data
-                    analysed_index, peaks, analysis_time = self._multiprocessing[camera]['output'].get()
+                    analysed_index, peaks, analysis_time = self._multiprocessing[
+                        camera
+                    ]["output"].get()
                     skeletons = calculate_skeletons(peaks, ANIMALS_NUMBER)
-                    print('', end='\r', flush=True)  # this is the line you should not remove
-                    analysed_frame , depth_map, input_time = self.get_stored_frames(camera, analysed_index)
+                    print(
+                        "", end="\r", flush=True
+                    )  # this is the line you should not remove
+                    analysed_frame, depth_map, input_time = self.get_stored_frames(
+                        camera, analysed_index
+                    )
                     delay_time = time.time() - input_time
                     # Calculating FPS and plotting the data on frame
                     self.calculate_fps(analysis_time if analysis_time != 0 else 0.01)
                     frame_time = time.time() - self._start_time
                     analysed_image = plot_metadata_frame(
                         plot_bodyparts(analysed_frame, skeletons),
-                        frame_width, frame_height, self._fps, frame_time)
+                        frame_width,
+                        frame_height,
+                        self._fps,
+                        frame_time,
+                    )
 
                     # Experiments
-                    if self._experiment.experiment_finished and self._experiment_running:
+                    if (
+                        self._experiment.experiment_finished
+                        and self._experiment_running
+                    ):
                         self._experiment_running = False
 
-                    if self._experiment_running and not self._experiment.experiment_finished:
+                    if (
+                        self._experiment_running
+                        and not self._experiment.experiment_finished
+                    ):
                         if ANIMALS_NUMBER > 1 and not FLATTEN_MA and not PASS_SEPARATE:
-                            self._experiment.check_skeleton(analysed_image,skeletons)
+                            self._experiment.check_skeleton(analysed_image, skeletons)
                         else:
                             for skeleton in skeletons:
-                                self._experiment.check_skeleton(analysed_image, skeleton)
+                                self._experiment.check_skeleton(
+                                    analysed_image, skeleton
+                                )
 
                     # Gathering data as pd.Series for output
                     if self._data_output:
-                        self.append_row(camera, analysed_index, skeletons,
-                                        self._experiment_running, self._experiment.get_trial(), self._start_time)
+                        self.append_row(
+                            camera,
+                            analysed_index,
+                            skeletons,
+                            self._experiment_running,
+                            self._experiment.get_trial(),
+                            self._start_time,
+                        )
 
                     analysed_frames[camera] = analysed_image
             return analysed_frames, analysis_time
@@ -523,6 +602,7 @@ class DeepLabStream:
     @staticmethod
     def set_up_experiment():
         from experiments.utils.exp_setup import setup_experiment
+
         experiment = setup_experiment()
         return experiment
 
@@ -549,10 +629,10 @@ class DeepLabStream:
         if self._dlc_running:
             for camera in self._multiprocessing:
                 # finishing the process
-                self._multiprocessing[camera]['process'].terminate()
+                self._multiprocessing[camera]["process"].terminate()
                 # closing all the Queues
-                self._multiprocessing[camera]['input'].close()
-                self._multiprocessing[camera]['output'].close()
+                self._multiprocessing[camera]["input"].close()
+                self._multiprocessing[camera]["output"].close()
             self._dlc_running = False
             self._multiprocessing = None
             self._start_time = None
@@ -586,7 +666,15 @@ class DeepLabStream:
         for camera in self.enabled_cameras:
             self._data_output[camera] = []
 
-    def append_row(self, camera, index, animal_skeletons, experiment_status, experiment_trial, start_time=None):
+    def append_row(
+        self,
+        camera,
+        index,
+        animal_skeletons,
+        experiment_status,
+        experiment_trial,
+        start_time=None,
+    ):
         """
         Create a pd.Series for each frame from each camera with joints position and store it
         :param experiment_trial: current trial name
@@ -596,7 +684,9 @@ class DeepLabStream:
         :param animal_skeletons: skeletons for that frame
         :param start_time: (optional) starting time point for Time column
         """
-        row = create_row(index, animal_skeletons, experiment_status, experiment_trial, start_time)
+        row = create_row(
+            index, animal_skeletons, experiment_status, experiment_trial, start_time
+        )
         self._data_output[camera].append(row)
 
     def create_dataframes(self):
@@ -606,8 +696,15 @@ class DeepLabStream:
         for num, camera in enumerate(self._data_output):
             print("Saving database for device {}".format(camera))
             df = pd.DataFrame(self._data_output[camera])
-            df.index.name = 'Frame'
-            df.to_csv(OUT_DIR + '/DataOutput{}'.format(camera) + '-' + time.strftime('%d%m%Y-%H%M%S') + '.csv', sep=';')
+            df.index.name = "Frame"
+            df.to_csv(
+                OUT_DIR
+                + "/DataOutput{}".format(camera)
+                + "-"
+                + time.strftime("%d%m%Y-%H%M%S")
+                + ".csv",
+                sep=";",
+            )
             print("Database saved")
 
     ######
@@ -616,9 +713,10 @@ class DeepLabStream:
     @staticmethod
     def greetings():
         from utils.configloader import EXP_NAME, EXP_ORIGIN
+
         print("This is DeepLabStream")
         print("Developed by: Jens Schweihoff and Matvey Loshakov")
-        print(f'Initializing {EXP_ORIGIN.lower()} experiment: {EXP_NAME}...')
+        print(f"Initializing {EXP_ORIGIN.lower()} experiment: {EXP_NAME}...")
 
     def get_camera_manager(self):
         return self._camera_manager
@@ -653,11 +751,13 @@ class DeepLabStream:
 
 # testing part
 @click.command()
-@click.option('--dlc-enabled', 'dlc_enabled', is_flag=True)
-@click.option('--benchmark-enabled', 'benchmark_enabled', is_flag=True)
-@click.option('--recording-enabled', 'recording_enabled', is_flag=True)
-@click.option('--data-output-enabled', 'data_output_enabled', is_flag=True)
-def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_output_enabled):
+@click.option("--dlc-enabled", "dlc_enabled", is_flag=True)
+@click.option("--benchmark-enabled", "benchmark_enabled", is_flag=True)
+@click.option("--recording-enabled", "recording_enabled", is_flag=True)
+@click.option("--data-output-enabled", "data_output_enabled", is_flag=True)
+def start_deeplabstream(
+    dlc_enabled, benchmark_enabled, recording_enabled, data_output_enabled
+):
     if not dlc_enabled and benchmark_enabled:
         print("Cannot benchmark with DLC turned off")
         print("Please enable DLC with --dlc-enabled flag")
@@ -676,7 +776,7 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
     print("Benchmarking enabled: {}".format(benchmark_enabled))
     print("Data output enabled: {}".format(data_output_enabled))
     print("Start with current config? (y/n)")
-    if input().lower() != 'y':
+    if input().lower() != "y":
         print("Please edit config and restart the script.")
         print("Exiting script...")
         sys.exit()
@@ -711,7 +811,9 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
             minimum = np.min(dataset)
             print("Minimum {0} time {1:6.5f}".format(name, minimum))
             standart_deviation = np.std(dataset)
-            print("Standard deviation {0} time {1:6.5f}".format(name, standart_deviation))
+            print(
+                "Standard deviation {0} time {1:6.5f}".format(name, standart_deviation)
+            )
 
         def show_benchmark_statistics():
             """
@@ -750,7 +852,9 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
             # outputting the frames
             res_frames, res_time = stream_manager.get_analysed_frames()
             # inputting the frames
-            stream_manager.input_frames_for_analysis(all_frames, stream_manager.frame_index)
+            stream_manager.input_frames_for_analysis(
+                all_frames, stream_manager.frame_index
+            )
 
             ###########################################################
             # Benchmarking part
@@ -782,7 +886,7 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
                 whole_loop_time_data.append(whole_loop)
 
         # exit clauses
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             start_time = stream_manager.get_start_time()
             stream_manager.finish_streaming()
             if benchmark_enabled:
@@ -802,20 +906,26 @@ def start_deeplabstream(dlc_enabled, benchmark_enabled, recording_enabled, data_
                     stream_manager.stop_recording()
                 break
             elif got_first_analysed_frame:
-                print("[{0}/3000] Benchmarking in progress".format(len(analysis_time_data)))
+                print(
+                    "[{0}/3000] Benchmarking in progress".format(
+                        len(analysis_time_data)
+                    )
+                )
 
     if benchmark_enabled:
-        model_parts = MODEL_NAME.split('_')
+        model_parts = MODEL_NAME.split("_")
         if len(model_parts) == 3:
-            short_model = model_parts[0] + '_' + model_parts[2]
+            short_model = model_parts[0] + "_" + model_parts[2]
         else:
             short_model = MODEL_NAME
         # the best way to save files
-        np.savetxt(f'{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt',
-                   np.transpose([fps_data, whole_loop_time_data]))
+        np.savetxt(
+            f"{OUT_DIR}/{short_model}_framerate_{FRAMERATE}_resolution_{RESOLUTION[0]}_{RESOLUTION[1]}.txt",
+            np.transpose([fps_data, whole_loop_time_data]),
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     mp.freeze_support()
     cls()
     start_deeplabstream()

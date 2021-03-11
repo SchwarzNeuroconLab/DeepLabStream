@@ -10,20 +10,38 @@ import random
 import time
 from functools import partial
 from collections import Counter
-from experiments.custom.stimulus_process import ClassicProtocolProcess, SimpleProtocolProcess,Timer, ExampleProtocolProcess
-from experiments.custom.triggers import ScreenTrigger, RegionTrigger, OutsideTrigger, DirectionTrigger, SpeedTrigger,\
-    SimbaThresholdBehaviorPoolTrigger, BsoidClassBehaviorPoolTrigger, SocialInteractionTrigger
+from experiments.custom.stimulus_process import (
+    ClassicProtocolProcess,
+    SimpleProtocolProcess,
+    Timer,
+    ExampleProtocolProcess,
+)
+from experiments.custom.triggers import (
+    ScreenTrigger,
+    RegionTrigger,
+    OutsideTrigger,
+    DirectionTrigger,
+    SpeedTrigger,
+    SimbaThresholdBehaviorPoolTrigger,
+    BsoidClassBehaviorPoolTrigger,
+    SocialInteractionTrigger,
+)
 
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
-from experiments.custom.stimulation import show_visual_stim_img,laser_switch
-from experiments.custom.classifier import SimbaProcessPool, BsoidProcessPool, PureSimbaProcessPool
+from experiments.custom.stimulation import show_visual_stim_img, laser_switch
+from experiments.custom.classifier import (
+    SimbaProcessPool,
+    BsoidProcessPool,
+    PureSimbaProcessPool,
+)
 
 
 from utils.configloader import THRESHOLD, POOL_SIZE
 
 
 """ experimental classification experiment using Simba trained classifiers in a pool which are converted using the pure-predict package"""
+
 
 class PureSimbaBehaviorPoolExperiment:
     """
@@ -38,13 +56,13 @@ class PureSimbaBehaviorPoolExperiment:
         self.experiment_finished = False
         self._process_experiment = ExampleProtocolProcess()
         self._process_pool = PureSimbaProcessPool(POOL_SIZE)
-        #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
-        #initiate in experiment, so that process can be started with start_experiment
-        self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(prob_threshold= THRESHOLD,
-                                                                  class_process_pool = self._process_pool,
-                                                                  debug=False)
+        # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
+        # initiate in experiment, so that process can be started with start_experiment
+        self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(
+            prob_threshold=THRESHOLD, class_process_pool=self._process_pool, debug=False
+        )
         self._event = None
-        #is not fully utilized in this experiment but is usefull to keep for further adaptation
+        # is not fully utilized in this experiment but is usefull to keep for further adaptation
         self._current_trial = None
         self._max_reps = 999
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -68,12 +86,14 @@ class PureSimbaBehaviorPoolExperiment:
         if not self.experiment_finished:
             for trial in self._trials:
                 # check for all trials if condition is met
-                #this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
-                #are passed to the classifier process
-                result, response = self._trials[trial]['trigger'](skeleton, target_prob = self._trials[trial]['target_prob'])
+                # this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
+                # are passed to the classifier process
+                result, response = self._trials[trial]["trigger"](
+                    skeleton, target_prob=self._trials[trial]["target_prob"]
+                )
                 plot_triggers_response(frame, response)
-                #if the trigger is reporting back that the behavior is found: do something
-                #currently nothing is done, expect counting the occurances
+                # if the trigger is reporting back that the behavior is found: do something
+                # currently nothing is done, expect counting the occurances
                 if result:
                     if self._current_trial is None:
                         if not self._trial_timers[trial].check_timer():
@@ -93,9 +113,11 @@ class PureSimbaBehaviorPoolExperiment:
         """
         Defining the trials
         """
-        trials = {'DLStream_test': dict(trigger=self._behaviortrigger.check_skeleton,
-                                    target_prob = None,
-                                    count=0)}
+        trials = {
+            "DLStream_test": dict(
+                trigger=self._behaviortrigger.check_skeleton, target_prob=None, count=0
+            )
+        }
         return trials
 
     def check_exp_timer(self):
@@ -123,7 +145,7 @@ class PureSimbaBehaviorPoolExperiment:
         self.experiment_finished = True
         self._process_experiment.end()
         self._process_pool.end()
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
 
     def get_trial(self):
@@ -138,8 +160,9 @@ class PureSimbaBehaviorPoolExperiment:
         return info
 
 
-
 """ experimental classification experiment using Simba trained classifiers in a pool"""
+
+
 class SimbaBehaviorPoolExperiment:
     """
     Test experiment for Simba classification
@@ -152,13 +175,13 @@ class SimbaBehaviorPoolExperiment:
         """Classifier process and initiation of behavior trigger"""
         self.experiment_finished = False
         self._process_pool = SimbaProcessPool(POOL_SIZE)
-        #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
-        #initiate in experiment, so that process can be started with start_experiment
-        self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(prob_threshold= THRESHOLD,
-                                                                  class_process_pool = self._process_pool,
-                                                                  debug=False)
+        # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
+        # initiate in experiment, so that process can be started with start_experiment
+        self._behaviortrigger = SimbaThresholdBehaviorPoolTrigger(
+            prob_threshold=THRESHOLD, class_process_pool=self._process_pool, debug=False
+        )
         self._event = None
-        #is not fully utilized in this experiment but is usefull to keep for further adaptation
+        # is not fully utilized in this experiment but is usefull to keep for further adaptation
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
         self._trial_timers = {trial: Timer(10) for trial in self._trials}
@@ -181,12 +204,14 @@ class SimbaBehaviorPoolExperiment:
         if not self.experiment_finished:
             for trial in self._trials:
                 # check for all trials if condition is met
-                #this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
-                #are passed to the classifier process
-                result, response = self._trials[trial]['trigger'](skeleton, target_prob = self._trials[trial]['target_prob'])
+                # this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
+                # are passed to the classifier process
+                result, response = self._trials[trial]["trigger"](
+                    skeleton, target_prob=self._trials[trial]["target_prob"]
+                )
                 plot_triggers_response(frame, response)
-                #if the trigger is reporting back that the behavior is found: do something
-                #currently nothing is done, expect counting the occurances
+                # if the trigger is reporting back that the behavior is found: do something
+                # currently nothing is done, expect counting the occurances
                 if result:
                     if self._current_trial is None:
                         if not self._trial_timers[trial].check_timer():
@@ -198,14 +223,17 @@ class SimbaBehaviorPoolExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
+
     @property
     def _trials(self):
         """
         Defining the trials
         """
-        trials = {'SimBA1': dict(trigger=self._behaviortrigger.check_skeleton,
-                                    target_prob = None,
-                                    count=0)}
+        trials = {
+            "SimBA1": dict(
+                trigger=self._behaviortrigger.check_skeleton, target_prob=None, count=0
+            )
+        }
         return trials
 
     def check_exp_timer(self):
@@ -231,7 +259,7 @@ class SimbaBehaviorPoolExperiment:
         """
         self.experiment_finished = True
         self._process_pool.end()
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
 
     def get_trial(self):
@@ -246,8 +274,8 @@ class SimbaBehaviorPoolExperiment:
         return info
 
 
-
 """ experimental classification experiment using BSOID trained classifiers in a pool"""
+
 
 class BsoidBehaviorPoolExperiment:
     """
@@ -261,12 +289,13 @@ class BsoidBehaviorPoolExperiment:
         """Classifier process and initiation of behavior trigger"""
         self.experiment_finished = False
         self._process_pool = BsoidProcessPool(POOL_SIZE)
-        #pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
-        #initiate in experiment, so that process can be started with start_experiment
-        self._behaviortrigger = BsoidClassBehaviorPoolTrigger(target_class= THRESHOLD,
-                                                              class_process_pool = self._process_pool)
+        # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
+        # initiate in experiment, so that process can be started with start_experiment
+        self._behaviortrigger = BsoidClassBehaviorPoolTrigger(
+            target_class=THRESHOLD, class_process_pool=self._process_pool
+        )
         self._event = None
-        #is not fully utilized in this experiment but is usefull to keep for further adaptation
+        # is not fully utilized in this experiment but is usefull to keep for further adaptation
         self._current_trial = None
         self._trial_count = {trial: 0 for trial in self._trials}
         self._trial_timers = {trial: Timer(10) for trial in self._trials}
@@ -289,12 +318,14 @@ class BsoidBehaviorPoolExperiment:
         if not self.experiment_finished:
             for trial in self._trials:
                 # check for all trials if condition is met
-                #this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
-                #are passed to the classifier process
-                result, response = self._trials[trial]['trigger'](skeleton, target_class = self._trials[trial]['target_class'])
+                # this passes the skeleton to the trigger, where the feature extraction is done and the extracted features
+                # are passed to the classifier process
+                result, response = self._trials[trial]["trigger"](
+                    skeleton, target_class=self._trials[trial]["target_class"]
+                )
                 plot_triggers_response(frame, response)
-                #if the trigger is reporting back that the behavior is found: do something
-                #currently nothing is done, expect counting the occurances
+                # if the trigger is reporting back that the behavior is found: do something
+                # currently nothing is done, expect counting the occurances
                 if result:
                     if self._current_trial is None:
                         if not self._trial_timers[trial].check_timer():
@@ -306,14 +337,17 @@ class BsoidBehaviorPoolExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
+
     @property
     def _trials(self):
         """
         Defining the trials
         """
-        trials = {'BSOID1': dict(trigger=self._behaviortrigger.check_skeleton,
-                                    target_class = None,
-                                    count=0)}
+        trials = {
+            "BSOID1": dict(
+                trigger=self._behaviortrigger.check_skeleton, target_class=None, count=0
+            )
+        }
         return trials
 
     def check_exp_timer(self):
@@ -339,7 +373,7 @@ class BsoidBehaviorPoolExperiment:
         """
         self.experiment_finished = True
         self._process_pool.end()
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
 
     def get_trial(self):
@@ -356,6 +390,7 @@ class BsoidBehaviorPoolExperiment:
 
 """Social or multiple animal experiments in combination with SLEAP or non-flattened maDLC pose estimation"""
 
+
 class ExampleSocialInteractionExperiment:
     """
     In this experiment the skeleton/instance of each animal will be considers for the trigger,
@@ -365,6 +400,7 @@ class ExampleSocialInteractionExperiment:
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
+
     def __init__(self):
         self.experiment_finished = False
         self._process = ExampleProtocolProcess()
@@ -393,11 +429,13 @@ class ExampleSocialInteractionExperiment:
 
         if not self.experiment_finished:
             result, response = False, None
-            #checking if enough animals were detected
+            # checking if enough animals were detected
             if len(skeletons) >= self._min_animals:
                 for trial in self._trials:
                     # check if social interaction trigger is true
-                    result, response = self._trials[trial]['trigger'](skeletons=skeletons)
+                    result, response = self._trials[trial]["trigger"](
+                        skeletons=skeletons
+                    )
                     plot_triggers_response(frame, response)
                     if result:
                         if self._current_trial is None:
@@ -421,22 +459,20 @@ class ExampleSocialInteractionExperiment:
         """
         Defining the trials
         """
-        identification_dict = dict(active={'animal': 1
-                                            , 'bp': ['bp2']
-                                           }
-                                ,passive = {'animal': 0
-                                            , 'bp': ['bp6']
-                                                }
-                                )
+        identification_dict = dict(
+            active={"animal": 1, "bp": ["bp2"]}, passive={"animal": 0, "bp": ["bp6"]}
+        )
 
-        interaction_trigger = SocialInteractionTrigger(threshold= self._proximity_threshold
-                                                       , identification_dict = identification_dict
-                                                       , interaction_type = 'proximity'
-                                                       , debug=True
-                                                       )
+        interaction_trigger = SocialInteractionTrigger(
+            threshold=self._proximity_threshold,
+            identification_dict=identification_dict,
+            interaction_type="proximity",
+            debug=True,
+        )
 
-        trials = {'DLStream_test': dict(trigger=interaction_trigger.check_skeleton,
-                                             count=0)}
+        trials = {
+            "DLStream_test": dict(trigger=interaction_trigger.check_skeleton, count=0)
+        }
         return trials
 
     def check_exp_timer(self):
@@ -461,7 +497,7 @@ class ExampleSocialInteractionExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to end the process!
         self._process.end()
@@ -496,7 +532,7 @@ class ExampleMultipleAnimalExperiment:
         self._trial_timers = {trial: Timer(10) for trial in self._trials}
         self._exp_timer = Timer(600)
 
-    def check_skeleton(self,frame,skeletons):
+    def check_skeleton(self, frame, skeletons):
         """
         Checking each passed animal skeleton for a pre-defined set of conditions
         Outputting the visual representation, if exist
@@ -511,40 +547,41 @@ class ExampleMultipleAnimalExperiment:
                 self.stop_experiment()
 
         if not self.experiment_finished:
-            result,response = False,None
+            result, response = False, None
             for trial in self._trials:
                 # check for all trials if condition is met
                 result_list = []
                 for skeleton in skeletons:
                     # checking each skeleton for trigger success
-                    result,response = self._trials[trial]['trigger'](skeleton=skeleton)
+                    result, response = self._trials[trial]["trigger"](skeleton=skeleton)
                     # if one of the triggers is true, break the loop and continue (the first True)
                     if result:
                         break
-                plot_triggers_response(frame,response)
+                plot_triggers_response(frame, response)
                 if result:
                     if self._current_trial is None:
                         if not self._trial_timers[trial].check_timer():
                             self._current_trial = trial
                             self._trial_timers[trial].reset()
                             self._trial_count[trial] += 1
-                            print(trial,self._trial_count[trial])
+                            print(trial, self._trial_count[trial])
                 else:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
 
             self._process.set_trial(self._current_trial)
-            return result,response
+            return result, response
 
     @property
     def _trials(self):
         """
         Defining the trials
         """
-        green_roi = RegionTrigger('circle',self._green_point,self._radius * 2 + 7.5,'bp1')
-        trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
-                                             count=0)}
+        green_roi = RegionTrigger(
+            "circle", self._green_point, self._radius * 2 + 7.5, "bp1"
+        )
+        trials = {"Greenbar_whiteback": dict(trigger=green_roi.check_skeleton, count=0)}
         return trials
 
     def check_exp_timer(self):
@@ -569,7 +606,7 @@ class ExampleMultipleAnimalExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to end the process!
         self._process.end()
@@ -591,6 +628,7 @@ class ExampleExperiment:
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
+
     def __init__(self):
         self.experiment_finished = False
         self._process = ExampleProtocolProcess()
@@ -621,7 +659,7 @@ class ExampleExperiment:
             result, response = False, None
             for trial in self._trials:
                 # check for all trials if condition is met
-                result, response = self._trials[trial]['trigger'](skeleton=skeleton)
+                result, response = self._trials[trial]["trigger"](skeleton=skeleton)
                 plot_triggers_response(frame, response)
                 if result:
                     if self._current_trial is None:
@@ -643,12 +681,16 @@ class ExampleExperiment:
         """
         Defining the trials
         """
-        green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, 'neck')
-        blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5, 'neck')
-        trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
-                                             count=0),
-                  'Bluebar_whiteback': dict(trigger=blue_roi.check_skeleton,
-                                            count=0)}
+        green_roi = RegionTrigger(
+            "circle", self._green_point, self._radius * 2 + 7.5, "neck"
+        )
+        blue_roi = RegionTrigger(
+            "circle", self._blue_point, self._radius * 2 + 7.5, "neck"
+        )
+        trials = {
+            "Greenbar_whiteback": dict(trigger=green_roi.check_skeleton, count=0),
+            "Bluebar_whiteback": dict(trigger=blue_roi.check_skeleton, count=0),
+        }
         return trials
 
     def check_exp_timer(self):
@@ -673,7 +715,7 @@ class ExampleExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to end the process!
         self._process.end()
@@ -705,20 +747,22 @@ EXP_TIME = 3600
 EXP_COMPLETION = 10
 
 
-
 class SpeedExperiment:
     """
     Simple class to contain all of the experiment properties
     Uses multiprocess to ensure the best possible performance and
         to showcase that it is possible to work with any type of equipment, even timer-dependent
     """
+
     def __init__(self):
         self.experiment_finished = False
         self._threshold = 10
         self._event = None
         self._current_trial = None
         self._event_count = 0
-        self._trigger = SpeedTrigger(threshold = self._threshold,bodypart= 'tailroot', timewindow_len= 5)
+        self._trigger = SpeedTrigger(
+            threshold=self._threshold, bodypart="tailroot", timewindow_len=5
+        )
         self._exp_timer = Timer(600)
 
     def check_skeleton(self, frame, skeleton):
@@ -738,14 +782,13 @@ class SpeedExperiment:
                 laser_switch(True)
                 self._event_count += 1
                 print(self._event_count)
-                print('Light on')
+                print("Light on")
 
             else:
                 laser_switch(False)
-                print('Light off')
+                print("Light off")
 
             return result, response
-
 
     def check_exp_timer(self):
         """
@@ -768,7 +811,7 @@ class SpeedExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         self._exp_timer.reset()
         # don't forget to stop the laser for safety!
         laser_switch(False)
@@ -778,6 +821,7 @@ class SpeedExperiment:
         Check which trial is going on right now
         """
         return self._current_trial
+
 
 class FirstExperiment:
     def __init__(self):
@@ -801,7 +845,7 @@ class FirstExperiment:
         status, trial = self._process.get_status()
         if status:
             current_trial = self._trials[trial]
-            condition, response = current_trial['trigger'].check_skeleton(skeleton)
+            condition, response = current_trial["trigger"].check_skeleton(skeleton)
             self._process.pass_condition(condition)
             result = self._process.get_result()
             if result is not None:
@@ -817,7 +861,11 @@ class FirstExperiment:
                 # if not continue
                 self._iti_duration = next(self._iti_list, False)
                 self._intertrial_timer = Timer(self._iti_duration)
-                print(' Going into InterTrialTime for ' + str(self._iti_duration) + ' sec.')
+                print(
+                    " Going into InterTrialTime for "
+                    + str(self._iti_duration)
+                    + " sec."
+                )
 
                 self._intertrial_timer.start()
             result = None
@@ -832,7 +880,7 @@ class FirstExperiment:
                 print("Experiment is finished due to max. trial number.")
                 print(self._result_list)
                 self.stop_experiment()
-            elif self._counter['result'][('Greenbar_whiteback', True)] >= 20:
+            elif self._counter["result"][("Greenbar_whiteback", True)] >= 20:
                 print("Reached max amount of CS+ trial successes!")
                 print(self._result_list)
                 self.stop_experiment()
@@ -845,8 +893,15 @@ class FirstExperiment:
                     self._process.set_trial(self._chosen_trial)
                     self._print_check = False
                 elif not self._print_check:
-                    print('Next trial: #' + str(len(self._result_list) + 1) + ' ' + self._chosen_trial)
-                    print('Animal is not meeting trial start criteria, the start of trial is delayed.')
+                    print(
+                        "Next trial: #"
+                        + str(len(self._result_list) + 1)
+                        + " "
+                        + self._chosen_trial
+                    )
+                    print(
+                        "Animal is not meeting trial start criteria, the start of trial is delayed."
+                    )
                     self._print_check = True
                     # self._penalty_timer.reset()
                     # self._penalty_timer.start()
@@ -862,20 +917,26 @@ class FirstExperiment:
         """
         self._result_list.append((trial, result))
         if result is True:
-            if trial == 'Bluebar_whiteback' and self._completion_counter['Greenbar_whiteback'] is False:
+            if (
+                trial == "Bluebar_whiteback"
+                and self._completion_counter["Greenbar_whiteback"] is False
+            ):
                 self._success_count[trial] = []
-                print('Success ignored. Waiting for Green.')
+                print("Success ignored. Waiting for Green.")
             else:
                 self._success_count[trial].append(result)
                 self.check_completion()
-                print('Trial successful')
-                print('Successful trials in a row so far:' + str(len(self._success_count[trial])))
+                print("Trial successful")
+                print(
+                    "Successful trials in a row so far:"
+                    + str(len(self._success_count[trial]))
+                )
         else:
             self._success_count[trial] = []
-            print('Trial failed, resetting completion criterion')
+            print("Trial failed, resetting completion criterion")
 
-        trial_counter = self._counter['trial']
-        result_counter = self._counter['result']
+        trial_counter = self._counter["trial"]
+        result_counter = self._counter["result"]
         print(trial_counter)
         print(result_counter)
 
@@ -926,28 +987,38 @@ class FirstExperiment:
     def _trials(self):
 
         # self.triggers['orient'] = ScreenTrigger('North', 90, ['neck', 'nose'])
-        region_trigger = RegionTrigger('circle', (650, 37), 50, 'nose')
-        outside_trigger = OutsideTrigger('circle', (650, 37), 50, 'nose')
+        region_trigger = RegionTrigger("circle", (650, 37), 50, "nose")
+        outside_trigger = OutsideTrigger("circle", (650, 37), 50, "nose")
         if not CTRL:
-            trials = {'Greenbar_whiteback': dict(stimulus_timer=Timer(10),
-                                                 collection_timer=Timer(10),
-                                                 success_timer=Timer(7),
-                                                 trigger=region_trigger,
-                                                 result_func=any,
-                                                 random_reward=False),
-                      'Bluebar_whiteback': dict(stimulus_timer=Timer(10),
-                                                collection_timer=Timer(10),
-                                                success_timer=Timer(7),
-                                                trigger=outside_trigger,
-                                                result_func=all,
-                                                random_reward=False)}
+            trials = {
+                "Greenbar_whiteback": dict(
+                    stimulus_timer=Timer(10),
+                    collection_timer=Timer(10),
+                    success_timer=Timer(7),
+                    trigger=region_trigger,
+                    result_func=any,
+                    random_reward=False,
+                ),
+                "Bluebar_whiteback": dict(
+                    stimulus_timer=Timer(10),
+                    collection_timer=Timer(10),
+                    success_timer=Timer(7),
+                    trigger=outside_trigger,
+                    result_func=all,
+                    random_reward=False,
+                ),
+            }
         else:
-            trials = {'CTRL': dict(stimulus_timer=Timer(10),
-                                   collection_timer=Timer(7),
-                                   success_timer=Timer(10),
-                                   trigger=region_trigger,
-                                   result_func=any,
-                                   random_reward=False)}
+            trials = {
+                "CTRL": dict(
+                    stimulus_timer=Timer(10),
+                    collection_timer=Timer(7),
+                    success_timer=Timer(10),
+                    trigger=region_trigger,
+                    result_func=any,
+                    random_reward=False,
+                )
+            }
 
         return trials
 
@@ -958,7 +1029,7 @@ class FirstExperiment:
         :return: dict of triggers
         """
         if self._stage == 1:
-            triggers = dict(orient=ScreenTrigger('North', 90, ['neck', 'nose']))
+            triggers = dict(orient=ScreenTrigger("North", 90, ["neck", "nose"]))
 
         # if self._stage == 2:
         #     triggers = dict(orient = ScreenTrigger('North', 90, ['neck', 'nose']),
@@ -975,7 +1046,7 @@ class FirstExperiment:
         trial_list = [i[0] for i in self._result_list]
         trial_counter = Counter(trial_list)
         res_counter = Counter(self._result_list)
-        return {'trial': trial_counter, 'result': res_counter}
+        return {"trial": trial_counter, "result": res_counter}
 
     def check_exp_timer(self):
         if not self._exp_timer.check_timer():
@@ -1023,7 +1094,7 @@ class SecondExperiment:
         # if not all stages are completed
         for trial in self._trials:
             # check for all trials if condition is met
-            result, response = self._trials[trial]['trigger'](skeleton=skeleton)
+            result, response = self._trials[trial]["trigger"](skeleton=skeleton)
             if self._event is None:
                 # if there is no current trial as event already
                 if result:
@@ -1041,20 +1112,20 @@ class SecondExperiment:
                     self._count[trial] += 1
             # plot_triggers_response(frame, response)
         print(self._event)
-        print('green: {}'.format(self._count['Greenbar_whiteback']))
-        print('blue: {}'.format(self._count['Bluebar_whiteback']))
+        print("green: {}".format(self._count["Greenbar_whiteback"]))
+        print("blue: {}".format(self._count["Bluebar_whiteback"]))
         if self._event is not None:
             # if there is a trial set as event, show stimulus
-            print('I am not none!')
-            show_visual_stim_img(type=self._event, name='inside')
+            print("I am not none!")
+            show_visual_stim_img(type=self._event, name="inside")
         elif self._event is None:
             # if there is no trial set as event, show background
-            show_visual_stim_img(name='inside')
+            show_visual_stim_img(name="inside")
         if all(trials >= EXP_COMPLETION for trials in self._count.values()):
             # if all trials reached number of repeats of completion criterion, set stage as completed and go higher
             # self._completion_counter[self._stage] = True
             # finish the experiment if stage is completed
-            print('Stage ' + str(self._stage) + ' completed!')
+            print("Stage " + str(self._stage) + " completed!")
             self.stop_experiment()
         self.check_exp_timer()
         #       self._stage += 1
@@ -1068,48 +1139,85 @@ class SecondExperiment:
         orientation_angle = 30
         orientation_bodyparts = ["neck", "nose"]
 
-        region_bodyparts = 'nose'
+        region_bodyparts = "nose"
         if self._stage == 1:
-            green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5, region_bodyparts)
-            blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5, region_bodyparts)
-            trials = {'Greenbar_whiteback': dict(trigger=green_roi.check_skeleton,
-                                                 count=0),
-                      'Bluebar_whiteback': dict(trigger=blue_roi.check_skeleton,
-                                                count=0)}
+            green_roi = RegionTrigger(
+                "circle", self._green_point, self._radius * 2 + 7.5, region_bodyparts
+            )
+            blue_roi = RegionTrigger(
+                "circle", self._blue_point, self._radius * 2 + 7.5, region_bodyparts
+            )
+            trials = {
+                "Greenbar_whiteback": dict(trigger=green_roi.check_skeleton, count=0),
+                "Bluebar_whiteback": dict(trigger=blue_roi.check_skeleton, count=0),
+            }
         elif self._stage == 2:
-            green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5 * 5, region_bodyparts)
-            blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5 * 5, region_bodyparts)
-            green_dir = DirectionTrigger(self._green_point, orientation_angle, orientation_bodyparts, True)
-            blue_dir = DirectionTrigger(self._blue_point, orientation_angle, orientation_bodyparts, True)
+            green_roi = RegionTrigger(
+                "circle",
+                self._green_point,
+                self._radius * 2 + 7.5 * 5,
+                region_bodyparts,
+            )
+            blue_roi = RegionTrigger(
+                "circle", self._blue_point, self._radius * 2 + 7.5 * 5, region_bodyparts
+            )
+            green_dir = DirectionTrigger(
+                self._green_point, orientation_angle, orientation_bodyparts, True
+            )
+            blue_dir = DirectionTrigger(
+                self._blue_point, orientation_angle, orientation_bodyparts, True
+            )
 
             def res_func(roi, direct, skeleton):
                 res_roi, response_roi = roi.check_skeleton(skeleton)
                 res_dir, response_dir = direct.check_skeleton(skeleton)
                 final_result = all([res_roi, res_dir])
-                response_roi['plot'].update(response_dir['plot'])
+                response_roi["plot"].update(response_dir["plot"])
                 return final_result, response_roi
 
-            trials = {'Greenbar_whiteback': dict(trigger=partial(res_func, roi=green_roi, direct=green_dir),
-                                                 count=0),
-                      'Bluebar_whiteback': dict(trigger=partial(res_func, roi=blue_roi, direct=blue_dir),
-                                                count=0)}
+            trials = {
+                "Greenbar_whiteback": dict(
+                    trigger=partial(res_func, roi=green_roi, direct=green_dir), count=0
+                ),
+                "Bluebar_whiteback": dict(
+                    trigger=partial(res_func, roi=blue_roi, direct=blue_dir), count=0
+                ),
+            }
         elif self._stage == 3:
-            green_roi = RegionTrigger('circle', self._green_point, self._radius * 2 + 7.5 * 10, region_bodyparts)
-            blue_roi = RegionTrigger('circle', self._blue_point, self._radius * 2 + 7.5 * 10, region_bodyparts)
-            green_dir = DirectionTrigger(self._green_point, orientation_angle, orientation_bodyparts, True)
-            blue_dir = DirectionTrigger(self._blue_point, orientation_angle, orientation_bodyparts, True)
+            green_roi = RegionTrigger(
+                "circle",
+                self._green_point,
+                self._radius * 2 + 7.5 * 10,
+                region_bodyparts,
+            )
+            blue_roi = RegionTrigger(
+                "circle",
+                self._blue_point,
+                self._radius * 2 + 7.5 * 10,
+                region_bodyparts,
+            )
+            green_dir = DirectionTrigger(
+                self._green_point, orientation_angle, orientation_bodyparts, True
+            )
+            blue_dir = DirectionTrigger(
+                self._blue_point, orientation_angle, orientation_bodyparts, True
+            )
 
             def res_func(roi, direct, skeleton):
                 res_roi, response_roi = roi.check_skeleton(skeleton)
                 res_dir, response_dir = direct.check_skeleton(skeleton)
                 final_result = all([res_roi, res_dir])
-                response_roi['plot'].update(response_dir['plot'])
+                response_roi["plot"].update(response_dir["plot"])
                 return final_result, response_roi
 
-            trials = {'Greenbar_whiteback': dict(trigger=partial(res_func, roi=green_roi, direct=green_dir),
-                                                 count=0),
-                      'Bluebar_whiteback': dict(trigger=partial(res_func, roi=blue_roi, direct=blue_dir),
-                                                count=0)}
+            trials = {
+                "Greenbar_whiteback": dict(
+                    trigger=partial(res_func, roi=green_roi, direct=green_dir), count=0
+                ),
+                "Bluebar_whiteback": dict(
+                    trigger=partial(res_func, roi=blue_roi, direct=blue_dir), count=0
+                ),
+            }
 
             # green_dir = DirectionTrigger(self._green_point, orientation_angle, orientation_bodyparts, True)
             # blue_dir = DirectionTrigger(self._blue_point, orientation_angle, orientation_bodyparts, True)
@@ -1134,7 +1242,7 @@ class SecondExperiment:
 
     def stop_experiment(self):
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
 
     def get_trial(self):
         return self._event
@@ -1173,7 +1281,9 @@ class OptogenExperiment:
                 if not self._intertrial_timer.check_timer():
                     # check if there is an intertrial time running right now, if not continue
                     # check if the headdirection angle is within limits
-                    _, angle_point = angle_between_vectors(*skeleton['neck'], *skeleton['nose'], *self._point)
+                    _, angle_point = angle_between_vectors(
+                        *skeleton["neck"], *skeleton["nose"], *self._point
+                    )
                     if self._start_angle <= angle_point <= self._end_angle:
                         if not self._event:
                             # if a stimulation event wasn't started already, start one
@@ -1222,7 +1332,7 @@ class OptogenExperiment:
                                 print("Stimulation duration", trial_time)
                                 self._intertrial_timer.start()
         else:
-            #if maximum experiment time was reached, stop experiment
+            # if maximum experiment time was reached, stop experiment
             print("Ending experiment, timer ran out")
             self.stop_experiment()
 
@@ -1234,7 +1344,7 @@ class OptogenExperiment:
 
     def stop_experiment(self):
         self.experiment_finished = True
-        print('Experiment completed!')
+        print("Experiment completed!")
         print("Total event duration", sum(self._results))
         print(self._results)
 
@@ -1248,7 +1358,6 @@ class OptogenExperiment:
 
 
 class Reward_PreTraining:
-
     def __init__(self):
         self.experiment_finished = False
         self._trials_list = self.generate_trials_list(self._trials, 30)
@@ -1275,7 +1384,11 @@ class Reward_PreTraining:
             # check trial end trigger and starts Timer
             self._intertrial_timer.start()
             if not self._print_check:
-                print('Reward was taken. Going into InterTrialTime for ' + str(self._iti_duration) + ' sec.')
+                print(
+                    "Reward was taken. Going into InterTrialTime for "
+                    + str(self._iti_duration)
+                    + " sec."
+                )
                 self._print_check = True
             # resets chosen_trial
             self._chosen_trial = None
@@ -1289,10 +1402,10 @@ class Reward_PreTraining:
                     # if no more trials exist in iter
                     print("Experiment is finished due to max. trial number.")
                     exp_time = self._exp_timer.return_time()
-                    print('Experiment took ' + str(exp_time) + ' sec')
+                    print("Experiment took " + str(exp_time) + " sec")
                     self.stop_experiment()
                 self._trial_counter += 1
-                print('Stimulation: #', str(self._trial_counter))
+                print("Stimulation: #", str(self._trial_counter))
                 self._process.set_trial(self._chosen_trial)
         self.check_end_time()
 
@@ -1315,8 +1428,7 @@ class Reward_PreTraining:
     @property
     def _trials(self):
         """this is a dummy version of the more complex experiments to keep the general flow"""
-        trials = {'Pretraining': dict(stimulus_timer=None,
-                                      count=0)}
+        trials = {"Pretraining": dict(stimulus_timer=None, count=0)}
         return trials
 
     @property
@@ -1325,7 +1437,7 @@ class Reward_PreTraining:
         creates trial start condition triggers depending on the experimental stage"
         :return: dict of triggers
         """
-        triggers = dict(region=RegionTrigger('circle', (648, 38), 30, 'nose'))
+        triggers = dict(region=RegionTrigger("circle", (648, 38), 30, "nose"))
 
         return triggers
 

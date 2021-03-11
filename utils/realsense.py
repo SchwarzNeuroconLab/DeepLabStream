@@ -8,7 +8,10 @@ Licensed under GNU General Public License v3.0
 
 import warnings
 import numpy as np
-warnings.filterwarnings(category=FutureWarning, action='ignore')  # filter unwanted warnings
+
+warnings.filterwarnings(
+    category=FutureWarning, action="ignore"
+)  # filter unwanted warnings
 import pyrealsense2 as prs2
 
 
@@ -16,6 +19,7 @@ class RealSenseManager:
     """
     RealSense cameras manager class
     """
+
     def __init__(self):
         """
         Everything needed to initialize we get from the environment
@@ -65,25 +69,31 @@ class RealSenseManager:
         :param framerate: maximum stream framerate
         """
         width, heigth = resolution
-        if stream_type == 'color':
-            self._config.enable_stream(stream_type=prs2.stream.color,
-                                       width=width,
-                                       height=heigth,
-                                       format=prs2.format.bgr8,
-                                       framerate=framerate)
-        elif stream_type == 'depth':
-            self._config.enable_stream(stream_type=prs2.stream.depth,
-                                       width=width,
-                                       height=heigth,
-                                       format=prs2.format.z16,
-                                       framerate=framerate)
-        elif stream_type == 'infrared':
-            self._config.enable_stream(stream_type=prs2.stream.infrared,
-                                       stream_index=1,  # we are using only the first camera here
-                                       width=width,
-                                       height=heigth,
-                                       format=prs2.format.y8,
-                                       framerate=framerate)
+        if stream_type == "color":
+            self._config.enable_stream(
+                stream_type=prs2.stream.color,
+                width=width,
+                height=heigth,
+                format=prs2.format.bgr8,
+                framerate=framerate,
+            )
+        elif stream_type == "depth":
+            self._config.enable_stream(
+                stream_type=prs2.stream.depth,
+                width=width,
+                height=heigth,
+                format=prs2.format.z16,
+                framerate=framerate,
+            )
+        elif stream_type == "infrared":
+            self._config.enable_stream(
+                stream_type=prs2.stream.infrared,
+                stream_index=1,  # we are using only the first camera here
+                width=width,
+                height=heigth,
+                format=prs2.format.y8,
+                framerate=framerate,
+            )
 
     def enable_device(self, device_serial: str):
         """
@@ -145,7 +155,9 @@ class RealSenseManager:
         Not currently used due to very heavy CPU load
         OCV works with this better
         """
-        colorized_frame = np.asanyarray(self._colorizer.colorize(depth_frame).get_data())
+        colorized_frame = np.asanyarray(
+            self._colorizer.colorize(depth_frame).get_data()
+        )
         return colorized_frame
 
     def stop(self):

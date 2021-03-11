@@ -9,16 +9,25 @@ import time
 import cv2
 import numpy as np
 
-from utils.configloader import CAMERA_SOURCE, VIDEO_SOURCE, RESOLUTION, FRAMERATE, REPEAT_VIDEO
+from utils.configloader import (
+    CAMERA_SOURCE,
+    VIDEO_SOURCE,
+    RESOLUTION,
+    FRAMERATE,
+    REPEAT_VIDEO,
+)
+
 
 class MissingFrameError(Exception):
     """Custom expection to be raised when frame is not received. Should be caught in app.py and deeplabstream.py
-     to stop dlstream gracefully"""
+    to stop dlstream gracefully"""
+
 
 class GenericManager:
     """
     Camera manager class for generic (not specified) cameras
     """
+
     def __init__(self):
         """
         Generic camera manager from video source
@@ -28,8 +37,8 @@ class GenericManager:
         self._manager_name = "generic"
         self._enabled_devices = {}
         self._camera = None
-        #Will be called when enabling stream! Important for restart of stream
-        #self._camera = cv2.VideoCapture(int(self._source))
+        # Will be called when enabling stream! Important for restart of stream
+        # self._camera = cv2.VideoCapture(int(self._source))
         self._camera_name = "Camera {}".format(self._source)
 
     def get_connected_devices(self) -> list:
@@ -80,8 +89,10 @@ class GenericManager:
         if ret:
             color_frames[self._camera_name] = image
         else:
-            raise MissingFrameError('No frame was received from the camera. Make sure that the camera is connected '
-                                    'and that the camera source is set correctly.')
+            raise MissingFrameError(
+                "No frame was received from the camera. Make sure that the camera is connected "
+                "and that the camera source is set correctly."
+            )
 
         return color_frames, depth_maps, infra_frames
 
@@ -101,13 +112,14 @@ class VideoManager(GenericManager):
     """
     Camera manager class for analyzing videos
     """
+
     def __init__(self):
         """
         Generic video manager from video files
         Uses pure opencv
         """
         super().__init__()
-        #will be defined in enable_stream
+        # will be defined in enable_stream
         self._camera = None
         self._camera_name = "Video"
         self.initial_wait = False
@@ -120,7 +132,7 @@ class VideoManager(GenericManager):
         """
         # set video to first frame
         self._camera = cv2.VideoCapture(VIDEO_SOURCE)
-        self._camera.set(cv2.CAP_PROP_POS_FRAMES,0)
+        self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     def get_frames(self) -> tuple:
         """
@@ -142,16 +154,15 @@ class VideoManager(GenericManager):
             color_frames[self._camera_name] = image
             running_time = time.time() - self.last_frame_time
             if running_time <= 1 / FRAMERATE:
-                sleepy_time = int(np.ceil(1000/FRAMERATE - running_time / 1000))
+                sleepy_time = int(np.ceil(1000 / FRAMERATE - running_time / 1000))
                 cv2.waitKey(sleepy_time)
         elif REPEAT_VIDEO:
             # cycle the video for testing purposes
             self._camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
             return self.get_frames()
         else:
-            raise MissingFrameError('The video reached the end or is damaged. Use REPEAT_VIDEO in the advanced_settings to repeat videos.')
+            raise MissingFrameError(
+                "The video reached the end or is damaged. Use REPEAT_VIDEO in the advanced_settings to repeat videos."
+            )
 
         return color_frames, depth_maps, infra_frames
-
-
-
