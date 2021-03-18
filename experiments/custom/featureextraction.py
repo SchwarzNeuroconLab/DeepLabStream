@@ -5,7 +5,7 @@ University Bonn Medical Faculty, Germany
 https://github.com/SchwarzNeuroconLab/DeepLabStream
 Licensed under GNU General Public License v3.0
 
-Simba Feature extraction functions were provided by Simon Nillson from Golden Lab
+Simba Feature extraction functions were provided by Simon Nilsson from Golden Lab
 Main developer of SiMBA https://github.com/sgoldenlab/simba
 and integrated into the SimbaFeatureExtractor
 
@@ -25,7 +25,7 @@ import itertools
 ### EUCLIDIAN DISTANCES IN SINGLE FRAMES
 @jit(nopython=True, cache=True)
 def EuclidianDistCalc(inArr):
-    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+    """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
     Mouse_1_nose_to_tail = int(
         np.sqrt(
             ((inArr[-1][4] - inArr[-1][12]) ** 2 + (inArr[-1][5] - inArr[-1][13]) ** 2)
@@ -111,7 +111,7 @@ def EuclidianDistCalc(inArr):
 ### EUCLIDEAN DISTANCES BETWEEN CENTROIDS IN ROLLING WINDOWS
 @jit(nopython=True, cache=True)
 def distancesBetweenBps(bpArray, bp):
-    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+    """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
     frames2Process = bpArray.shape[0]
     bps2process = int(bpArray.shape[1] / 2)
@@ -180,7 +180,7 @@ def distancesBetweenBps(bpArray, bp):
 ### EUCLIDEAN DISTANCES BETWEEN BODY-PARTS WITHIN EACH ANIMALS HULL
 @jit(nopython=True, cache=True)
 def bpDistancesInHull(animal1arraySplit):
-    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+    """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
     frames2process = animal1arraySplit.shape[0]
     bps2process = animal1arraySplit[1].shape[0]
@@ -209,7 +209,7 @@ def bpDistancesInHull(animal1arraySplit):
 ### TOTAL MOVEMENT OF ALL ANIMALS IN ROLLING WINDOWS
 @jit(nopython=True, cache=True)
 def TotalMovementBodyparts(arrayConcat_Animal1, arrayConcat_Animal2):
-    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+    """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
     frames2process = arrayConcat_Animal2.shape[0]
     bps2process = int(arrayConcat_Animal2.shape[1] / 2)
@@ -273,7 +273,7 @@ def TotalMovementBodyparts(arrayConcat_Animal1, arrayConcat_Animal2):
 ### MOVEMENTS OF INDIVIDUAL BODY-PARTS
 @jit(nopython=True, cache=True)
 def singleAnimalBpMovements(tail_1, tail_2, center_1, center_2, nose_1, nose_2):
-    """provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+    """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
     Tail_base_movement_M1_median_2, Tail_base_movement_M2_median_2 = (
         int(np.median(tail_1)),
@@ -339,7 +339,7 @@ class SimbaFeatureExtractor:
     def extract_features(self, input_array):
         """Takes bp coordinates of length input_list_length and extract features.
         :return extracted feature list for input to classifier"
-        Adapted from code provided by Simon Nillson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+        Adapted from code provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
         def append2featureList(featureList, measures2add):
             featureList.extend(measures2add)
