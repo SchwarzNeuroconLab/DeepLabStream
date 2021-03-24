@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Star)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
 [![GitHub forks](https://img.shields.io/github/forks/SchwarzNeuroconLab/DeepLabStream.svg?style=social&label=Fork)](https://github.com/SchwarzNeuroconLab/DeepLabStream)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect)
+[![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect) [![Join the chat at https://gitter.im/DLStream/community](https://badges.gitter.im/DLStream/community.svg)](https://gitter.im/DLStream/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 DeepLabStream is a python based multi-purpose tool that enables the realtime tracking and manipulation of animals during ongoing experiments.
 Our toolbox was orginally adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expanded on its core capabilities, but is now able to utilize a variety of different network architectures for online pose estimation
@@ -17,12 +17,18 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 ![DLS_Stim](docs/DLSSTim_example.gif)
 
+## Read the news:
+
+- Real-time behavioral analysis using artificial intelligence @ [Federal Ministry of Education and Research](http://www.research-in-germany.org/news/2021/2/2021-02-19_Real-time_behavioural_analysis_using_artificial_intelligence.html), [Uni Bonn](https://www.uni-bonn.de/news/real-time-behavioral-analysis-using-artificial-intelligence) and [Phys.org](https://phys.org/news/2021-02-real-time-behavioral-analysis-artificial-intelligence.html)
+- Understanding AI: How studying Neural Net and Human Brain Helps @ [AnalyticsInsight.net](https://www.analyticsinsight.net/understanding-ai-how-studying-neural-net-and-human-brain-helps/)
+- We are also featured on [open-neuroscience.com](https://open-neuroscience.com/post/deeplabstream/)!
+
 ## New features:
 
 #### 02/2021: Multiple Animal Experiments (Pre-release): Full [SLEAP](https://github.com/murthylab/sleap) integration (Full release coming soon!)
 
 - Updated [Installation](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing) (for SLEAP support)
-- Single Instance and Multiple Instance models (TopDown & BottomUp) integration (SLEAP v1.1.0a10), more coming soon!
+- Single Instance and Multiple Instance models (TopDown & BottomUp) integration (SLEAP v1.1), more coming soon!
 - [New Multiple Animal Experiment Tutorial](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Multiple-Animal-Experiments)
 
 #### 01/2021: DLStream was published in [Communications Biology](https://www.nature.com/articles/s42003-021-01654-9)
@@ -37,7 +43,7 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
  
  #### Contributing
 
-If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg)!
+If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg) or go to [Gitter](https://gitter.im/DLStream/community) for a quick chat!
 
 We are constantly working to update and increase the capabilities of DLStream. 
 We welcome all feedback and input from your side.

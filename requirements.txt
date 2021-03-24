@@ -1,5 +1,5 @@
-PySide2==5.14.1
-numba==0.51.1
+
+PySide2==5.15.2
 gpiozero==1.5.1
 pigpio==1.78
 pyserial==3.5
@@ -13,3 +13,4 @@ scikit-learn== 0.24.1
 scikit-image==0.17.2
 scipy==1.4.1
 pure-predict==0.0.4
+numba==0.51.1
