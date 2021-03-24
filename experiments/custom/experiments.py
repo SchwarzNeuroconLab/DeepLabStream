@@ -37,7 +37,7 @@ from experiments.custom.classifier import (
 )
 
 
-from utils.configloader import THRESHOLD, POOL_SIZE
+from utils.configloader import THRESHOLD, POOL_SIZE, TRIGGER
 
 
 """ experimental classification experiment using Simba trained classifiers in a pool which are converted using the pure-predict package"""
@@ -62,7 +62,7 @@ class PureSimbaBehaviorPoolExperiment:
             prob_threshold=THRESHOLD, class_process_pool=self._process_pool, debug=False
         )
         self._event = None
-        # is not fully utilized in this experiment but is usefull to keep for further adaptation
+        # is not fully utilized in this experiment but is useful to keep for further adaptation
         self._current_trial = None
         self._max_reps = 999
         self._trial_count = {trial: 0 for trial in self._trials}
@@ -173,7 +173,7 @@ class SimbaBehaviorPoolExperiment:
 
     def __init__(self):
         """Classifier process and initiation of behavior trigger"""
-        self.experiment_finished = False
+        self._process_experiment = ExampleProtocolProcess()
         self._process_pool = SimbaProcessPool(POOL_SIZE)
         # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         # initiate in experiment, so that process can be started with start_experiment
@@ -223,6 +223,10 @@ class SimbaBehaviorPoolExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
+            self._process_experiment.set_trial(self._current_trial)
+        else:
+            pass
+        return result,response
 
     @property
     def _trials(self):
@@ -230,7 +234,7 @@ class SimbaBehaviorPoolExperiment:
         Defining the trials
         """
         trials = {
-            "SimBA1": dict(
+            "DLStream_test": dict(
                 trigger=self._behaviortrigger.check_skeleton, target_prob=None, count=0
             )
         }
@@ -249,6 +253,7 @@ class SimbaBehaviorPoolExperiment:
         """
         Start the experiment
         """
+        self._process_experiment.start()
         self._process_pool.start()
         if not self.experiment_finished:
             self._exp_timer.start()
@@ -258,6 +263,7 @@ class SimbaBehaviorPoolExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
+        self._process_experiment.end()
         self._process_pool.end()
         print("Experiment completed!")
         self._exp_timer.reset()
@@ -288,11 +294,12 @@ class BsoidBehaviorPoolExperiment:
     def __init__(self):
         """Classifier process and initiation of behavior trigger"""
         self.experiment_finished = False
+        self._process_experiment = ExampleProtocolProcess()
         self._process_pool = BsoidProcessPool(POOL_SIZE)
         # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         # initiate in experiment, so that process can be started with start_experiment
         self._behaviortrigger = BsoidClassBehaviorPoolTrigger(
-            target_class=THRESHOLD, class_process_pool=self._process_pool
+            target_class=TRIGGER, class_process_pool=self._process_pool, debug= False
         )
         self._event = None
         # is not fully utilized in this experiment but is usefull to keep for further adaptation
@@ -337,14 +344,19 @@ class BsoidBehaviorPoolExperiment:
                     if self._current_trial == trial:
                         self._current_trial = None
                         self._trial_timers[trial].start()
+            self._process_experiment.set_trial(self._current_trial)
+        else:
+            pass
+        return result,response
 
     @property
     def _trials(self):
         """
         Defining the trials
+        Target class is the cluster of interest and can be changed with every call of check_skeleton
         """
         trials = {
-            "BSOID1": dict(
+            "DLStream_test": dict(
                 trigger=self._behaviortrigger.check_skeleton, target_class=None, count=0
             )
         }
@@ -364,6 +376,7 @@ class BsoidBehaviorPoolExperiment:
         Start the experiment
         """
         self._process_pool.start()
+        self._process_experiment.start()
         if not self.experiment_finished:
             self._exp_timer.start()
 
@@ -372,6 +385,7 @@ class BsoidBehaviorPoolExperiment:
         Stop the experiment and reset the timer
         """
         self.experiment_finished = True
+        self._process_experiment.end()
         self._process_pool.end()
         print("Experiment completed!")
         self._exp_timer.reset()
@@ -386,6 +400,7 @@ class BsoidBehaviorPoolExperiment:
         """ returns optional info"""
         info = self._behaviortrigger.get_last_prob()
         return info
+
 
 
 """Social or multiple animal experiments in combination with SLEAP or non-flattened maDLC pose estimation"""

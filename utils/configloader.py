@@ -78,6 +78,7 @@ START_TIME = time.time()
 PATH_TO_CLASSIFIER = dsc_config["Classification"].get("PATH_TO_CLASSIFIER")
 PIXPERMM = dsc_config["Classification"].getfloat("PIXPERMM")
 THRESHOLD = dsc_config["Classification"].getfloat("THRESHOLD")
+TRIGGER = dsc_config["Classification"].getfloat("TRIGGER")
 POOL_SIZE = dsc_config["Classification"].getint("POOL_SIZE")
 TIME_WINDOW = dsc_config["Classification"].getint("TIME_WINDOW")
 

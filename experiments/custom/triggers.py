@@ -13,7 +13,7 @@ from utils.analysis import (
     EllipseROI,
     RectangleROI,
 )
-from utils.configloader import RESOLUTION, TIME_WINDOW
+from utils.configloader import RESOLUTION, TIME_WINDOW, FRAMERATE
 from collections import deque
 from experiments.custom.featureextraction import (
     SimbaFeatureExtractor,
@@ -804,12 +804,12 @@ class BsoidClassBehaviorTrigger:
         self._trigger = target_class
         self._last_result = [0]
         self._center = None
-        self._debug = debug  # not used in this trigger
+        self._debug = debug
         self._skeleton = None
         self._classifier, self._time_window_len = self._init_classifier(
             path_to_sav
         )  # initialize classifier
-        self.feat_extractor = BsoidFeatureExtractor(self._time_window_len, fps=30)
+        self.feat_extractor = BsoidFeatureExtractor(self._time_window_len, fps=FRAMERATE)
         self._time_window = deque(maxlen=self._time_window_len)
 
     @staticmethod
@@ -818,7 +818,7 @@ class BsoidClassBehaviorTrigger:
 
         """Put your classifier of choice in here"""
         classifier = BsoidClassifier(path_to_clf=path_to_sav)
-        win_len = classifier.ge()
+        win_len = classifier.get_win_len()
         return classifier, win_len
 
     def fill_time_window(self, skeleton):
@@ -847,11 +847,12 @@ class BsoidClassBehaviorTrigger:
             start_time = time.time()
             f_extract_output = self.feat_extractor.extract_features(self._time_window)
             end_time = time.time()
-            print(
-                "Feature extraction time: {:.2f} msec".format(
-                    (end_time - start_time) * 1000
+            if self._debug:
+                print(
+                    "Feature extraction time: {:.2f} msec".format(
+                        (end_time - start_time) * 1000
+                    )
                 )
-            )
         if f_extract_output is not None:
             self._last_result, _, _ = self._classifier.classify(f_extract_output)
         else:
@@ -906,7 +907,7 @@ class BsoidClassBehaviorPoolTrigger:
         self._last_result = [0]
         self._feature_id = 0
         self._center = None
-        self._debug = debug  # not used in this trigger
+        self._debug = debug
         self._skeleton = None
         self._time_window_len = TIME_WINDOW
         self.feat_extractor = BsoidFeatureExtractor(self._time_window_len)
@@ -938,11 +939,12 @@ class BsoidClassBehaviorPoolTrigger:
             start_time = time.time()
             f_extract_output = self.feat_extractor.extract_features(self._time_window)
             end_time = time.time()
-            print(
-                "Feature extraction time: {:.2f} msec".format(
-                    (end_time - start_time) * 1000
+            if self._debug:
+                print(
+                    "Feature extraction time: {:.2f} msec".format(
+                        (end_time - start_time) * 1000
+                    )
                 )
-            )
         if f_extract_output is not None:
             self._feature_id += 1
             self._process_pool.pass_features(
