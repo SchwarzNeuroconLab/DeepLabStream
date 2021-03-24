@@ -709,7 +709,9 @@ class SimbaThresholdBehaviorPoolTrigger:
             k: skeleton[k] for k in skeleton.keys() if k not in key_selection
         }
         flat_values = transform_2pose(skeleton_selection).flatten()
+
         # if not enough animals are present, padd the rest with default value "0,0"
+        # TODO: Padd automatically; remove hardcoding
         if flat_values.shape[0] < 28:
             flat_values = np.pad(
                 flat_values,

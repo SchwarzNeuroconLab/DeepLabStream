@@ -111,6 +111,7 @@ def EuclidianDistCalc(inArr):
 ### EUCLIDEAN DISTANCES BETWEEN CENTROIDS IN ROLLING WINDOWS
 @jit(nopython=True, cache=True)
 def distancesBetweenBps(bpArray, bp):
+    #TODO: adapt to flexible window
     """provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
 
     frames2Process = bpArray.shape[0]
@@ -127,6 +128,7 @@ def distancesBetweenBps(bpArray, bp):
         int(np.sum(outputArray)),
     )
     if bp == "centroid":
+        #currently hardcoded to 15 frames
         msArr200, msArr166, msArr133, msArr66 = (
             outputArray[8:15],
             outputArray[10:15],
@@ -326,6 +328,7 @@ class SimbaFeatureExtractor:
     def __init__(self, input_array_length):
         self.currPixPerMM = PIXPERMM
         self.input_array_length = input_array_length
+        #TODO: Collect bodypart position in input array from skeleton automatically (this will make this much easier!)
 
     def get_currPixPerMM(self):
         return self.currPixPerMM

@@ -319,11 +319,11 @@ def pure_simba_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
             last_prob = classifier.classify(features)
             output_q.put((last_prob, feature_id))
             end_time = time.time()
-            print(
-                "Classification time: {:.2f} msec".format(
-                    (end_time - start_time) * 1000
-                )
-            )
+            # print(
+            #     "Classification time: {:.2f} msec".format(
+            #         (end_time - start_time) * 1000
+            #     )
+            # )
         else:
             pass
 
