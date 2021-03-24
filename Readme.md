@@ -13,7 +13,7 @@ DeepLabStream is a python based multi-purpose tool that enables the realtime tra
 Our toolbox was orginally adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expanded on its core capabilities, but is now able to utilize a variety of different network architectures for online pose estimation
  ([SLEAP](https://github.com/murthylab/sleap), [DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live), [DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap)).
 
-DeepLabStreams core feature is the utilization of real-time tracking to orchestrate closed-loop experiments. This can be achieved using any type of camera-based video stream (incl. multiple streams).  It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation.
+DeepLabStreams core feature is the utilization of real-time tracking to orchestrate closed-loop experiments. This can be achieved using any type of camera-based video stream (incl. multiple streams).  It enables running experimental protocols that are dependent on a constant stream of bodypart positions and feedback activation of several input/output devices. It's capabilities range from simple region of interest (ROI) based triggers to headdirection or behavior dependent stimulation, including online classification ([SiMBA](https://www.biorxiv.org/content/10.1101/2020.04.19.049452v2), [B-SOID](https://www.biorxiv.org/content/10.1101/770271v2)).
 
 ![DLS_Stim](docs/DLSSTim_example.gif)
 
@@ -25,6 +25,14 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 ## New features:
 
+#### 03/2021: Online Behavior Classification using SiMBA and B-SOID:
+
+- full integration of online classification of user-defined behavior using [SiMBA](https://github.com/sgoldenlab/simba) and [B-SOID](https://github.com/YttriLab/B-SOID).
+- SOCIAL CLASSIFICATION with SiMBA 14bp two animal classification (more to come!)
+- Unsupervised Classification with B-SOID
+- New wiki guide and example experiment to get started with online classification: [Advanced Behavior Classification](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Advanced-Behavior-Classification)
+- this version has new requirements (numba, pure, scikit-learn), so be sure to install them (e.g. `pip install -r requirements.txt`).
+
 #### 02/2021: Multiple Animal Experiments (Pre-release): Full [SLEAP](https://github.com/murthylab/sleap) integration (Full release coming soon!)
 
 - Updated [Installation](https://github.com/SchwarzNeuroconLab/DeepLabStream/wiki/Installation-&-Testing) (for SLEAP support)
@@ -33,7 +41,8 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 #### 01/2021: DLStream was published in [Communications Biology](https://www.nature.com/articles/s42003-021-01654-9)
 
-#### 12/2021: New pose estimation model integration ([DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live)) and pre-release of further integration ([DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap))
+#### 12/2021: New pose estimation model integration
+ - ([DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live)) and pre-release of further integration ([DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap))
 
 ## Quick Reference:
 
@@ -131,7 +140,6 @@ If you encounter any issues or errors, you can check out the wiki article ([Help
 
 If you use this code or data please cite:
 
-
 Schweihoff, J.F., Loshakov, M., Pavlova, I. et al. DeepLabStream enables closed-loop behavioral experiments using deep learning-based markerless, real-time posture detection. 
 
 Commun Biol 4, 130 (2021). https://doi.org/10.1038/s42003-021-01654-9
@@ -147,3 +155,23 @@ Developed by:
 - Matvey Loshakov, matveyloshakov@gmail.com
 
 Corresponding Author: Martin Schwarz, Martin.Schwarz@ukbonn.de
+
+## Other References
+
+If you are using any of the following open-source code please cite them accordingly:
+
+>  Simple Behavioral Analysis (SimBA) – an open source toolkit for computer classification of complex social behaviors in experimental animals;
+ Simon RO Nilsson, Nastacia L. Goodwin, Jia Jie Choong, Sophia Hwang, Hayden R Wright, Zane C Norville, Xiaoyu Tong, Dayu Lin, Brandon S. Bentzley, Neir Eshel, Ryan J McLaughlin, Sam A. Golden
+ bioRxiv 2020.04.19.049452; doi: https://doi.org/10.1101/2020.04.19.049452 
+
+>  B-SOiD: An Open Source Unsupervised Algorithm for Discovery of Spontaneous Behaviors;
+ Alexander I. Hsu, Eric A. Yttri
+ bioRxiv 770271; doi: https://doi.org/10.1101/770271 
+
+> SLEAP: Multi-animal pose tracking;
+Talmo D. Pereira, Nathaniel Tabris, Junyu Li, Shruthi Ravindranath, Eleni S. Papadoyannis, Z. Yan Wang, David M. Turner, Grace McKenzie-Smith, Sarah D. Kocher, Annegret L. Falkner, Joshua W. Shaevitz, Mala Murthy
+bioRxiv 2020.08.31.276246; doi: https://doi.org/10.1101/2020.08.31.276246 
+
+>Real-time, low-latency closed-loop feedback using markerless posture tracking;
+    Gary A Kane, Gonçalo Lopes, Jonny L Saunders, Alexander Mathis, Mackenzie W Mathis;
+ eLife 2020;9:e61909 doi: 10.7554/eLife.61909

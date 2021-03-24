@@ -25,5 +25,5 @@ def convert_classifier(path):
 
 
 if __name__ == "__main__":
-    path_to_classifier = r"D:\SimBa\Jens_models\pursuit_prediction_11.sav"
+    path_to_classifier = "PATH_TO_CLASSIFIER"
     convert_classifier(path_to_classifier)
