@@ -13,13 +13,591 @@ Bsoid Feature extraction functions were adpated from code orginally by Alexander
 Main developer of B-Soid https://github.com/YttriLab/B-SOID
 and integrated into the BsoidFeatureExtractor
 """
-
+import scipy
+from scipy.spatial import ConvexHull
 from utils.configloader import PIXPERMM, FRAMERATE
 import numpy as np
 import pandas as pd
 import math
+import time
 from numba import jit
 import itertools
+
+"""For standard SIMBA feature extraction"""
+
+def count_values_in_range(series,values_in_range_min,values_in_range_max):
+    return series.between(left=values_in_range_min,right=values_in_range_max).sum()
+
+@jit(nopython=True, cache=True)
+def euclidean_distance(x1, x2, y1, y2):
+    result = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    return result
+
+@jit(nopython=True, cache=True)
+def angle3pt(ax,ay,bx,by,cx,cy):
+    ang = math.degrees(
+        math.atan2(cy - by,cx - bx) - math.atan2(ay - by,ax - bx))
+    return ang + 360 if ang < 0 else ang
+
+def as_strided(*args):
+    return np.lib.stride_tricks.as_strided(*args)
+
+
+
+class SimbaFeatureExtractorStandard14bp:
+    """Feature extraction module for integration in behavior trigger, takes list of postures as input
+    and calculates features to pass to classifier. Features and classifier have to match!
+    Designed to work with Simba https://github.com/sgoldenlab/simba"""
+
+    def __init__(self, input_array_length, debug = False):
+        self._debug = debug
+        self.input_array_length = input_array_length
+        #TODO: Collect bodypart position in input array from skeleton automatically (this will make this much easier!)
+        self._currPixPerMM = PIXPERMM
+        self._fps = FRAMERATE
+        self._num_bodyparts = 14
+        self._roll_window_values = [2,5,6,7.5,15]
+        self._roll_window_values_len = len(self._roll_window_values)
+        self._roll_windows =  [int(self._fps / num) for num in self._roll_window_values]
+        self._columnheaders = ["Nose_1_x","Nose_1_y"
+            ,"Ear_left_1_x","Ear_left_1_y"
+            ,"Ear_right_1_x","Ear_right_1_y"
+            ,"Center_1_x","Center_1_y"
+            ,"Lat_left_1_x","Lat_left_1_y"
+            ,"Lat_right_1_x","Lat_right_1_y"
+            ,"Tail_base_1_x","Tail_base_1_y"
+            ,"Nose_2_x","Nose_2_y"
+            ,"Ear_left_2_x","Ear_left_2_y"
+            ,"Ear_right_2_x","Ear_right_2_y"
+            ,"Center_2_x","Center_2_y"
+            ,"Lat_left_2_x","Lat_left_2_y"
+            ,"Lat_right_2_x","Lat_right_2_y"
+            ,"Tail_base_2_x","Tail_base_2_y"
+                         ]
+        self._pheaders = ["Nose_1_p","Ear_left_1_p","Ear_right_1_p","Center_1_p","Lat_left_1_p","Lat_right_1_p",
+                     "Tail_base_1_p","Nose_2_p","Ear_left_2_p","Ear_right_2_p","Center_2_p","Lat_left_2_p",
+                     "Lat_right_2_p","Tail_base_2_p"]
+
+    def convert_pandas(self, input_array):
+        """This is a hardcoded version for the 14 bp SiMBA classification"""
+        input_array_np = np.array(input_array)
+
+        input_df = pd.DataFrame(input_array_np,columns=self._columnheaders)
+        # add fake prediction column
+        for p_clm in self._pheaders:
+            input_df[p_clm] = 0.99
+
+        input_df = input_df.fillna(0)
+        input_df = input_df.drop(input_df.index[[0]])
+        input_df = input_df.apply(pd.to_numeric)
+        input_df = input_df.reset_index()
+        input_df = input_df.reset_index(drop=True)
+        return input_df
+
+    def extract_features_simba14bp(self, input_df):
+        # adapted from SIMBA: https://github.com/sgoldenlab/simba/blob/master/simba/features_scripts/extract_features_14bp.py
+        ########### CREATE PD FOR RAW DATA AND PD FOR MOVEMENT BETWEEN FRAMES ###########
+        M1_hull_large_euclidean_list = []
+        M1_hull_small_euclidean_list = []
+        M1_hull_mean_euclidean_list = []
+        M1_hull_sum_euclidean_list = []
+        M2_hull_large_euclidean_list = []
+        M2_hull_small_euclidean_list = []
+        M2_hull_mean_euclidean_list = []
+        M2_hull_sum_euclidean_list = []
+
+        start_time = time.time()
+        ########### MOUSE AREAS ###########################################
+        input_df['Mouse_1_poly_area'] = input_df.apply(lambda x: ConvexHull(np.array(
+            [[x['Ear_left_1_x'],x["Ear_left_1_y"]],
+             [x['Ear_right_1_x'],x["Ear_right_1_y"]],
+             [x['Nose_1_x'],x["Nose_1_y"]],
+             [x['Lat_left_1_x'],x["Lat_left_1_y"]], \
+             [x['Lat_right_1_x'],x["Lat_right_1_y"]],
+             [x['Tail_base_1_x'],x["Tail_base_1_y"]],
+             [x['Center_1_x'],x["Center_1_y"]]])).area,axis=1)
+        input_df['Mouse_1_poly_area'] = input_df['Mouse_1_poly_area'] / self._currPixPerMM
+
+
+        input_df['Mouse_2_poly_area'] = input_df.apply(lambda x: ConvexHull(np.array(
+            [[x['Ear_left_2_x'],x["Ear_left_2_y"]],
+             [x['Ear_right_2_x'],x["Ear_right_2_y"]],
+             [x['Nose_2_x'],x["Nose_2_y"]],
+             [x['Lat_left_2_x'],x["Lat_left_2_y"]], \
+             [x['Lat_right_2_x'],x["Lat_right_2_y"]],
+             [x['Tail_base_2_x'],x["Tail_base_2_y"]],
+             [x['Center_2_x'],x["Center_2_y"]]])).area,axis=1)
+        input_df['Mouse_2_poly_area'] = input_df['Mouse_2_poly_area'] / self._currPixPerMM
+
+        if self._debug:
+            print('Evaluating convex hulls...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### CREATE SHIFTED DATAFRAME FOR DISTANCE CALCULATIONS ###########################################
+        start_time = time.time()
+        input_df_shifted = input_df.shift(periods=1)
+        input_df_shifted = input_df_shifted.rename(
+            columns={'Ear_left_1_x': 'Ear_left_1_x_shifted','Ear_left_1_y': 'Ear_left_1_y_shifted',
+                     'Ear_left_1_p': 'Ear_left_1_p_shifted','Ear_right_1_x': 'Ear_right_1_x_shifted', \
+                     'Ear_right_1_y': 'Ear_right_1_y_shifted','Ear_right_1_p': 'Ear_right_1_p_shifted',
+                     'Nose_1_x': 'Nose_1_x_shifted','Nose_1_y': 'Nose_1_y_shifted', \
+                     'Nose_1_p': 'Nose_1_p_shifted','Center_1_x': 'Center_1_x_shifted',
+                     'Center_1_y': 'Center_1_y_shifted','Center_1_p': 'Center_1_p_shifted','Lat_left_1_x': \
+                         'Lat_left_1_x_shifted','Lat_left_1_y': 'Lat_left_1_y_shifted',
+                     'Lat_left_1_p': 'Lat_left_1_p_shifted','Lat_right_1_x': 'Lat_right_1_x_shifted',
+                     'Lat_right_1_y': 'Lat_right_1_y_shifted', \
+                     'Lat_right_1_p': 'Lat_right_1_p_shifted','Tail_base_1_x': 'Tail_base_1_x_shifted',
+                     'Tail_base_1_y': 'Tail_base_1_y_shifted', \
+                     'Tail_base_1_p': 'Tail_base_1_p_shifted',
+                     'Ear_left_2_x': 'Ear_left_2_x_shifted','Ear_left_2_y': 'Ear_left_2_y_shifted',
+                     'Ear_left_2_p': 'Ear_left_2_p_shifted','Ear_right_2_x': 'Ear_right_2_x_shifted', \
+                     'Ear_right_2_y': 'Ear_right_2_y_shifted','Ear_right_2_p': 'Ear_right_2_p_shifted',
+                     'Nose_2_x': 'Nose_2_x_shifted','Nose_2_y': 'Nose_2_y_shifted', \
+                     'Nose_2_p': 'Nose_2_p_shifted','Center_2_x': 'Center_2_x_shifted',
+                     'Center_2_y': 'Center_2_y_shifted','Center_2_p': 'Center_2_p_shifted','Lat_left_2_x': \
+                         'Lat_left_2_x_shifted','Lat_left_2_y': 'Lat_left_2_y_shifted',
+                     'Lat_left_2_p': 'Lat_left_2_p_shifted','Lat_right_2_x': 'Lat_right_2_x_shifted',
+                     'Lat_right_2_y': 'Lat_right_2_y_shifted', \
+                     'Lat_right_2_p': 'Lat_right_2_p_shifted','Tail_base_2_x': 'Tail_base_2_x_shifted',
+                     'Tail_base_2_y': 'Tail_base_2_y_shifted', \
+                     'Tail_base_2_p': 'Tail_base_2_p_shifted',
+                     'Mouse_1_poly_area': 'Mouse_1_poly_area_shifted',
+                     'Mouse_2_poly_area': 'Mouse_2_poly_area_shifted'})
+        input_df_combined = pd.concat([input_df,input_df_shifted],axis=1,join='inner')
+        input_df_combined = input_df_combined.fillna(0)
+        input_df_combined = input_df_combined.reset_index(drop=True)
+
+        if self._debug:
+            print('Creating shifted dataframes for distance calculations')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### EUCLIDEAN DISTANCES ###########################################
+        start_time = time.time()
+
+        #within mice
+
+        eucl_distance_dict_wm = dict(
+            nose_to_tail = ('Nose', 'Tail_base')
+            ,width = ('Lat_left', 'Lat_right')
+            ,Ear_distance = ('Ear_right','Ear_left')
+            ,Nose_to_centroid = ('Nose', 'Center')
+            ,Nose_to_lateral_left= ('Nose', 'Lat_left')
+            ,Nose_to_lateral_right=('Nose','Lat_right')
+            ,Centroid_to_lateral_left = ('Center', 'Lat_left')
+            ,Centroid_to_lateral_right=('Center','Lat_right')
+        )
+
+        mice = [1, 2]
+        for mouse in mice:
+            for distance_measurement, bodyparts in eucl_distance_dict_wm.items():
+                x1 = input_df[f'{bodyparts[0]}_{mouse}_x'].to_numpy()
+                y1 = input_df[f'{bodyparts[0]}_{mouse}_y'].to_numpy()
+                x2 = input_df[f'{bodyparts[1]}_{mouse}_x'].to_numpy()
+                y2 = input_df[f'{bodyparts[1]}_{mouse}_y'].to_numpy()
+                input_df[f'Mouse_{mouse}_{distance_measurement}'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+
+        #between mice
+
+        eucl_distance_dict_bm = dict(
+            Centroid_distance = ('Center_1','Center_2')
+            ,Nose_to_nose_distance = ('Nose_1', 'Nose_2')
+            ,M1_Nose_to_M2_lat_left = ('Nose_1','Lat_left_2')
+            ,M1_Nose_to_M2_lat_right = ('Nose_1', 'Lat_right_2')
+            ,M2_Nose_to_M1_lat_left = ('Nose_2','Lat_left_1')
+            ,M2_Nose_to_M1_lat_right = ('Nose_2', 'Lat_right_1')
+            ,M1_Nose_to_M2_tail_base = ('Nose_1', 'Tail_base_2')
+            ,M2_Nose_to_M1_tail_base=('Nose_2', 'Tail_base_1')
+        )
+
+        for distance_measurement,bodyparts in eucl_distance_dict_bm.items():
+            x1 = input_df[f'{bodyparts[0]}_x'].to_numpy()
+            y1 = input_df[f'{bodyparts[0]}_y'].to_numpy()
+            x2 = input_df[f'{bodyparts[1]}_x'].to_numpy()
+            y2 = input_df[f'{bodyparts[1]}_y'].to_numpy()
+            input_df[f'{distance_measurement}'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+
+        #Movement
+
+        bp_list = ('Center', 'Nose', 'Lat_left','Lat_right', 'Tail_base', 'Ear_left', 'Ear_right')
+
+        mice = [1, 2]
+        for mouse in mice:
+            for bp in bp_list:
+                x1 = input_df_combined[f'{bp}_{mouse}_x_shifted'].to_numpy()
+                y1 = input_df_combined[f'{bp}_{mouse}_y_shifted'].to_numpy()
+                x2 = input_df_combined[f'{bp}_{mouse}_x'].to_numpy()
+                y2 = input_df_combined[f'{bp}_{mouse}_y'].to_numpy()
+                'Movement_mouse_1_centroid'
+                if bp == 'Center':
+                    input_df[f'Movement_mouse_{mouse}_centroid'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+                elif bp == 'Ear_left':
+                    input_df[f'Movement_mouse_{mouse}_left_ear'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+                elif bp == 'Ear_right':
+                    input_df[f'Movement_mouse_{mouse}_right_ear'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+                elif bp == 'Lat_left':
+                    input_df[f'Movement_mouse_{mouse}_lateral_left'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+                elif bp == 'Lat_right':
+                    input_df[f'Movement_mouse_{mouse}_lateral_right'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+                else:
+                    input_df[f'Movement_mouse_{mouse}_{bp.lower()}'] = euclidean_distance(x1,x2,y1,y2) / self._currPixPerMM
+
+
+        input_df['Mouse_1_polygon_size_change'] = (
+                input_df_combined['Mouse_1_poly_area_shifted'] - input_df_combined['Mouse_1_poly_area'])
+        input_df['Mouse_2_polygon_size_change'] = (
+                input_df_combined['Mouse_2_poly_area_shifted'] - input_df_combined['Mouse_2_poly_area'])
+
+        if self._debug:
+            print('Calculating euclidean distances...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### HULL - EUCLIDEAN DISTANCES ###########################################
+        start_time = time.time()
+
+        for index,row in input_df.iterrows():
+            M1_np_array = np.array(
+                [[row['Ear_left_1_x'],row["Ear_left_1_y"]],[row['Ear_right_1_x'],row["Ear_right_1_y"]],
+                 [row['Nose_1_x'],row["Nose_1_y"]],[row['Center_1_x'],row["Center_1_y"]],
+                 [row['Lat_left_1_x'],row["Lat_left_1_y"]],[row['Lat_right_1_x'],row["Lat_right_1_y"]],
+                 [row['Tail_base_1_x'],row["Tail_base_1_y"]]]).astype(int)
+            M2_np_array = np.array(
+                [[row['Ear_left_2_x'],row["Ear_left_2_y"]],[row['Ear_right_2_x'],row["Ear_right_2_y"]],
+                 [row['Nose_2_x'],row["Nose_2_y"]],[row['Center_2_x'],row["Center_2_y"]],
+                 [row['Lat_left_2_x'],row["Lat_left_2_y"]],[row['Lat_right_2_x'],row["Lat_right_2_y"]],
+                 [row['Tail_base_2_x'],row["Tail_base_2_y"]]]).astype(int)
+            M1_dist_euclidean = scipy.spatial.distance.cdist(M1_np_array,M1_np_array,metric='euclidean')
+            M1_dist_euclidean = M1_dist_euclidean[M1_dist_euclidean != 0]
+            M1_hull_large_euclidean = np.amax(M1_dist_euclidean)
+            M1_hull_small_euclidean = np.min(M1_dist_euclidean)
+            M1_hull_mean_euclidean = np.mean(M1_dist_euclidean)
+            M1_hull_sum_euclidean = np.sum(M1_dist_euclidean)
+            M1_hull_large_euclidean_list.append(M1_hull_large_euclidean)
+            M1_hull_small_euclidean_list.append(M1_hull_small_euclidean)
+            M1_hull_mean_euclidean_list.append(M1_hull_mean_euclidean)
+            M1_hull_sum_euclidean_list.append(M1_hull_sum_euclidean)
+            M2_dist_euclidean = scipy.spatial.distance.cdist(M2_np_array,M2_np_array,metric='euclidean')
+            M2_dist_euclidean = M2_dist_euclidean[M2_dist_euclidean != 0]
+            M2_hull_large_euclidean = np.amax(M2_dist_euclidean)
+            M2_hull_small_euclidean = np.min(M2_dist_euclidean)
+            M2_hull_mean_euclidean = np.mean(M2_dist_euclidean)
+            M2_hull_sum_euclidean = np.sum(M2_dist_euclidean)
+            M2_hull_large_euclidean_list.append(M2_hull_large_euclidean)
+            M2_hull_small_euclidean_list.append(M2_hull_small_euclidean)
+            M2_hull_mean_euclidean_list.append(M2_hull_mean_euclidean)
+            M2_hull_sum_euclidean_list.append(M2_hull_sum_euclidean)
+        input_df['M1_largest_euclidean_distance_hull'] = list(
+            map(lambda x: x / self._currPixPerMM,M1_hull_large_euclidean_list))
+        input_df['M1_smallest_euclidean_distance_hull'] = list(
+            map(lambda x: x / self._currPixPerMM,M1_hull_small_euclidean_list))
+        input_df['M1_mean_euclidean_distance_hull'] = list(map(lambda x: x / self._currPixPerMM,M1_hull_mean_euclidean_list))
+        input_df['M1_sum_euclidean_distance_hull'] = list(map(lambda x: x / self._currPixPerMM,M1_hull_sum_euclidean_list))
+        input_df['M2_largest_euclidean_distance_hull'] = list(
+            map(lambda x: x / self._currPixPerMM,M2_hull_large_euclidean_list))
+        input_df['M2_smallest_euclidean_distance_hull'] = list(
+            map(lambda x: x / self._currPixPerMM,M2_hull_small_euclidean_list))
+        input_df['M2_mean_euclidean_distance_hull'] = list(map(lambda x: x / self._currPixPerMM,M2_hull_mean_euclidean_list))
+        input_df['M2_sum_euclidean_distance_hull'] = list(map(lambda x: x / self._currPixPerMM,M2_hull_sum_euclidean_list))
+        input_df['Sum_euclidean_distance_hull_M1_M2'] = (
+                input_df['M1_sum_euclidean_distance_hull'] + input_df['M2_sum_euclidean_distance_hull'])
+
+        if self._debug:
+            print('Calculating hull variables...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### COLLAPSED MEASURES ###########################################
+
+        start_time = time.time()
+        input_df['Total_movement_centroids'] = input_df['Movement_mouse_1_centroid'] + input_df['Movement_mouse_2_centroid']
+        input_df['Total_movement_all_bodyparts_M1'] = input_df['Movement_mouse_1_centroid'] + input_df[
+            'Movement_mouse_1_nose'] + input_df['Movement_mouse_1_tail_base'] + \
+                                                      input_df['Movement_mouse_1_left_ear'] + input_df[
+                                                        'Movement_mouse_1_right_ear'] + input_df[
+                                                        'Movement_mouse_1_lateral_left'] + input_df[
+                                                        'Movement_mouse_1_lateral_right']
+        input_df['Total_movement_all_bodyparts_M2'] = input_df['Movement_mouse_2_centroid'] + input_df[
+            'Movement_mouse_2_nose'] + input_df['Movement_mouse_2_tail_base'] + \
+                                                      input_df['Movement_mouse_2_left_ear'] + input_df[
+                                                        'Movement_mouse_2_right_ear'] + input_df[
+                                                        'Movement_mouse_2_lateral_left'] + input_df[
+                                                        'Movement_mouse_2_lateral_right']
+        input_df['Total_movement_all_bodyparts_both_mice'] = input_df['Total_movement_all_bodyparts_M1'] + input_df[
+            'Total_movement_all_bodyparts_M2']
+
+        if self._debug:
+            print('Collapsed measures')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### CALC ROLLING WINDOWS MEDIANS AND MEANS ###########################################
+        # step  simplification: remove pd.DataFrame.rolling() for fixed selection. In a limited time window a rolling approach is not neccessary
+        start_time = time.time()
+
+        for roll_value in self._roll_windows:
+
+            parameter_dict = dict(
+                Mouse1_width = 'Mouse_1_width'
+                ,Mouse2_width = 'Mouse_2_width'
+                ,Distance = 'Centroid_distance'
+                ,Movement = 'Total_movement_centroids'
+                ,Sum_euclid_distances_hull = 'Sum_euclidean_distance_hull_M1_M2'
+            )
+            for key, clm_name in parameter_dict.items():
+
+                clm_array = input_df[clm_name][:roll_value].to_numpy()
+
+                currentcolname = f'{key}_mean_' + str(roll_value)
+                input_df[currentcolname] = np.mean(clm_array)
+
+                currentcolname = f'{key}_median_' + str(roll_value)
+                input_df[currentcolname] = np.median(clm_array)
+
+                currentcolname = f'{key}_sum_' + str(roll_value)
+                input_df[currentcolname] = np.sum(clm_array)
+
+
+            clm_name = 'euclidean_distance_hull'
+            clm_name2 = 'euclid_distances'
+            for mouse in mice:
+                for value in ('largest', 'smallest', 'mean'):
+
+                    clm_array = input_df[f'M{mouse}_{value}_{clm_name}'][:roll_value].to_numpy()
+
+                    currentcolname = f'Mouse{mouse}_{value}_{clm_name2}_mean_' + str(roll_value)
+                    input_df[currentcolname] = np.mean(clm_array)
+
+                    currentcolname = f'Mouse{mouse}_{value}_{clm_name2}_median_' + str(roll_value)
+                    input_df[currentcolname] = np.median(clm_array)
+
+                    currentcolname = f'Mouse{mouse}_{value}_{clm_name2}_sum_' + str(roll_value)
+                    input_df[currentcolname] = np.sum(clm_array)
+
+            clm_list = [
+                'Total_movement_all_bodyparts_both_mice'
+                ,'Total_movement_centroids'
+            ]
+
+            for clm_name in clm_list:
+                clm_array = input_df[clm_name][:roll_value].to_numpy()
+
+                currentcolname = clm_name + '_mean_' + str(roll_value)
+                input_df[currentcolname] = np.mean(clm_array)
+
+                currentcolname = clm_name + '_median_' + str(roll_value)
+                input_df[currentcolname] = np.median(clm_array)
+
+                currentcolname = clm_name + '_sum_' + str(roll_value)
+                input_df[currentcolname] = np.sum(clm_array)
+
+            parameter_dict = dict(
+                Nose_movement = 'nose'
+                ,Centroid_movement = 'centroid'
+                ,Tail_base_movement = 'tail_base'
+            )
+            for mouse in mice:
+                for key, bp in parameter_dict.items():
+                    clm_array = input_df[f'Movement_mouse_{mouse}_{bp.lower()}'][:roll_value].to_numpy()
+
+                    currentcolname = f'{key}_M{mouse}_mean_' + str(roll_value)
+                    input_df[currentcolname] = np.mean(clm_array)
+
+                    currentcolname = f'{key}_M{mouse}_median_' + str(roll_value)
+                    input_df[currentcolname] = np.median(clm_array)
+
+                    currentcolname = f'{key}_M{mouse}_sum_' + str(roll_value)
+                    input_df[currentcolname] = np.sum(clm_array)
+
+        if self._debug:
+            print('Calculating rolling windows: medians, medians, and sums...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### BODY PARTS RELATIVE TO EACH OTHER ##################
+
+        ################# EMPETY #########################################
+
+        ########### ANGLES ###########################################
+        start_time = time.time()
+        input_df['Mouse_1_angle'] = input_df.apply(
+            lambda x: angle3pt(x['Nose_1_x'],x['Nose_1_y'],x['Center_1_x'],x['Center_1_y'],x['Tail_base_1_x'],
+                               x['Tail_base_1_y']),axis=1)
+        input_df['Mouse_2_angle'] = input_df.apply(
+            lambda x: angle3pt(x['Nose_2_x'],x['Nose_2_y'],x['Center_2_x'],x['Center_2_y'],x['Tail_base_2_x'],
+                               x['Tail_base_2_y']),axis=1)
+        input_df['Total_angle_both_mice'] = input_df['Mouse_1_angle'] + input_df['Mouse_2_angle']
+        for roll_value in self._roll_windows:
+            currentcolname = 'Total_angle_both_mice_' + str(roll_value)
+            input_df[currentcolname] = np.sum(input_df['Total_angle_both_mice'][:roll_value].to_numpy())
+
+        if self._debug:
+            print('Calculating angles...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### DEVIATIONS ###########################################
+        start_time = time.time()
+        parameter_dict = dict(
+            Total_movement_all_bodyparts_both_mice_deviation = 'Total_movement_all_bodyparts_both_mice'
+            ,Sum_euclid_distances_hull_deviation = 'Sum_euclidean_distance_hull_M1_M2'
+            ,M1_smallest_euclid_distances_hull_deviation = 'M1_smallest_euclidean_distance_hull'
+            ,M1_largest_euclid_distances_hull_deviation = 'M1_largest_euclidean_distance_hull'
+            ,M1_mean_euclid_distances_hull_deviation = 'M1_mean_euclidean_distance_hull'
+            ,Centroid_distance_deviation = 'Centroid_distance'
+            ,Total_angle_both_mice_deviation = 'Total_angle_both_mice'
+            ,Movement_mouse_1_deviation_centroid = 'Movement_mouse_1_centroid'
+            ,Movement_mouse_2_deviation_centroid = 'Movement_mouse_2_centroid'
+            ,Mouse_1_polygon_deviation = 'Mouse_1_poly_area'
+            ,Mouse_2_polygon_deviation = 'Mouse_2_poly_area'
+
+        )
+        for key, value in parameter_dict.items():
+            currentClm = input_df[value].to_numpy()
+            input_df[key] = (np.mean(currentClm) - currentClm)
+
+
+        for roll_value in self._roll_windows:
+
+            clm_names = (
+                'Total_movement_all_bodyparts_both_mice_mean_'
+                ,'Sum_euclid_distances_hull_mean_'
+                ,'Mouse1_smallest_euclid_distances_mean_'
+                ,'Mouse1_largest_euclid_distances_mean_'
+                ,'Movement_mean_'
+                ,'Distance_mean_'
+                ,'Total_angle_both_mice_'
+            )
+
+            for part in clm_names:
+                currentcolname = part + str(roll_value)
+                currentClm = input_df[currentcolname].to_numpy()
+                output_array = (np.mean(currentClm) - currentClm)
+                input_df[f'{currentcolname}_deviation'] = output_array
+                # same values will be applied to another clm ... weird but what should i do?
+                #Yes I checked. Twice, actually 3 times.
+                input_df[f'{currentcolname}_percentile_rank'] = output_array
+
+        if self._debug:
+            print('Calculating deviations...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### PERCENTILE RANK ###########################################
+
+        start_time = time.time()
+        input_df['Movement_percentile_rank'] = input_df['Total_movement_centroids'].rank(pct=True)
+        input_df['Distance_percentile_rank'] = input_df['Centroid_distance'].rank(pct=True)
+        input_df['Movement_mouse_1_percentile_rank'] = input_df['Movement_mouse_1_centroid'].rank(pct=True)
+        input_df['Movement_mouse_2_percentile_rank'] = input_df['Movement_mouse_1_centroid'].rank(pct=True)
+        input_df['Movement_mouse_1_deviation_percentile_rank'] = input_df['Movement_mouse_1_deviation_centroid'].rank(
+            pct=True)
+        input_df['Movement_mouse_2_deviation_percentile_rank'] = input_df['Movement_mouse_2_deviation_centroid'].rank(
+            pct=True)
+        input_df['Centroid_distance_percentile_rank'] = input_df['Centroid_distance'].rank(pct=True)
+        input_df['Centroid_distance_deviation_percentile_rank'] = input_df['Centroid_distance_deviation'].rank(pct=True)
+
+        if self._debug:
+            print('Calculating percentile ranks...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### CALCULATE STRAIGHTNESS OF POLYLINE PATH: tortuosity  ###########################################
+        #as_strided = np.lib.stride_tricks.as_strided
+        start_time = time.time()
+
+        win_size = 3
+        centroidList_Mouse1_x = as_strided(input_df.Center_1_x,(len(input_df) - (win_size - 1),win_size),
+                                           (input_df.Center_1_x.values.strides * 2))
+        centroidList_Mouse1_y = as_strided(input_df.Center_1_y,(len(input_df) - (win_size - 1),win_size),
+                                           (input_df.Center_1_y.values.strides * 2))
+        centroidList_Mouse2_x = as_strided(input_df.Center_2_x,(len(input_df) - (win_size - 1),win_size),
+                                           (input_df.Center_2_x.values.strides * 2))
+        centroidList_Mouse2_y = as_strided(input_df.Center_2_y,(len(input_df) - (win_size - 1),win_size),
+                                           (input_df.Center_2_y.values.strides * 2))
+
+        for k in range(self._roll_window_values_len):
+            start = 0
+            end = start + int(self._roll_window_values[k])
+            tortuosity_M1 = []
+            tortuosity_M2 = []
+            for y in range(len(input_df)):
+                tortuosity_List_M1 = []
+                tortuosity_List_M2 = []
+                CurrCentroidList_Mouse1_x = centroidList_Mouse1_x[start:end]
+                CurrCentroidList_Mouse1_y = centroidList_Mouse1_y[start:end]
+                CurrCentroidList_Mouse2_x = centroidList_Mouse2_x[start:end]
+                CurrCentroidList_Mouse2_y = centroidList_Mouse2_y[start:end]
+                for i in range(len(CurrCentroidList_Mouse1_x)):
+                    currMovementAngle_mouse1 = (
+                        angle3pt(CurrCentroidList_Mouse1_x[i][0],CurrCentroidList_Mouse1_y[i][0],
+                                 CurrCentroidList_Mouse1_x[i][1],CurrCentroidList_Mouse1_y[i][1],
+                                 CurrCentroidList_Mouse1_x[i][2],CurrCentroidList_Mouse1_y[i][2]))
+                    currMovementAngle_mouse2 = (
+                        angle3pt(CurrCentroidList_Mouse2_x[i][0],CurrCentroidList_Mouse2_y[i][0],
+                                 CurrCentroidList_Mouse2_x[i][1],CurrCentroidList_Mouse2_y[i][1],
+                                 CurrCentroidList_Mouse2_x[i][2],CurrCentroidList_Mouse2_y[i][2]))
+                    tortuosity_List_M1.append(currMovementAngle_mouse1)
+                    tortuosity_List_M2.append(currMovementAngle_mouse2)
+                tortuosity_M1.append(sum(tortuosity_List_M1) / (2 * math.pi))
+                tortuosity_M2.append(sum(tortuosity_List_M2) / (2 * math.pi))
+                start += 1
+                end += 1
+            currentcolname1 = str('Tortuosity_Mouse1_') + str(self._roll_window_values[k])
+            # currentcolname2 = str('Tortuosity_Mouse2_') + str(self._roll_window_values[k])
+            input_df[currentcolname1] = tortuosity_M1
+            # input_df[currentcolname2] = tortuosity_M2
+        if self._debug:
+            print('Calculating path tortuosities...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### CALC THE NUMBER OF LOW PROBABILITY DETECTIONS & TOTAL PROBABILITY VALUE FOR ROW###########################################
+        start_time = time.time()
+
+        #SKIPPING BECAUSE DLSTREAM DOES NOT USE PROBABILITY
+        input_df['Sum_probabilities'] = 0.99 * self._num_bodyparts
+        input_df['Sum_probabilities_deviation'] = 0
+        #output of ranking with all 0
+        input_df['Sum_probabilities_deviation_percentile_rank'] = 0.53571
+        input_df['Sum_probabilities_percentile_rank'] = 0.53571
+
+        input_df["Low_prob_detections_0.1"] = 0.0
+        input_df["Low_prob_detections_0.5"] = 0.0
+        input_df["Low_prob_detections_0.75"] = 0.0
+        if self._debug:
+            print('Calculating pose probability scores...')
+            print((time.time() -start_time) *1000, 'ms')
+
+        ########### DROP COORDINATE COLUMNS ###########################################
+
+        input_df = input_df.reset_index(drop=True)
+        input_df = input_df.fillna(0)
+        input_df = input_df.drop(columns=['index'])
+        #drop coordinates and likelyhood
+        #input_df = input_df.drop(columns = self._columnheaders + self._pheaders)
+
+        return input_df
+
+    def extract_features(self, input_array):
+        """Takes bp coordinates of length input_list_length and extract features.
+        :return extracted feature list for input to classifier"
+        Adapted from code provided by Simon Nilsson from Golden Lab; Main developer of SiMBA https://github.com/sgoldenlab/simba"""
+
+        if len(input_array) == self.input_array_length:
+            start_time = time.time()
+            input_df = self.convert_pandas(input_array)
+            features = self.extract_features_simba14bp(input_df)
+
+            if self._debug:
+                print('Full feature extraction time: ', (time.time() -start_time) *1000)
+            return features.to_numpy()
+
+        else:
+            return None
+
+    def get_currPixPerMM(self):
+        return self.currPixPerMM
+
+    def get_input_array_length(self):
+        return self.input_array_length
+
+    def set_input_array_length(self, new_input_array_length):
+        self.input_array_length = new_input_array_length
+
+
+"""For fast simba extraction"""
 
 
 ### EUCLIDIAN DISTANCES IN SINGLE FRAMES
@@ -450,6 +1028,7 @@ class SimbaFeatureExtractor:
 
         else:
             return None
+
 
 
 class BsoidFeatureExtractor:

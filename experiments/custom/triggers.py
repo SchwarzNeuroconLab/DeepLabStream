@@ -676,6 +676,115 @@ class SpeedTrigger:
 class SimbaThresholdBehaviorPoolTrigger:
     """
     Trigger to check if animal's behavior is classified as specific motif above threshold probability.
+    Uses processing pool with feature extraction and classification in the same process
+
+    """
+
+    def __init__(self, prob_threshold: float, class_process_pool, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param float prob_threshold: threshold probability of prediction that is returned by classifier and should be used as trigger.
+        If you plan to use the classifier for multiple trial triggers in the same experiment with different thresholds. We recommend setting up the
+        trigger_probability during check_skeleton
+        :param class_process_pool: list of dictionaries with keys process: mp.Process, input: mp.queue, output: mp.queue;
+         used for lossless frame-by-frame classification
+
+        """
+        self._trigger_threshold = prob_threshold
+        self._process_pool = class_process_pool
+        self._last_prob = 0.0
+        self._feature_id = 0
+        self._center = None
+        self._debug = debug
+        self._skeleton = None
+        self._time_window_len = TIME_WINDOW
+        # feature extraction will happen in the classification process
+        #self.feat_extractor = None
+        self._time_window = deque(maxlen=self._time_window_len)
+
+    def fill_time_window(self, skeleton: dict):
+        """Transforms skeleton input into flat numpy array of coordinates to pass to feature extraction"""
+        # todo: remove bodyparts that are not used automatically
+        key_selection = {"0_tail_tip", "1_tail_tip"}
+        skeleton_selection = {
+            k: skeleton[k] for k in skeleton.keys() if k not in key_selection
+        }
+        flat_values = transform_2pose(skeleton_selection).flatten()
+
+        # if not enough animals are present, padd the rest with default value "0,0"
+        # TODO: Padd automatically; remove hardcoding
+        if flat_values.shape[0] < 28:
+            flat_values = np.pad(
+                flat_values,
+                (0, 28 - flat_values.shape[0]),
+                "constant",
+                constant_values=0,
+            )
+        # this appends the new row to the deque time_window, which will drop the "oldest" entry due to a maximum
+        # length of time_window_len
+        self._time_window.append(flat_values)
+
+    def check_skeleton(self, skeleton, target_prob: float = None):
+        """
+        Checking skeleton for trigger, will pass skeleton window to classifier if window length is reached and
+        collect skeletons otherwise
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :param target_prob: optional, overwrites self._trigger_prob with target probability. this is supposed to enable the
+        set up of different trials (with different motif thresholds) in the experiment without the necessaty to init to
+        classifiers: default None
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        self.fill_time_window(skeleton)
+
+        """Checks if necessary time window was collected and passes it to classifier"""
+        # if enough postures where collected
+
+        if len(self._time_window) == self._time_window_len:
+            # if the last classification is done and was taken
+            self._feature_id += 1
+            self._process_pool.pass_time_window(
+                (self._time_window, self._feature_id), debug=self._debug
+            )
+        # check if a process from the pool is done with the result
+        result, feature_id = self._process_pool.get_result(debug=self._debug)
+        if result is not None:
+            self._last_prob = result
+        # else:
+        #     self._last_prob = 0.0
+
+        if target_prob is not None:
+            self._trigger_threshold = target_prob
+        # choosing a point to draw near the skeleton
+        self._center = (50, 50)
+        result = False
+        text = "Current probability: {:.2f}".format(self._last_prob)
+
+        if self._trigger_threshold <= self._last_prob:
+            result = True
+            text = "Motif matched: {:.2f}".format(self._last_prob)
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        response_body = {
+            "plot": {"text": dict(text=text, org=self._center, color=color)}
+        }
+        response = (result, response_body)
+        return response
+
+    def get_trigger_threshold(self):
+        return self._trigger_threshold
+
+    def get_last_prob(self):
+        return self._last_prob
+
+    def get_time_window_len(self):
+        return self._time_window_len
+
+
+class SimbaThresholdBehaviorPoolTrigger_old:
+    """
+    THIS VERSION HAS A SEPERATE FEATURE EXTRACTION WHICH WILL AFFECT OVERALL PERFORMANCE
+    Trigger to check if animal's behavior is classified as specific motif above threshold probability.
     """
 
     def __init__(self, prob_threshold: float, class_process_pool, debug: bool = False):
@@ -791,6 +900,10 @@ class SimbaThresholdBehaviorPoolTrigger:
 
 class BsoidClassBehaviorTrigger:
     """
+    THIS VERSION HAS A SEPERATE FEATURE EXTRACTION WHICH CAN AFFECT OVERALL PERFORMANCE AND USES ONLY 1 CLASSIFIER AT A TIME
+    WE RECOMMEND USING THE POOL VERSION.
+    If you only want/need to run 1 classifier, just set pool_size to 1
+
     Trigger to check if animal's behavior is classified as specific motif with BSOID trained classifier.
     """
 
@@ -891,6 +1004,95 @@ class BsoidClassBehaviorTrigger:
 
 class BsoidClassBehaviorPoolTrigger:
     """
+    Trigger to check if animal's behavior is classified as specific motif with BSOID trained classifier.
+    Uses processing pool with feature extraction and classification in the same process
+    """
+
+    def __init__(self, target_class: int, class_process_pool, debug: bool = False):
+        """
+        Initialising trigger with following parameters:
+        :param int target_class: target classification category that should be used as trigger. Must match "Group" number of cluster in BSOID.
+        If you plan to use the classifier for multiple trial triggers in the same experiment with different thresholds. We recommend setting up the
+        target_class during check_skeleton
+        :param class_process_pool: list of dictionaries with keys process: mp.Process, input: mp.queue, output: mp.queue;
+         used for lossless frame-by-frame classification
+
+        """
+        self._trigger = target_class
+        self._process_pool = class_process_pool
+        self._last_result = [0]
+        self._feature_id = 0
+        self._center = None
+        self._debug = debug
+        self._skeleton = None
+        self._time_window_len = TIME_WINDOW
+        #not used in this version
+        self.feat_extractor = None
+        self._time_window = deque(maxlen=self._time_window_len)
+
+    def fill_time_window(self, skeleton):
+        from utils.poser import transform_2pose
+
+        pose = transform_2pose(skeleton)
+        self._time_window.appendleft(pose)
+
+    def check_skeleton(self, skeleton, target_class: int = None):
+        """
+        Checking skeleton for trigger, will pass skeleton window to classifier if window length is reached and
+        collect skeletons otherwise
+        :param skeleton: a skeleton dictionary, returned by calculate_skeletons() from poser file
+        :param target_class: optional, overwrites self._trigger with target probability. this is supposed to enable the
+        set up of different trials (with different motifs/categories) in the experiment without the necessity to init to
+        classifiers: default None
+        :return: response, a tuple of result (bool) and response body
+        Response body is used for plotting and outputting results to trials dataframes
+        """
+        self.fill_time_window(skeleton)
+
+        """Checks if necessary time window was collected and passes it to classifier"""
+        if len(self._time_window) == self._time_window_len:
+            self._feature_id += 1
+            self._process_pool.pass_time_window(
+                (self._time_window, self._feature_id), debug=self._debug
+            )
+            # check if a process from the pool is done with the result
+        clf_result, feature_id = self._process_pool.get_result(debug=self._debug)
+        if clf_result is not None:
+            self._last_result = clf_result[0]
+        if target_class is not None:
+            self._trigger = target_class
+        # choosing a point to draw near the skeleton
+        self._center = skeleton[list(skeleton.keys())[0]]
+        # self._center = (50,50)
+        result = False
+        # text = 'Current probability: {:.2f}'.format(self._last_prob)
+        text = "Current Class: {}".format(self._last_result)
+
+        if self._last_result[0] == self._trigger:
+            result = True
+            text = "Motif matched: {}".format(self._last_result)
+
+        color = (0, 255, 0) if result else (0, 0, 255)
+        response_body = {
+            "plot": {"text": dict(text=text, org=self._center, color=color)}
+        }
+        response = (result, response_body)
+        return response
+
+    def get_trigger_threshold(self):
+        return self._trigger
+
+    def get_last_prob(self):
+        return self._last_prob
+
+    def get_time_window_len(self):
+        return self._time_window_len
+
+
+class BsoidClassBehaviorPoolTrigger_old:
+    """
+        THIS VERSION HAS A SEPERATE FEATURE EXTRACTION WHICH CAN AFFECT OVERALL PERFORMANCE
+
     Trigger to check if animal's behavior is classified as specific motif with BSOID trained classifier.
     """
 

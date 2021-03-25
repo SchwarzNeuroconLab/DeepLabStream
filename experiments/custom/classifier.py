@@ -10,7 +10,8 @@ import multiprocessing as mp
 import time
 import pickle
 
-from utils.configloader import PATH_TO_CLASSIFIER
+from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW
+from experiments.custom.featureextraction import SimbaFeatureExtractor, SimbaFeatureExtractorStandard14bp, BsoidFeatureExtractor
 
 
 class Classifier:
@@ -82,6 +83,7 @@ class SiMBAClassifier:
     def __init__(self):
         self._classifier = self.load_classifier(PATH_TO_CLASSIFIER)
         self.last_result = 0.0
+        self._pure = self._check_pure()
 
     @staticmethod
     def load_classifier(path_to_sav):
@@ -92,10 +94,22 @@ class SiMBAClassifier:
         file.close()
         return classifier
 
+    def _check_pure(self):
+        if 'pure' in str(self._classifier):
+            return True
+        else:
+            return False
+
     def classify(self, features):
         """predicts motif probability from features"""
-        prediction = self._classifier.predict_proba(features)
-        probability = prediction.item(1)
+        if self._pure:
+            # pure-predict needs a list instead of a numpy array
+            prediction = self._classifier.predict_proba(list(features))
+            # pure-predict returns a nested list
+            probability = prediction[0][1]
+        else:
+            prediction = self._classifier.predict_proba(features)
+            probability = prediction.item(1)
         self.last_result = probability
         return probability
 
@@ -306,7 +320,6 @@ def simba_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
         else:
             pass
 
-
 def pure_simba_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
     classifier = PureSiMBAClassifier()  # initialize classifier
     while True:
@@ -495,3 +508,245 @@ class BsoidProcessPool(ClassifierProcessPool):
         """
         super().__init__(pool_size)
         self._process_pool = super().initiate_pool(bsoid_classifier_pool_run, pool_size)
+
+
+"""Feature Extraction and Classification in the same pool"""
+
+
+
+def example_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
+    feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
+    classifier = Classifier()  # initialize classifier
+    while True:
+        skel_time_window = None
+        feature_id = 0
+        if input_q.full():
+            skel_time_window, feature_id = input_q.get()
+        if skel_time_window is not None:
+            start_time = time.time()
+            features = feature_extractor.extract_features(skel_time_window)
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob, feature_id))
+            end_time = time.time()
+            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+        else:
+            pass
+
+
+def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
+    feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
+    classifier = SiMBAClassifier()  # initialize classifier
+    while True:
+        skel_time_window = None
+        feature_id = 0
+        if input_q.full():
+            skel_time_window, feature_id = input_q.get()
+        if skel_time_window is not None:
+            start_time = time.time()
+            features = feature_extractor.extract_features(skel_time_window)
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob, feature_id))
+            end_time = time.time()
+            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+        else:
+            pass
+
+def pure_simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
+    feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
+    #feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
+    classifier = SiMBAClassifier()  # initialize classifier
+    while True:
+        skel_time_window = None
+        feature_id = 0
+        if input_q.full():
+            skel_time_window, feature_id = input_q.get()
+        if skel_time_window is not None:
+            start_time = time.time()
+            features = feature_extractor.extract_features(skel_time_window)
+            end_time = time.time()
+            print(
+                "Feature extraction time: {:.2f} msec".format(
+                    (end_time - start_time) * 1000
+                )
+            )
+
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob, feature_id))
+            end_time2 = time.time()
+            print(
+                "Classification time: {:.2f} msec".format(
+                    (end_time2 - end_time) * 1000
+                )
+            )
+        else:
+            pass
+
+
+def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
+    feature_extractor = BsoidFeatureExtractor(TIME_WINDOW)
+    classifier = BsoidClassifier()  # initialize classifier
+    while True:
+        skel_time_window = None
+        feature_id = 0
+        if input_q.full():
+            skel_time_window, feature_id = input_q.get()
+        if skel_time_window is not None:
+            start_time = time.time()
+            features = feature_extractor.extract_features(skel_time_window)
+            last_prob = classifier.classify(features)
+            output_q.put((last_prob, feature_id))
+            end_time = time.time()
+            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
+            # print("Feature ID: "+ feature_id)
+        else:
+            pass
+
+
+class FeatureExtractionClassifierProcessPool:
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self, pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        self._running = False
+        self._pool_size = pool_size
+        self._process_pool = self.initiate_pool(example_feat_classifier_pool_run, pool_size)
+
+    @staticmethod
+    def initiate_pool(process_func, pool_size: int):
+        """creates list of process dictionaries that are used to classify features
+        :param process_func: function that will be passed to mp.Process object, should contain classification
+        :param pool_size: number of processes created by function, should be enough to enable constistent feature classification without skipped frames
+        :"""
+        process_pool = []
+
+        for i in range(pool_size):
+            input_queue = mp.Queue(1)
+            output_queue = mp.Queue(1)
+            classification_process = mp.Process(
+                target=process_func, args=(input_queue, output_queue)
+            )
+            process_pool.append(
+                dict(
+                    process=classification_process,
+                    input=input_queue,
+                    output=output_queue,
+                    running=False,
+                )
+            )
+
+        return process_pool
+
+    def start(self):
+        """
+        Starting all processes
+        """
+        for process in self._process_pool:
+            process["process"].start()
+
+    def end(self):
+        """
+        Ending all processes
+        """
+        for process in self._process_pool:
+            process["input"].close()
+            process["output"].close()
+            process["process"].terminate()
+
+    def get_status(self):
+        """
+        Getting current status of the running protocol
+        """
+        return self._running
+
+    def pass_time_window(self, skel_time_window: tuple, debug: bool = False):
+        """
+        Passing the features to the process pool
+        First checks if processes got their first input yet
+        Checks which process is already done and then gives new input
+        breaks for loop if an idle process was found
+        :param features tuple: feature list from feature extractor and feature_id used to identify processing sequence
+        :param debug bool: reporting of process + feature id to identify discrepancies in processing sequence
+        """
+        for process in self._process_pool:
+            if not process["running"]:
+                if process["input"].empty():
+                    process["input"].put(skel_time_window)
+                    process["running"] = True
+                    if debug:
+                        print(
+                            "First Input",
+                            process["process"].name,
+                            "ID: " + str(skel_time_window[1]),
+                        )
+                    break
+
+            elif process["input"].empty() and process["output"].full():
+                process["input"].put(skel_time_window)
+                if debug:
+                    print("Input", process["process"].name, "ID: " + str(skel_time_window[1]))
+                break
+
+    def get_result(self, debug: bool = False):
+        """
+        Getting result from the process pool
+        takes result from first finished process in pool
+        :param debug bool: reporting of process + feature id to identify discrepancies in processing sequence
+
+        """
+        result = (None, 0)
+        for process in self._process_pool:
+            if process["output"].full():
+                result = process["output"].get()
+                if debug:
+                    print("Output", process["process"].name, "ID: " + str(result[1]))
+                break
+        return result
+
+
+class PureFeatSimbaProcessPool(FeatureExtractionClassifierProcessPool):
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self, pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        super().__init__(pool_size)
+        self._process_pool = super().initiate_pool(
+            pure_simba_feat_classifier_pool_run, pool_size
+        )
+
+
+class FeatSimbaProcessPool(FeatureExtractionClassifierProcessPool):
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self, pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        super().__init__(pool_size)
+        self._process_pool = super().initiate_pool(simba_feat_classifier_pool_run, pool_size)
+
+
+class FeatBsoidProcessPool(ClassifierProcessPool):
+    """
+    Class to help work with protocol function in multiprocessing
+    spawns a pool of processes that tackle the frame-by-frame issue.
+    """
+
+    def __init__(self, pool_size: int):
+        """
+        Setting up the three queues and the process itself
+        """
+        super().__init__(pool_size)
+        self._process_pool = super().initiate_pool(bsoid_feat_classifier_pool_run, pool_size)
