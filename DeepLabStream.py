@@ -340,7 +340,7 @@ class DeepLabStream:
                             scmap, locref, ANIMALS_NUMBER, config
                         )
                         # Use the line below to use raw DLC output rather then DLStream optimization
-                        # peaks = pose
+                        #peaks = pose
                     if MODEL_ORIGIN == "MADLC":
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
                     analysis_time = time.time() - start_time

@@ -176,6 +176,28 @@ def find_local_peaks_new(
     return all_peaks
 
 
+def filter_pose_by_likelihood(pose, threshold: float = 0.1):
+    """
+       !!!FOR NOW THIS FUNCTION SETS THEM TO (0,0) due to missing float dtype in coordinate handling. Will be updated later on.
+       filters pose estimation by likelihood threshold. Estimates below threshold are set to NaN and handled downstream
+    of this function in calculate skeletons.
+    :param pose: pose estimation (e.g., from DLC)
+    :param threshold: likelihood threshold to filter by
+    :return filtered_pose: pose estimation filtered by likelihood (may contain NaN)
+    """
+    # TODO: Update to NaN
+
+    filtered_pose = pose.copy()
+
+    for num, bp in enumerate(filtered_pose):
+        if bp[2] < threshold:
+            # set new threshold to "2" (number outside of normal range to signify filter
+            # TODO: This should be np.NaN not 0,0
+            filtered_pose[num] = np.array([0, 0, 2])
+
+    return filtered_pose
+
+
 def calculate_dlstream_skeletons(peaks: dict, animals_number: int) -> list:
     """
     Creating skeletons from given peaks
@@ -272,8 +294,8 @@ def get_ma_pose(image, config, session, inputs, outputs):
         inputs,
         outputs,
         outall=True,
-        nms_radius=config["nmsradius"],
-        det_min_score=config["minconfidence"],
+        nms_radius=5.0,
+        det_min_score=0.1,
         c_engine=False,
     )
 
@@ -457,6 +479,38 @@ def handle_missing_bp(animal_skeletons: list):
                     break
 
     return animal_skeletons
+
+
+def arrange_flatskeleton(skeleton, n_animals, n_bp_animal, switch_dict):
+    """changes sequence of bodypart sets (skeletons) in multi animal tracking with flat skeleton output (multiple animals in single skeleton) by switching position of pairs.
+    E.g. in pose estimation with different fur colors. Note: When switching muliple animals the new position of the previous switches will be used.
+    :param skeleton: flat skeleton of pose estimation in style {bp1: (x,y), bp2: (x2,y2) ...}
+    :param n_animals: number of animals in total represented by skeleton
+    :param n_bp_animal: number of bodyparts per animal in skeleton
+    :param switch_dict: dictionary containing position of bodypart set (animal) in flat skeleton as key and bp set to exchange with as value.
+            e.g. switch_dict = dict(1 = 2, 3 = 4)
+    :return: skeleton with new order
+    """
+    flat_pose = transform_2pose(skeleton)
+    ra_dict = {}
+    # slicing the animals out
+    for num_animal in range(n_animals):
+        ra_dict[num_animal] = flat_pose[
+            num_animal * n_bp_animal : num_animal * n_bp_animal + n_bp_animal
+        ]
+    # switching positions
+    for orig_pos, switch_pos in switch_dict.items():
+        # extract old
+        orig = ra_dict[orig_pos]
+        switch = ra_dict[switch_pos]
+        # set to new position
+        ra_dict[orig_pos] = switch
+        ra_dict[switch_pos] = orig
+    # extracting pose
+    arranged_pose = np.array([*ra_dict.values()]).reshape(flat_pose.shape)
+    # transforming it to skeleton
+    flat_skeleton = transform_2skeleton(arranged_pose)
+    return flat_skeleton
 
 
 def calculate_skeletons_dlc_live(pose) -> list:
