@@ -699,7 +699,7 @@ class SimbaThresholdBehaviorPoolTrigger:
         self._skeleton = None
         self._time_window_len = TIME_WINDOW
         # feature extraction will happen in the classification process
-        #self.feat_extractor = None
+        # self.feat_extractor = None
         self._time_window = deque(maxlen=self._time_window_len)
 
     def fill_time_window(self, skeleton: dict):
@@ -805,7 +805,7 @@ class BsoidClassBehaviorPoolTrigger:
         self._debug = debug
         self._skeleton = None
         self._time_window_len = TIME_WINDOW
-        #not used in this version
+        # not used in this version
         self.feat_extractor = None
         self._time_window = deque(maxlen=self._time_window_len)
 
@@ -1011,7 +1011,9 @@ class BsoidClassBehaviorTrigger:
         self._classifier, self._time_window_len = self._init_classifier(
             path_to_sav
         )  # initialize classifier
-        self.feat_extractor = BsoidFeatureExtractor(self._time_window_len, fps=FRAMERATE)
+        self.feat_extractor = BsoidFeatureExtractor(
+            self._time_window_len, fps=FRAMERATE
+        )
         self._time_window = deque(maxlen=self._time_window_len)
 
     @staticmethod

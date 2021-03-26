@@ -11,7 +11,11 @@ import time
 import pickle
 
 from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW
-from experiments.custom.featureextraction import SimbaFeatureExtractor, SimbaFeatureExtractorStandard14bp, BsoidFeatureExtractor
+from experiments.custom.featureextraction import (
+    SimbaFeatureExtractor,
+    SimbaFeatureExtractorStandard14bp,
+    BsoidFeatureExtractor,
+)
 
 
 class Classifier:
@@ -65,7 +69,7 @@ class SiMBAClassifier:
         return classifier
 
     def _check_pure(self):
-        if 'pure' in str(self._classifier):
+        if "pure" in str(self._classifier):
             return True
         else:
             return False
@@ -147,10 +151,9 @@ def example_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
             pass
 
 
-
 def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
     feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
-    #feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
+    # feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
     classifier = SiMBAClassifier()  # initialize classifier
     while True:
         skel_time_window = None
@@ -211,7 +214,9 @@ class FeatureExtractionClassifierProcessPool:
         """
         self._running = False
         self._pool_size = pool_size
-        self._process_pool = self.initiate_pool(example_feat_classifier_pool_run, pool_size)
+        self._process_pool = self.initiate_pool(
+            example_feat_classifier_pool_run, pool_size
+        )
 
     @staticmethod
     def initiate_pool(process_func, pool_size: int):
@@ -285,7 +290,11 @@ class FeatureExtractionClassifierProcessPool:
             elif process["input"].empty() and process["output"].full():
                 process["input"].put(skel_time_window)
                 if debug:
-                    print("Input", process["process"].name, "ID: " + str(skel_time_window[1]))
+                    print(
+                        "Input",
+                        process["process"].name,
+                        "ID: " + str(skel_time_window[1]),
+                    )
                 break
 
     def get_result(self, debug: bool = False):
@@ -316,7 +325,9 @@ class FeatSimbaProcessPool(FeatureExtractionClassifierProcessPool):
         Setting up the three queues and the process itself
         """
         super().__init__(pool_size)
-        self._process_pool = super().initiate_pool(simba_feat_classifier_pool_run, pool_size)
+        self._process_pool = super().initiate_pool(
+            simba_feat_classifier_pool_run, pool_size
+        )
 
 
 class FeatBsoidProcessPool(FeatureExtractionClassifierProcessPool):
@@ -330,8 +341,9 @@ class FeatBsoidProcessPool(FeatureExtractionClassifierProcessPool):
         Setting up the three queues and the process itself
         """
         super().__init__(pool_size)
-        self._process_pool = super().initiate_pool(bsoid_feat_classifier_pool_run, pool_size)
-
+        self._process_pool = super().initiate_pool(
+            bsoid_feat_classifier_pool_run, pool_size
+        )
 
 
 """Simple process protocols """
@@ -651,4 +663,3 @@ class BsoidProcessPool(ClassifierProcessPool):
         """
         super().__init__(pool_size)
         self._process_pool = super().initiate_pool(bsoid_classifier_pool_run, pool_size)
-

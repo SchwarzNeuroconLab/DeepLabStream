@@ -30,16 +30,15 @@ from experiments.custom.triggers import (
 from utils.plotter import plot_triggers_response
 from utils.analysis import angle_between_vectors
 from experiments.custom.stimulation import show_visual_stim_img, laser_switch
-from experiments.custom.classifier import (
-    FeatBsoidProcessPool,
-    FeatSimbaProcessPool
-)
+from experiments.custom.classifier import FeatBsoidProcessPool, FeatSimbaProcessPool
 
 
 from utils.configloader import THRESHOLD, POOL_SIZE, TRIGGER
 
 
 """ experimental classification experiment using Simba trained classifiers in a pool which are converted using the pure-predict package"""
+
+
 class SimbaBehaviorPoolExperiment:
     """
     Test experiment for Simba classification
@@ -52,8 +51,8 @@ class SimbaBehaviorPoolExperiment:
         """Classifier process and initiation of behavior trigger"""
         self.experiment_finished = False
         self._process_experiment = ExampleProtocolProcess()
-        #this process has feature extraction and classification in one process
-        #simplifies everything if the feature extraction script is within the parallel process
+        # this process has feature extraction and classification in one process
+        # simplifies everything if the feature extraction script is within the parallel process
         self._process_pool = FeatSimbaProcessPool(POOL_SIZE)
         # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         # initiate in experiment, so that process can be started with start_experiment
@@ -178,7 +177,7 @@ class BsoidBehaviorPoolExperiment:
         # pass classifier to trigger, so that check_skeleton is the only function that passes skeleton
         # initiate in experiment, so that process can be started with start_experiment
         self._behaviortrigger = BsoidClassBehaviorPoolTrigger(
-            target_class=TRIGGER, class_process_pool=self._process_pool, debug= False
+            target_class=TRIGGER, class_process_pool=self._process_pool, debug=False
         )
         self._event = None
         # is not fully utilized in this experiment but is usefull to keep for further adaptation
@@ -226,7 +225,7 @@ class BsoidBehaviorPoolExperiment:
             self._process_experiment.set_trial(self._current_trial)
         else:
             pass
-        return result,response
+        return result, response
 
     @property
     def _trials(self):
