@@ -1,6 +1,6 @@
 
 PySide2==5.15.2
-gpiozero==1.5.1
+gpiozero==1.6.2
 pigpio==1.78
 pyserial==3.5
 nidaqmx==0.5.7
