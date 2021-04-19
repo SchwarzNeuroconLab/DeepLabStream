@@ -52,7 +52,7 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
  
  #### Contributing
 
-If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-jpy2olk1-CuJu0ZylGg_SLbO7zBkcrg) or go to [Gitter](https://gitter.im/DLStream/community) for a quick chat!
+If you have feature requests or questions regarding the design of experiments join our [slack group](https://join.slack.com/t/dlstream/shared_invite/zt-pdh6twf5-xHbpLvJtrTx32t12w8RDVQ) or go to [Gitter](https://gitter.im/DLStream/community) for a quick chat!
 
 We are constantly working to update and increase the capabilities of DLStream. 
 We welcome all feedback and input from your side.
