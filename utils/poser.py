@@ -371,7 +371,7 @@ def load_dlc_live():
 
 
 def load_sleap():
-    model = load_model(MODEL_PATH)
+    model = load_model(MODEL_PATH, batch_size=1)
     model.inference_model
     return model.inference_model
 
