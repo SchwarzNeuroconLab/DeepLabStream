@@ -380,16 +380,15 @@ class DeepLabStream:
                 if input_q.full():
                     index, frame = input_q.get()
                     start_time = time.time()
-                    input_frame = frame[:, :, ::-1]
-                    # this is weird, but without it, it does not seem to work...
-                    frames = np.array([input_frame])
-                    prediction = sleap_model.predict(frames[[0]], batch_size=1)
-                    # check if this is multiple animal instances or single animal model
-                    if sleap_model.name == "single_instance_inference_model":
-                        # get predictions (wrap it again, so the behavior is the same for both model types)
-                        peaks = np.array([prediction["peaks"][0, :]])
-                    else:
-                        peaks = prediction["instance_peaks"][0, :]
+                    # Make sure image is (1, height, width, channels) and uint8
+                    # (height, width) -> (height, width, 1)
+                    frame = np.expand_dims(frame, axis=-1) if frame.ndim == 2 else frame
+                    # (height, width, channels) -> (1, height, width, channels)
+                    frame = np.expand_dims(frame, axis=0) if frame.ndim == 3 else frame
+                    # predict_on_batch is MUCH faster as it does not retrace the model graph for same size inputs
+                    pred = sleap_model.predict_on_batch(frame)
+                    peaks = pred["instance_peaks"][0]  # (n_poses, n_nodes, 2)
+
                     analysis_time = time.time() - start_time
                     output_q.put((index, peaks, analysis_time))
         else:
