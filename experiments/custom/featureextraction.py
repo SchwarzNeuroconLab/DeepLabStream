@@ -1241,8 +1241,10 @@ class BsoidFeatureExtractor:
     Designed to work with BSOID; https://github.com/YttriLab/B-SOID"""
 
     def __init__(self, input_array_length):
-        self.input_array_length = input_array_length
         self._fps = FRAMERATE
+        # calculate length based on FRAMERAT /10
+        self.input_array_length = input_array_length
+        self._last_valid_pose = None
 
     def get_currPixPerMM(self):
         return None
@@ -1252,6 +1254,33 @@ class BsoidFeatureExtractor:
 
     def set_input_array_length(self, new_input_array_length):
         self.input_array_length = new_input_array_length
+
+    def handle_nan(self, pose_window):
+        """pose_window is a np.array with shape time_window_length * number_of_bp * 2. Missing bp's filtered by upstream pose filter are set to NaN.
+        This function sets them to the last valid pose. Self._last_valid_pose is not the full skeleton but a collection
+         of bp coordinates that do not have to be from the same frame
+        :param pose_window: np.array time_window that is passed from trigger module and possibly contains NaN values
+        :return pro_window: np.array processed time_window which has NaN values reset to last valid bp pose (including from previous windows),
+                            can be passed to feature_extraction"""
+
+        pro_window = pose_window.copy()
+        if self._last_valid_pose is None:
+            # TODO: solve issue of first entries with NaN
+            # current solution: take first entry of time_window and reset NaN to 0.0
+            self._last_valid_pose = np.nan_to_num(pro_window[0],copy=True)
+
+        for win_num, time_point in enumerate(pro_window):
+            # go trough all time points and set NaN coordinates to last valid, if not NaN update last valid pose for that body part
+            for bp_num, bp in enumerate(time_point):
+                # find NaN values in coordinates
+                if any(np.isnan(bp)):
+                    # reset them to last valid coordinates.
+                    pro_window[win_num, bp_num] = self._last_valid_pose[bp_num]
+                else:
+                    # no NaN? then update the last valid pose for this body part
+                    self._last_valid_pose[bp_num] = bp
+
+        return pro_window
 
     def extract_features(self, input_array):
         """
@@ -1307,7 +1336,10 @@ class BsoidFeatureExtractor:
             return currdf_filt, perc_rect
 
         if len(input_array) == self.input_array_length:
-            data, p_sub_threshold = adp_filt_pose(input_array)
+            #old version to filter data:
+            #data, p_sub_threshold = adp_filt_pose(input_array)
+            #new version to filter data (filtering is handled upstream):
+            data = self.handle_nan(input_array)
             data = np.array([data])
             win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
             feats = []
