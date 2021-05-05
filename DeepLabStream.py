@@ -35,6 +35,7 @@ from utils.configloader import (
     CROP,
     CROP_X,
     CROP_Y,
+    USE_DLSTREAM_POSTURE_DETECTION,
 )
 from utils.plotter import plot_bodyparts, plot_metadata_frame
 from utils.poser import (
@@ -336,11 +337,14 @@ class DeepLabStream:
                         scmap, locref, pose = get_pose(
                             frame, config, sess, inputs, outputs
                         )
-                        peaks = find_local_peaks_new(
-                            scmap, locref, ANIMALS_NUMBER, config
-                        )
+                        if USE_DLSTREAM_POSTURE_DETECTION:
+                            """ This is a legacy function that was used in earlier versions"""
+                            peaks = find_local_peaks_new(
+                                scmap, locref, ANIMALS_NUMBER, config
+                            )
                         # Use the line below to use raw DLC output rather then DLStream optimization
-                        #peaks = pose
+                        else:
+                            peaks = pose
                     if MODEL_ORIGIN == "MADLC":
                         peaks = get_ma_pose(frame, config, sess, inputs, outputs)
                     analysis_time = time.time() - start_time
