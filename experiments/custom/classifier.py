@@ -106,9 +106,7 @@ class BsoidClassifier:
         import joblib
 
         file = open(path_to_sav, "rb")
-        #[_, _, _, clf, _, predictions] = joblib.load(file)
-        # TODO: revert to original
-        clf, _ = joblib.load(file)
+        [_, _, _, clf, _, predictions] = joblib.load(file)
         file.close()
         return clf
 
