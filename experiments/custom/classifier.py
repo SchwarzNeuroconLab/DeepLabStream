@@ -10,7 +10,7 @@ import multiprocessing as mp
 import time
 import pickle
 
-from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW
+from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW, FRAMERATE
 from experiments.custom.featureextraction import (
     SimbaFeatureExtractor,
     SimbaFeatureExtractorStandard14bp,
@@ -106,7 +106,9 @@ class BsoidClassifier:
         import joblib
 
         file = open(path_to_sav, "rb")
-        [_, _, _, clf, _, predictions] = joblib.load(file)
+        #[_, _, _, clf, _, predictions] = joblib.load(file)
+        # TODO: revert to original
+        clf, _ = joblib.load(file)
         file.close()
         return clf
 
@@ -183,7 +185,7 @@ def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
 
 
 def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
-    feature_extractor = BsoidFeatureExtractor(TIME_WINDOW)
+    feature_extractor = BsoidFeatureExtractor()
     classifier = BsoidClassifier()  # initialize classifier
     while True:
         skel_time_window = None

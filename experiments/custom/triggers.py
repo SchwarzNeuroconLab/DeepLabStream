@@ -804,8 +804,10 @@ class BsoidClassBehaviorPoolTrigger:
         self._center = None
         self._debug = debug
         self._skeleton = None
-        self._time_window_len = TIME_WINDOW
-        # not used in this version
+        # TODO: alter to framerate/10 when feature extraction is updated
+        # BSOID classifiers always look at 100 ms time windows, so framerate/10 frames
+        self._time_window_len = int(np.ceil(FRAMERATE / 10 * 2))
+        # not used in this version (directly called in process pool)
         self.feat_extractor = None
         self._time_window = deque(maxlen=self._time_window_len)
 
@@ -1119,8 +1121,10 @@ class BsoidClassBehaviorPoolTrigger_old:
         self._center = None
         self._debug = debug
         self._skeleton = None
-        self._time_window_len = TIME_WINDOW
-        self.feat_extractor = BsoidFeatureExtractor(self._time_window_len)
+        # TODO: alter to framerate/10 when feature extraction is updated
+        # BSOID classifiers always look at 100 ms time windows, so framerate/10 frames
+        self._time_window_len = int(np.ceil(FRAMERATE / 10 * 2))
+        self.feat_extractor = BsoidFeatureExtractor()
         self._time_window = deque(maxlen=self._time_window_len)
 
     def fill_time_window(self, skeleton):
@@ -1168,7 +1172,7 @@ class BsoidClassBehaviorPoolTrigger_old:
             self._trigger = target_class
         # choosing a point to draw near the skeleton
         self._center = skeleton[list(skeleton.keys())[0]]
-        # self._center = (50,50)
+        #self._center = (50,50)
         result = False
         # text = 'Current probability: {:.2f}'.format(self._last_prob)
         text = "Current Class: {}".format(self._last_result)

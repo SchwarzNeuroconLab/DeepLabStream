@@ -1240,20 +1240,20 @@ class BsoidFeatureExtractor:
     and calculates features to pass to classifier. Features and classifier have to match!
     Designed to work with BSOID; https://github.com/YttriLab/B-SOID"""
 
-    def __init__(self, input_array_length):
+    def __init__(self):
         self._fps = FRAMERATE
-        # calculate length based on FRAMERAT /10
-        self.input_array_length = input_array_length
+        # calculate length based on FRAMERATE /10
+        #self.input_array_length = time_window
         self._last_valid_pose = None
 
     def get_currPixPerMM(self):
         return None
 
     def get_input_array_length(self):
-        return self.input_array_length
+        return None
 
     def set_input_array_length(self, new_input_array_length):
-        self.input_array_length = new_input_array_length
+        pass
 
     def handle_nan(self, pose_window):
         """pose_window is a np.array with shape time_window_length * number_of_bp * 2. Missing bp's filtered by upstream pose filter are set to NaN.
@@ -1335,134 +1335,133 @@ class BsoidFeatureExtractor:
             currdf_filt = currdf_filt.astype(np.float)
             return currdf_filt, perc_rect
 
-        if len(input_array) == self.input_array_length:
-            #old version to filter data:
-            #data, p_sub_threshold = adp_filt_pose(input_array)
-            #new version to filter data (filtering is handled upstream):
-            data = self.handle_nan(input_array)
-            data = np.array([data])
-            win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
-            feats = []
-            for m in range(len(data)):  # 1
-                dataRange = len(data[m])  # 5
-                dxy_r = []
-                dis_r = []
-                for r in range(dataRange):  # 0-4
-                    if r < dataRange - 1:
-                        dis = []
-                        for c in range(0, data[m].shape[1], 2):  # 0-17, 2
-                            dis.append(
-                                np.linalg.norm(
-                                    data[m][r + 1, c : c + 2] - data[m][r, c : c + 2]
-                                )
+
+        # old version to filter data:
+        # data, p_sub_threshold = adp_filt_pose(input_array)
+
+        # new version to filter data (filtering is handled upstream):
+        data = self.handle_nan(input_array) # still a deque
+        data = np.array([data]) # converted to np.array
+        # TODO: Update to match new time_window calculation and filtering
+        win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
+        feats = []
+        for m in range(len(data)):  # 1
+            dataRange = len(data[m])  # 5
+            dxy_r = []
+            dis_r = []
+            for r in range(dataRange):  # 0-4
+                if r < dataRange - 1:
+                    dis = []
+                    for c in range(0, data[m].shape[1], 2):  # 0-17, 2
+                        dis.append(
+                            np.linalg.norm(
+                                data[m][r + 1, c : c + 2] - data[m][r, c : c + 2]
                             )
-                        dis_r.append(dis)
-                    dxy = []
-                    for i, j in itertools.combinations(
-                        range(0, data[m].shape[1], 2), 2
-                    ):  # 0-17, 2
-                        dxy.append(data[m][r, i : i + 2] - data[m][r, j : j + 2])
-                    dxy_r.append(dxy)
-                dis_r = np.array(dis_r)
-                dxy_r = np.array(dxy_r)
-                dis_smth = []
-                dxy_eu = np.zeros([dataRange, dxy_r.shape[1]])  # 5,36
-                ang = np.zeros([dataRange - 1, dxy_r.shape[1]])
-                dxy_smth = []
-                ang_smth = []
-                for l in range(dis_r.shape[1]):  # 0-8
-                    dis_smth.append(boxcar_center(dis_r[:, l], win_len))
-                for k in range(dxy_r.shape[1]):  # 0-35
-                    for kk in range(dataRange):  # 0
-                        dxy_eu[kk, k] = np.linalg.norm(dxy_r[kk, k, :])
-                        if kk < dataRange - 1:
-                            b_3d = np.hstack([dxy_r[kk + 1, k, :], 0])
-                            a_3d = np.hstack([dxy_r[kk, k, :], 0])
-                            c = np.cross(b_3d, a_3d)
-                            ang[kk, k] = np.dot(
-                                np.dot(np.sign(c[2]), 180) / np.pi,
-                                math.atan2(
-                                    np.linalg.norm(c),
-                                    np.dot(dxy_r[kk, k, :], dxy_r[kk + 1, k, :]),
+                        )
+                    dis_r.append(dis)
+                dxy = []
+                for i, j in itertools.combinations(
+                    range(0, data[m].shape[1], 2), 2
+                ):  # 0-17, 2
+                    dxy.append(data[m][r, i : i + 2] - data[m][r, j : j + 2])
+                dxy_r.append(dxy)
+            dis_r = np.array(dis_r)
+            dxy_r = np.array(dxy_r)
+            dis_smth = []
+            dxy_eu = np.zeros([dataRange, dxy_r.shape[1]])  # 5,36
+            ang = np.zeros([dataRange - 1, dxy_r.shape[1]])
+            dxy_smth = []
+            ang_smth = []
+            for l in range(dis_r.shape[1]):  # 0-8
+                dis_smth.append(boxcar_center(dis_r[:, l], win_len))
+            for k in range(dxy_r.shape[1]):  # 0-35
+                for kk in range(dataRange):  # 0
+                    dxy_eu[kk, k] = np.linalg.norm(dxy_r[kk, k, :])
+                    if kk < dataRange - 1:
+                        b_3d = np.hstack([dxy_r[kk + 1, k, :], 0])
+                        a_3d = np.hstack([dxy_r[kk, k, :], 0])
+                        c = np.cross(b_3d, a_3d)
+                        ang[kk, k] = np.dot(
+                            np.dot(np.sign(c[2]), 180) / np.pi,
+                            math.atan2(
+                                np.linalg.norm(c),
+                                np.dot(dxy_r[kk, k, :], dxy_r[kk + 1, k, :]),
+                            ),
+                        )
+                dxy_smth.append(boxcar_center(dxy_eu[:, k], win_len))
+                ang_smth.append(boxcar_center(ang[:, k], win_len))
+            dis_smth = np.array(dis_smth)
+            dxy_smth = np.array(dxy_smth)
+            ang_smth = np.array(ang_smth)
+            feats.append(np.vstack((dxy_smth[:, 1:], ang_smth, dis_smth)))
+
+        f_10fps = []
+        for n in range(0, len(feats)):
+            feats1 = np.zeros(len(data[n]))
+            for s in range(math.floor(self._fps / 10)):
+                # TODO: going from fps/10 to time_window size
+                for k in range(
+                    round(self._fps / 10) + s,
+                    len(feats[n][0]),
+                    round(self._fps / 10),
+                ):
+                    if k > round(self._fps / 10) + s:
+                        feats1 = np.concatenate(
+                            (
+                                feats1.reshape(feats1.shape[0], feats1.shape[1]),
+                                np.hstack(
+                                    (
+                                        np.mean(
+                                            (
+                                                feats[n][
+                                                    0 : dxy_smth.shape[0],
+                                                    range(
+                                                        k - round(self._fps / 10), k
+                                                    ),
+                                                ]
+                                            ),
+                                            axis=1,
+                                        ),
+                                        np.sum(
+                                            (
+                                                feats[n][
+                                                    dxy_smth.shape[0] : feats[
+                                                        n
+                                                    ].shape[0],
+                                                    range(
+                                                        k - round(self._fps / 10), k
+                                                    ),
+                                                ]
+                                            ),
+                                            axis=1,
+                                        ),
+                                    )
+                                ).reshape(len(feats[0]), 1),
+                            ),
+                            axis=1,
+                        )
+                    else:
+                        feats1 = np.hstack(
+                            (
+                                np.mean(
+                                    (
+                                        feats[n][
+                                            0 : dxy_smth.shape[0],
+                                            range(k - round(self._fps / 10), k),
+                                        ]
+                                    ),
+                                    axis=1,
+                                ),
+                                np.sum(
+                                    (
+                                        feats[n][
+                                            dxy_smth.shape[0] : feats[n].shape[0],
+                                            range(k - round(self._fps / 10), k),
+                                        ]
+                                    ),
+                                    axis=1,
                                 ),
                             )
-                    dxy_smth.append(boxcar_center(dxy_eu[:, k], win_len))
-                    ang_smth.append(boxcar_center(ang[:, k], win_len))
-                dis_smth = np.array(dis_smth)
-                dxy_smth = np.array(dxy_smth)
-                ang_smth = np.array(ang_smth)
-                feats.append(np.vstack((dxy_smth[:, 1:], ang_smth, dis_smth)))
-
-            f_10fps = []
-            for n in range(0, len(feats)):
-                feats1 = np.zeros(len(data[n]))
-                for s in range(math.floor(self._fps / 10)):
-                    # TODO: going from fps/10 to time_window size 
-                    for k in range(
-                        round(self._fps / 10) + s,
-                        len(feats[n][0]),
-                        round(self._fps / 10),
-                    ):
-                        if k > round(self._fps / 10) + s:
-                            feats1 = np.concatenate(
-                                (
-                                    feats1.reshape(feats1.shape[0], feats1.shape[1]),
-                                    np.hstack(
-                                        (
-                                            np.mean(
-                                                (
-                                                    feats[n][
-                                                        0 : dxy_smth.shape[0],
-                                                        range(
-                                                            k - round(self._fps / 10), k
-                                                        ),
-                                                    ]
-                                                ),
-                                                axis=1,
-                                            ),
-                                            np.sum(
-                                                (
-                                                    feats[n][
-                                                        dxy_smth.shape[0] : feats[
-                                                            n
-                                                        ].shape[0],
-                                                        range(
-                                                            k - round(self._fps / 10), k
-                                                        ),
-                                                    ]
-                                                ),
-                                                axis=1,
-                                            ),
-                                        )
-                                    ).reshape(len(feats[0]), 1),
-                                ),
-                                axis=1,
-                            )
-                        else:
-                            feats1 = np.hstack(
-                                (
-                                    np.mean(
-                                        (
-                                            feats[n][
-                                                0 : dxy_smth.shape[0],
-                                                range(k - round(self._fps / 10), k),
-                                            ]
-                                        ),
-                                        axis=1,
-                                    ),
-                                    np.sum(
-                                        (
-                                            feats[n][
-                                                dxy_smth.shape[0] : feats[n].shape[0],
-                                                range(k - round(self._fps / 10), k),
-                                            ]
-                                        ),
-                                        axis=1,
-                                    ),
-                                )
-                            ).reshape(len(feats[0]), 1)
-                    f_10fps.append(feats1)
-            return f_10fps
-
-        else:
-            return None
+                        ).reshape(len(feats[0]), 1)
+                f_10fps.append(feats1)
+        return f_10fps
