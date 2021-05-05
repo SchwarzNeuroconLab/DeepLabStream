@@ -830,14 +830,18 @@ class BsoidClassBehaviorPoolTrigger:
 
         """Checks if necessary time window was collected and passes it to classifier"""
         if len(self._time_window) == self._time_window_len:
+            #create feature id to track if the algorithm is skipping some
             self._feature_id += 1
             self._process_pool.pass_time_window(
                 (self._time_window, self._feature_id), debug=self._debug
             )
             # check if a process from the pool is done with the result
         clf_result, feature_id = self._process_pool.get_result(debug=self._debug)
+        # this is a redundancy because output is a tuple with only one element, but it can be used for further filtering
+        # if a probability is passed
         if clf_result is not None:
             self._last_result = clf_result[0]
+        # check if target class was passed. This allows to update the trigger cluster id with each function call
         if target_class is not None:
             self._trigger = target_class
         # choosing a point to draw near the skeleton

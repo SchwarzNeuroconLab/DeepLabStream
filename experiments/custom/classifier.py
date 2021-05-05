@@ -275,6 +275,8 @@ class FeatureExtractionClassifierProcessPool:
         :param debug bool: reporting of process + feature id to identify discrepancies in processing sequence
         """
         for process in self._process_pool:
+            #if the process is not already busy, feed it some new input and break the loop
+            #this should only be valid the first time the process is fed.
             if not process["running"]:
                 if process["input"].empty():
                     process["input"].put(skel_time_window)
@@ -287,6 +289,8 @@ class FeatureExtractionClassifierProcessPool:
                         )
                     break
 
+            #if the process is busy but finished (has output), feed it some new input.
+            #this should be the normal case
             elif process["input"].empty() and process["output"].full():
                 process["input"].put(skel_time_window)
                 if debug:
@@ -306,7 +310,12 @@ class FeatureExtractionClassifierProcessPool:
         """
         result = (None, 0)
         for process in self._process_pool:
+            #check if process is finished
             if process["output"].full():
+                #take result and break the loop. This way two simultaneously finished processes are emptied in sequence
+                #rather then overwriting the results of each other
+                #the disadvantage is that the result won't be the latest classification but in the next in sequential order (to the last).
+                #the advantage is that we won't miss any results this way and have "consistent" latency, which is the intended behavior.
                 result = process["output"].get()
                 if debug:
                     print("Output", process["process"].name, "ID: " + str(result[1]))
@@ -381,6 +390,7 @@ def simba_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
 
 
 def bsoid_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
+    #takes features from input and feeds them into classifier. Outputs classification
     classifier = BsoidClassifier()  # initialize classifier
     while True:
         features = None
@@ -388,6 +398,7 @@ def bsoid_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
             features = input_q.get()
         if features is not None:
             start_time = time.time()
+            #last prob is a missleading name that comes from a binary classifier. B-SOID's output is a cluster id rather then the probability.
             last_prob = classifier.classify(features)
             output_q.put((last_prob))
             end_time = time.time()

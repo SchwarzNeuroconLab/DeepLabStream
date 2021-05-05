@@ -1365,6 +1365,7 @@ class BsoidFeatureExtractor:
             for n in range(0, len(feats)):
                 feats1 = np.zeros(len(data[n]))
                 for s in range(math.floor(self._fps / 10)):
+                    # TODO: going from fps/10 to time_window size 
                     for k in range(
                         round(self._fps / 10) + s,
                         len(feats[n][0]),
