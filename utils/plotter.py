@@ -119,12 +119,25 @@ def plot_triggers_response(image, response):
     if "plot" in response:
         plot = response["plot"]
         if "line" in plot:
+            #make sure they are int for openCV. No half pixels there...
+
+            plot['line']["pt1"] = tuple([int(i) for i in plot['line']["pt1"]])
+            plot['line']["pt2"] = tuple([int(i) for i in plot['line']["pt2"]])
             cv2.line(image, **plot["line"], thickness=4)
         if "text" in plot:
+            #make sure they are int for openCV. No half pixels there...
+            plot['text']["org"] = tuple([int(i) for i in plot['text']["org"]])
             font = cv2.FONT_HERSHEY_PLAIN
             cv2.putText(image, **plot["text"], fontFace=font, fontScale=1)
         if "circle" in plot:
-            # if result2:
+            #make sure they are int for openCV. No half pixels there...
+            plot['circle']["center"] = tuple([int(i) for i in plot['circle']["center"]])
+            plot['circle']["radius"] = int(plot['circle']["radius"])
+
             cv2.circle(image, **plot["circle"], thickness=2)
         if "square" in plot:
+            #make sure they are int for openCV. No half pixels there...
+            plot['square']["pt1"] = tuple([int(i) for i in plot['square']["pt1"]])
+            plot['square']["pt2"] = tuple([int(i) for i in plot['square']["pt2"]])
+
             cv2.rectangle(image, **plot["square"], thickness=2)
