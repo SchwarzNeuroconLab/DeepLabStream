@@ -4,7 +4,7 @@ gpiozero==1.6.2
 pigpio==1.78
 pyserial==3.5
 nidaqmx==0.5.7
-click==7.1.2
+click==8.0.1
 opencv-python==4.5.1.48
 opencv-contrib-python==4.5.1.48
 numpy>=1.14.5
