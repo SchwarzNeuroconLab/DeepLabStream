@@ -1302,11 +1302,11 @@ class BsoidFeatureExtractor:
             return moving_avg
 
         def adp_filt_pose(pose_estimation):
-            """Adapted from adp_filt function in BSOID"""
+            """Adapted from adp_filt function in BSOID
+            THIS FUNCTION IS DEPRECATED"""
             currdf = np.array(pose_estimation)
             datax = currdf[:, :, 0]
             datay = currdf[:, :, 1]
-            # TODO: Adapt filter to work without workaround and skeleton
             # data_lh = currdf[:, :, 2]
             data_lh = np.full_like(datax, 0.9)
             currdf_filt = np.zeros((datax.shape[0], (datax.shape[1]) * 2))
@@ -1343,8 +1343,7 @@ class BsoidFeatureExtractor:
         #data, p_sub_threshold = adp_filt_pose(input_array)
 
         # new version to filter data (filtering is handled upstream):
-        ##input_array = np.array(input_array)  # converted to np.array
-        data = self.handle_nan(input_array) # still a deque
+        data = self.handle_nan(input_array) # still a deque but will turn into np.array
         data = np.array([data])
         # TODO: Update to match new time_window calculation and filtering
         win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)

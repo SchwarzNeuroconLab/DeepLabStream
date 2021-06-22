@@ -9,6 +9,7 @@ Licensed under GNU General Public License v3.0
 import multiprocessing as mp
 import time
 import pickle
+import numpy as np
 
 from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW, FRAMERATE
 from experiments.custom.featureextraction import (
@@ -153,32 +154,42 @@ def example_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
 
 
 def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
-    feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
-    # feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
+    #feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
+    feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
     classifier = SiMBAClassifier()  # initialize classifier
+    report = False
+    ft_list = []
+    clf_list = []
     while True:
         skel_time_window = None
         feature_id = 0
         if input_q.full():
             skel_time_window, feature_id = input_q.get()
         if skel_time_window is not None:
-            start_time = time.time()
+            start_time_feat = time.time()
             features = feature_extractor.extract_features(skel_time_window)
-            # end_time = time.time()
-            # print(
-            #     "Feature extraction time: {:.2f} msec".format(
-            #         (end_time - start_time) * 1000
-            #     )
-            # )
-
+            end_time_feat = time.time()
+            start_time_clf = time.time()
             last_prob = classifier.classify(features)
+            end_time = time.time()
             output_q.put((last_prob, feature_id))
-            # end_time2 = time.time()
-            # print(
-            #     "Classification time: {:.2f} msec".format(
-            #         (end_time2 - end_time) * 1000
-            #     )
-            # )
+
+            if report:
+                feat_time = ((end_time_feat - start_time_feat) * 1000)
+                clf_time = ((end_time-start_time_clf)*1000)
+                print("Feature Extraction time: {:.2f} msec".format(feat_time))
+                print("Classification time: {:.2f} msec".format(clf_time))
+                print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
+                print("Current probability: {:.2f}".format(last_prob))
+                print("Feature ID: "+ str(feature_id))
+                #skip first 10 to ignore numba jit initial slowness in stats
+                if feature_id > 10:
+                    ft_list.append(feat_time)
+                    clf_list.append(clf_time)
+                    print("Avg. feature extraction time: {:.2f} +/- {:.2f} msec".format(np.mean(ft_list), np.std(ft_list)),
+                              "Avg. classification time: {:.2f} +/- {:.2f} msec".format(np.mean(clf_list), np.std(clf_list)),
+                          f"Classfication Cycles: {len(ft_list)}")
+
         else:
             pass
 
@@ -186,6 +197,10 @@ def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
 def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
     feature_extractor = BsoidFeatureExtractor()
     classifier = BsoidClassifier()  # initialize classifier
+    report = False
+    ft_list = []
+    clf_list = []
+
     while True:
         skel_time_window = None
         feature_id = 0
@@ -199,11 +214,19 @@ def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
             last_prob = classifier.classify(features)
             output_q.put((last_prob, feature_id))
             end_time = time.time()
-            print("Feature Extraction time: {:.2f} msec".format((end_time_feat - start_time_feat) * 1000))
-            print("Classification time: {:.2f} msec".format((end_time-start_time_clf)*1000))
-            print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
-            print("Current motif: ", *last_prob)
-            print("Feature ID: "+ str(feature_id))
+            if report:
+                feat_time = ((end_time_feat - start_time_feat) * 1000)
+                clf_time = ((end_time-start_time_clf)*1000)
+                print("Feature Extraction time: {:.2f} msec".format(feat_time))
+                print("Classification time: {:.2f} msec".format(clf_time))
+                print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
+                print("Current motif: ", *last_prob)
+                print("Feature ID: "+ str(feature_id))
+                ft_list.append(feat_time)
+                clf_list.append(clf_time)
+                print("Avg. feature extraction time: {:.2f} +/- {:.2f} msec".format(np.mean(ft_list), np.std(ft_list)),
+                          "Avg. classification time: {:.2f} +/- {:.2f} msec".format(np.mean(clf_list), np.std(clf_list)),
+                      f"Classfication Cycles: {len(ft_list)}")
         else:
             pass
 
