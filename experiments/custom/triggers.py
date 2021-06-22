@@ -846,9 +846,10 @@ class BsoidClassBehaviorPoolTrigger:
         # check if target class was passed. This allows to update the trigger cluster id with each function call
         if target_class is not None:
             self._trigger = target_class
+
         # choosing a point to draw near the skeleton
-        self._center = skeleton[list(skeleton.keys())[0]]
-        # self._center = (50,50)
+        #self._center = skeleton[list(skeleton.keys())[0]]
+        self._center = (50,50)
         result = False
         # text = 'Current probability: {:.2f}'.format(self._last_prob)
         text = "Current Class: {}".format(self._last_result)
