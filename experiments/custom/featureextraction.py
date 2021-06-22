@@ -1264,7 +1264,7 @@ class BsoidFeatureExtractor:
                             can be passed to feature_extraction"""
 
         pro_window_dq = pose_window.copy()
-        pro_window = np.array(pro_window_dq)
+        pro_window = np.array(pro_window_dq) # convert to numpy
         if self._last_valid_pose is None:
             # TODO: solve issue of first entries with NaN
             # current solution: take first entry of time_window and reset NaN to 0.0
@@ -1280,6 +1280,8 @@ class BsoidFeatureExtractor:
                 else:
                     # no NaN? then update the last valid pose for this body part
                     self._last_valid_pose[bp_num] = bp
+        #reshape to match requirements of bsoid feature extraction: time_window , bodyparts*2
+        pro_window = np.reshape(pro_window, (pro_window.shape[1], pro_window.shape[2]*pro_window.shape[3]))# converted to np.array
 
         return pro_window
 
@@ -1344,7 +1346,6 @@ class BsoidFeatureExtractor:
         ##input_array = np.array(input_array)  # converted to np.array
         data = self.handle_nan(input_array) # still a deque
         data = np.array([data])
-        data = np.reshape(data, (data.shape[0],data.shape[1], data.shape[2]*data.shape[3]))# converted to np.array
         # TODO: Update to match new time_window calculation and filtering
         win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
         feats = []
