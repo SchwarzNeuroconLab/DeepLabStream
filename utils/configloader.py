@@ -43,6 +43,7 @@ ALL_BODYPARTS = tuple(
     for part in dsc_config["Pose Estimation"].get("ALL_BODYPARTS").split(",")
 )
 
+
 # Streaming items
 
 try:
@@ -76,10 +77,14 @@ START_TIME = time.time()
 
 # Classification
 PATH_TO_CLASSIFIER = dsc_config["Classification"].get("PATH_TO_CLASSIFIER")
+POOL_SIZE = dsc_config["Classification"].getint("POOL_SIZE")
+
+# SIMBA
 PIXPERMM = dsc_config["Classification"].getfloat("PIXPERMM")
 THRESHOLD = dsc_config["Classification"].getfloat("THRESHOLD")
 TRIGGER = dsc_config["Classification"].getfloat("TRIGGER")
-POOL_SIZE = dsc_config["Classification"].getint("POOL_SIZE")
+
+# BSOID
 TIME_WINDOW = dsc_config["Classification"].getint("TIME_WINDOW")
 
 
@@ -111,6 +116,9 @@ CROP_Y = [
     for part in adv_dsc_config["Streaming"].get("CROP_Y").split(",")
 ]
 
+USE_DLSTREAM_POSTURE_DETECTION = adv_dsc_config["Pose Estimation"].getboolean("USE_DLSTREAM_POSTURE_DETECTION")
 FLATTEN_MA = adv_dsc_config["Pose Estimation"].getboolean("FLATTEN_MA")
 SPLIT_MA = adv_dsc_config["Pose Estimation"].getboolean("SPLIT_MA")
 HANDLE_MISSING = adv_dsc_config["Pose Estimation"].get("HANDLE_MISSING")
+FILTER_LIKELIHOOD = adv_dsc_config["Pose Estimation"].getboolean("FILTER_LIKELIHOOD")
+LIKELIHOOD_THRESHOLD = adv_dsc_config["Pose Estimation"].getfloat("LIKELIHOOD_THRESHOLD")

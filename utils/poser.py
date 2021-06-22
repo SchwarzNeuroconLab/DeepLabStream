@@ -27,6 +27,9 @@ from utils.configloader import (
     SPLIT_MA,
     HANDLE_MISSING,
     ANIMALS_NUMBER,
+    FILTER_LIKELIHOOD,
+    LIKELIHOOD_THRESHOLD,
+    USE_DLSTREAM_POSTURE_DETECTION,
 )
 
 # suppressing unnecessary warnings
@@ -138,6 +141,7 @@ def find_local_peaks_new(
         # selecting the joint in scoremap and locref
         lr_joint = local_reference[:, :, joint_num]
         sm_joint = scoremap[:, :, joint_num]
+
         # applying maximum filter with footprint
         neighborhood = generate_binary_structure(2, 1)
         sm_max_filter = maximum_filter(sm_joint, footprint=neighborhood)
@@ -178,22 +182,21 @@ def find_local_peaks_new(
 
 def filter_pose_by_likelihood(pose, threshold: float = 0.1):
     """
-       !!!FOR NOW THIS FUNCTION SETS THEM TO (0,0) due to missing float dtype in coordinate handling. Will be updated later on.
-       filters pose estimation by likelihood threshold. Estimates below threshold are set to NaN and handled downstream
+       Filters pose estimation by likelihood threshold. Estimates below threshold are set to NaN and handled downstream
     of this function in calculate skeletons.
     :param pose: pose estimation (e.g., from DLC)
     :param threshold: likelihood threshold to filter by
-    :return filtered_pose: pose estimation filtered by likelihood (may contain NaN)
+    :return filtered_pose: pose estimation filtered by likelihood (may contain NaN) in shape of pose,
+                            likelihood will be set to 2 in case of filtered bodyparts
     """
-    # TODO: Update to NaN
-
     filtered_pose = pose.copy()
-
-    for num, bp in enumerate(filtered_pose):
-        if bp[2] < threshold:
-            # set new threshold to "2" (number outside of normal range to signify filter
-            # TODO: This should be np.NaN not 0,0
-            filtered_pose[num] = np.array([0, 0, 2])
+    if MODEL_ORIGIN == 'DLC':
+        """ DLC pose output is an np.array with [bp*[X,Y, Likelihood]]"""
+        for num, bp in enumerate(filtered_pose):
+            if bp[2] < threshold:
+                # set new threshold to "2" (number outside of normal range to signify filter)
+                # if just past to "calculate_skeleton" it will be ignored
+                filtered_pose[num] = np.array([np.NaN, np.NaN, 2])
 
     return filtered_pose
 
@@ -542,7 +545,13 @@ def calculate_skeletons(peaks: dict, animals_number: int) -> list:
     adaptive to chosen model origin
     """
     if MODEL_ORIGIN == "DLC":
-        animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        if USE_DLSTREAM_POSTURE_DETECTION:
+            animal_skeletons = calculate_dlstream_skeletons(peaks, animals_number)
+        else:
+            if FILTER_LIKELIHOOD:
+                peaks = filter_pose_by_likelihood(peaks, LIKELIHOOD_THRESHOLD)
+            animal_skeletons = calculate_skeletons_dlc_live(peaks)
+
         if animals_number != 1 and SPLIT_MA:
             animal_skeletons = split_flat_skeleton(animal_skeletons)
         else:
