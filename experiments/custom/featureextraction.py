@@ -1263,7 +1263,8 @@ class BsoidFeatureExtractor:
         :return pro_window: np.array processed time_window which has NaN values reset to last valid bp pose (including from previous windows),
                             can be passed to feature_extraction"""
 
-        pro_window = pose_window.copy()
+        pro_window_dq = pose_window.copy()
+        pro_window = np.array(pro_window_dq)
         if self._last_valid_pose is None:
             # TODO: solve issue of first entries with NaN
             # current solution: take first entry of time_window and reset NaN to 0.0
@@ -1337,11 +1338,13 @@ class BsoidFeatureExtractor:
 
 
         # old version to filter data:
-        # data, p_sub_threshold = adp_filt_pose(input_array)
+        #data, p_sub_threshold = adp_filt_pose(input_array)
 
         # new version to filter data (filtering is handled upstream):
+        ##input_array = np.array(input_array)  # converted to np.array
         data = self.handle_nan(input_array) # still a deque
-        data = np.array([data]) # converted to np.array
+        data = np.array([data])
+        data = np.reshape(data, (data.shape[0],data.shape[1], data.shape[2]*data.shape[3]))# converted to np.array
         # TODO: Update to match new time_window calculation and filtering
         win_len = np.int(np.round(0.05 / (1 / self._fps)) * 2 - 1)
         feats = []
