@@ -117,6 +117,7 @@ class BsoidClassifier:
         Adapted from BSOID; https://github.com/YttriLab/B-SOID
         """
         labels_fslow = []
+        # TODO: adapt to pure version of BSOID Classifier
         for i in range(0, len(features)):
             labels = self._classifier.predict(features[i].T)
             labels_fslow.append(labels)
@@ -191,13 +192,18 @@ def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
         if input_q.full():
             skel_time_window, feature_id = input_q.get()
         if skel_time_window is not None:
-            start_time = time.time()
+            start_time_feat = time.time()
             features = feature_extractor.extract_features(skel_time_window)
+            end_time_feat = time.time()
+            start_time_clf = time.time()
             last_prob = classifier.classify(features)
             output_q.put((last_prob, feature_id))
             end_time = time.time()
-            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
-            # print("Feature ID: "+ feature_id)
+            print("Feature Extraction time: {:.2f} msec".format((end_time_feat - start_time_feat) * 1000))
+            print("Classification time: {:.2f} msec".format((end_time-start_time_clf)*1000))
+            print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
+            print("Current motif: ", *last_prob)
+            print("Feature ID: "+ str(feature_id))
         else:
             pass
 

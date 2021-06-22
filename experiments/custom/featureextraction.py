@@ -1281,7 +1281,7 @@ class BsoidFeatureExtractor:
                     # no NaN? then update the last valid pose for this body part
                     self._last_valid_pose[bp_num] = bp
         #reshape to match requirements of bsoid feature extraction: time_window , bodyparts*2
-        pro_window = np.reshape(pro_window, (pro_window.shape[1], pro_window.shape[2]*pro_window.shape[3]))# converted to np.array
+        pro_window = np.reshape(pro_window, (pro_window.shape[0], pro_window.shape[1]*pro_window.shape[2]))# converted to np.array
 
         return pro_window
 
