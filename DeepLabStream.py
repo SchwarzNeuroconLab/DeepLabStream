@@ -387,7 +387,11 @@ class DeepLabStream:
                     frame = np.expand_dims(frame, axis=0) if frame.ndim == 3 else frame
                     # predict_on_batch is MUCH faster as it does not retrace the model graph for same size inputs
                     pred = sleap_model.predict_on_batch(frame)
-                    peaks = pred["instance_peaks"][0]  # (n_poses, n_nodes, 2)
+                    try:
+                        peaks = pred["instance_peaks"][0]  # (n_poses, n_nodes, 2)
+                    except KeyError:
+                        # necessary for old sleap versions where single_instance models have different key naming
+                        peaks = pred["peaks"]
 
                     analysis_time = time.time() - start_time
                     output_q.put((index, peaks, analysis_time))
