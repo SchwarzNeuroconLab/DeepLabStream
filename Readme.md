@@ -9,7 +9,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/SNeuroconnect.svg?label=SNeuroconnect&style=social)](https://twitter.com/SNeuroconnect) 
 
-DeepLabStream is a python based multi-purpose tool that enables the realtime tracking and manipulation of animals during ongoing experiments.
+[DeepLabStream](https://www.nature.com/articles/s42003-021-01654-9) is a python based multi-purpose tool that enables the realtime tracking and manipulation of animals during ongoing experiments.
 Our toolbox was orginally adapted from the previously published [DeepLabCut](https://github.com/AlexEMG/DeepLabCut) ([Mathis et al., 2018](https://www.nature.com/articles/s41593-018-0209-y)) and expanded on its core capabilities, but is now able to utilize a variety of different network architectures for online pose estimation
  ([SLEAP](https://github.com/murthylab/sleap), [DLC-Live](https://github.com/DeepLabCut/DeepLabCut-live), [DeepPosekit's](https://github.com/jgraving/DeepPoseKit) StackedDenseNet, StackedHourGlass and [LEAP](https://github.com/murthylab/sleap)).
 
@@ -19,6 +19,7 @@ DeepLabStreams core feature is the utilization of real-time tracking to orchestr
 
 ## Read the news:
 
+- Watch an introductory talk about DLStream on [Youtube](https://www.youtube.com/watch?v=ZspLDZb_kMI)
 - Real-time behavioral analysis using artificial intelligence @ [Federal Ministry of Education and Research](http://www.research-in-germany.org/news/2021/2/2021-02-19_Real-time_behavioural_analysis_using_artificial_intelligence.html), [Uni Bonn](https://www.uni-bonn.de/news/real-time-behavioral-analysis-using-artificial-intelligence) and [Phys.org](https://phys.org/news/2021-02-real-time-behavioral-analysis-artificial-intelligence.html)
 - Understanding AI: How studying Neural Net and Human Brain Helps @ [AnalyticsInsight.net](https://www.analyticsinsight.net/understanding-ai-how-studying-neural-net-and-human-brain-helps/)
 - We are also featured on [open-neuroscience.com](https://open-neuroscience.com/post/deeplabstream/)!

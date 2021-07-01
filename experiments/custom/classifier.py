@@ -9,8 +9,9 @@ Licensed under GNU General Public License v3.0
 import multiprocessing as mp
 import time
 import pickle
+import numpy as np
 
-from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW
+from utils.configloader import PATH_TO_CLASSIFIER, TIME_WINDOW, FRAMERATE
 from experiments.custom.featureextraction import (
     SimbaFeatureExtractor,
     SimbaFeatureExtractorStandard14bp,
@@ -117,6 +118,7 @@ class BsoidClassifier:
         Adapted from BSOID; https://github.com/YttriLab/B-SOID
         """
         labels_fslow = []
+        # TODO: adapt to pure version of BSOID Classifier
         for i in range(0, len(features)):
             labels = self._classifier.predict(features[i].T)
             labels_fslow.append(labels)
@@ -152,52 +154,79 @@ def example_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
 
 
 def simba_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
-    feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
-    # feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
+    #feature_extractor = SimbaFeatureExtractorStandard14bp(TIME_WINDOW)
+    feature_extractor = SimbaFeatureExtractor(TIME_WINDOW)
     classifier = SiMBAClassifier()  # initialize classifier
+    report = False
+    ft_list = []
+    clf_list = []
     while True:
         skel_time_window = None
         feature_id = 0
         if input_q.full():
             skel_time_window, feature_id = input_q.get()
         if skel_time_window is not None:
-            start_time = time.time()
+            start_time_feat = time.time()
             features = feature_extractor.extract_features(skel_time_window)
-            # end_time = time.time()
-            # print(
-            #     "Feature extraction time: {:.2f} msec".format(
-            #         (end_time - start_time) * 1000
-            #     )
-            # )
-
+            end_time_feat = time.time()
+            start_time_clf = time.time()
             last_prob = classifier.classify(features)
+            end_time = time.time()
             output_q.put((last_prob, feature_id))
-            # end_time2 = time.time()
-            # print(
-            #     "Classification time: {:.2f} msec".format(
-            #         (end_time2 - end_time) * 1000
-            #     )
-            # )
+
+            if report:
+                feat_time = ((end_time_feat - start_time_feat) * 1000)
+                clf_time = ((end_time-start_time_clf)*1000)
+                print("Feature Extraction time: {:.2f} msec".format(feat_time))
+                print("Classification time: {:.2f} msec".format(clf_time))
+                print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
+                print("Current probability: {:.2f}".format(last_prob))
+                print("Feature ID: "+ str(feature_id))
+                #skip first 10 to ignore numba jit initial slowness in stats
+                if feature_id > 10:
+                    ft_list.append(feat_time)
+                    clf_list.append(clf_time)
+                    print("Avg. feature extraction time: {:.2f} +/- {:.2f} msec".format(np.mean(ft_list), np.std(ft_list)),
+                              "Avg. classification time: {:.2f} +/- {:.2f} msec".format(np.mean(clf_list), np.std(clf_list)),
+                          f"Classfication Cycles: {len(ft_list)}")
+
         else:
             pass
 
 
 def bsoid_feat_classifier_pool_run(input_q: mp.Queue, output_q: mp.Queue):
-    feature_extractor = BsoidFeatureExtractor(TIME_WINDOW)
+    feature_extractor = BsoidFeatureExtractor()
     classifier = BsoidClassifier()  # initialize classifier
+    report = False
+    ft_list = []
+    clf_list = []
+
     while True:
         skel_time_window = None
         feature_id = 0
         if input_q.full():
             skel_time_window, feature_id = input_q.get()
         if skel_time_window is not None:
-            start_time = time.time()
+            start_time_feat = time.time()
             features = feature_extractor.extract_features(skel_time_window)
+            end_time_feat = time.time()
+            start_time_clf = time.time()
             last_prob = classifier.classify(features)
             output_q.put((last_prob, feature_id))
             end_time = time.time()
-            # print("Classification time: {:.2f} msec".format((end_time-start_time)*1000))
-            # print("Feature ID: "+ feature_id)
+            if report:
+                feat_time = ((end_time_feat - start_time_feat) * 1000)
+                clf_time = ((end_time-start_time_clf)*1000)
+                print("Feature Extraction time: {:.2f} msec".format(feat_time))
+                print("Classification time: {:.2f} msec".format(clf_time))
+                print("Total time: {:.2f} msec".format((end_time-start_time_feat)*1000))
+                print("Current motif: ", *last_prob)
+                print("Feature ID: "+ str(feature_id))
+                ft_list.append(feat_time)
+                clf_list.append(clf_time)
+                print("Avg. feature extraction time: {:.2f} +/- {:.2f} msec".format(np.mean(ft_list), np.std(ft_list)),
+                          "Avg. classification time: {:.2f} +/- {:.2f} msec".format(np.mean(clf_list), np.std(clf_list)),
+                      f"Classfication Cycles: {len(ft_list)}")
         else:
             pass
 
@@ -275,6 +304,8 @@ class FeatureExtractionClassifierProcessPool:
         :param debug bool: reporting of process + feature id to identify discrepancies in processing sequence
         """
         for process in self._process_pool:
+            #if the process is not already busy, feed it some new input and break the loop
+            #this should only be valid the first time the process is fed.
             if not process["running"]:
                 if process["input"].empty():
                     process["input"].put(skel_time_window)
@@ -287,6 +318,8 @@ class FeatureExtractionClassifierProcessPool:
                         )
                     break
 
+            #if the process is busy but finished (has output), feed it some new input.
+            #this should be the normal case
             elif process["input"].empty() and process["output"].full():
                 process["input"].put(skel_time_window)
                 if debug:
@@ -306,7 +339,12 @@ class FeatureExtractionClassifierProcessPool:
         """
         result = (None, 0)
         for process in self._process_pool:
+            #check if process is finished
             if process["output"].full():
+                #take result and break the loop. This way two simultaneously finished processes are emptied in sequence
+                #rather then overwriting the results of each other
+                #the disadvantage is that the result won't be the latest classification but in the next in sequential order (to the last).
+                #the advantage is that we won't miss any results this way and have "consistent" latency, which is the intended behavior.
                 result = process["output"].get()
                 if debug:
                     print("Output", process["process"].name, "ID: " + str(result[1]))
@@ -381,6 +419,7 @@ def simba_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
 
 
 def bsoid_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
+    #takes features from input and feeds them into classifier. Outputs classification
     classifier = BsoidClassifier()  # initialize classifier
     while True:
         features = None
@@ -388,6 +427,7 @@ def bsoid_classifier_run(input_q: mp.Queue, output_q: mp.Queue):
             features = input_q.get()
         if features is not None:
             start_time = time.time()
+            #last prob is a missleading name that comes from a binary classifier. B-SOID's output is a cluster id rather then the probability.
             last_prob = classifier.classify(features)
             output_q.put((last_prob))
             end_time = time.time()
