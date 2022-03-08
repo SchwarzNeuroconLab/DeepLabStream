@@ -84,7 +84,7 @@ class BaseHeaddirectionTrigger(BaseTrigger):
         self._trigger_parameter_dict = dict(
             POINT="tuple", ANGLE="int", BODYPARTS="list", DEBUG="boolean"
         )
-        self._settings_dict = get_trigger_settings(self._name, self._exp_parameter_dict)
+        self._settings_dict = get_trigger_settings(self._name, self._trigger_parameter_dict)
 
         self._point = self._settings_dict["POINT"]
         self._angle = self._settings_dict["ANGLE"]
@@ -151,7 +151,7 @@ class BaseEgoHeaddirectionTrigger(BaseTrigger):
         self._trigger_parameter_dict = dict(
             ANGLE="int", HEADDIRECTION="str", BODYPARTS="list", DEBUG="boolean"
         )
-        self._settings_dict = get_trigger_settings(self._name, self._exp_parameter_dict)
+        self._settings_dict = get_trigger_settings(self._name, self._trigger_parameter_dict)
 
         self._point = self._settings_dict["POINT"]
         self._angle = self._settings_dict["ANGLE"]
@@ -238,7 +238,7 @@ class BaseScreenTrigger(BaseTrigger):
         self._trigger_parameter_dict = dict(
             ANGLE="int", DIRECTION="str", BODYPARTS="list", DEBUG="boolean"
         )
-        self._settings_dict = get_trigger_settings(self._name, self._exp_parameter_dict)
+        self._settings_dict = get_trigger_settings(self._name, self._trigger_parameter_dict)
 
         self._direction = self._settings_dict["DIRECTION"]
         self._point = direction_dict[self._direction]
@@ -561,7 +561,7 @@ class BaseSpeedTrigger(BaseTrigger):
         self._trigger_parameter_dict = dict(
             THRESHOLD="float", BODYPARTS="list", DEBUG="boolean"
         )
-        self._settings_dict = get_trigger_settings(self._name, self._exp_parameter_dict)
+        self._settings_dict = get_trigger_settings(self._name, self._trigger_parameter_dict)
 
         region_types = {"circle": EllipseROI, "square": RectangleROI}
         self._region_of_interest = region_types[self._settings_dict["TYPE"].lower()](
