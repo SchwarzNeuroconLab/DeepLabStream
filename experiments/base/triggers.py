@@ -356,7 +356,7 @@ class BaseRegionTrigger(BaseTrigger):
 
         color = (0, 255, 0) if result else (0, 0, 255)
 
-        if self._roi_type == "circle":
+        if self._settings_dict["TYPE"].lower() == "circle":
             response_body = {
                 "plot": {
                     "circle": dict(
@@ -366,7 +366,7 @@ class BaseRegionTrigger(BaseTrigger):
                     )
                 }
             }
-        elif self._roi_type == "square":
+        elif self._settings_dict["TYPE"].lower() == "square":
             box = self._region_of_interest.get_box()
             x1, y1, x2, y2 = box
             pt1 = (x1, y2)
