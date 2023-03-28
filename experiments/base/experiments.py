@@ -261,7 +261,7 @@ class BaseConditionalExperiment(BaseExperiment):
                 result, response = self._trigger.check_skeleton(skeleton=skeleton)
                 if result:
                     self._event_count += 1
-                    print("Stimulation #{self._event_count}".format())
+                    print(f"Stimulation #{self._event_count}")
                     self._intertrial_timer.reset()
                     self._intertrial_timer.start()
 
