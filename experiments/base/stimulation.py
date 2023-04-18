@@ -186,24 +186,31 @@ class ScreenStimulation(BaseStimulation):
         self._settings_dict = get_stimulation_settings(self._name, self._parameter_dict)
         self._running = False
         self._stim_device = None
+        self.height, self.width = None, None
 
-        self._background = (
-            self._setup_stimulus(self._settings_dict["BACKGROUND_PATH"], type="image")
-            if self._settings_dict["BACKGROUND_PATH"] is not None
-            else None
-        )
         self._stimulus = self._setup_stimulus(
             self._settings_dict["STIM_PATH"], type=self._settings_dict["TYPE"]
         )
+
+        if self._settings_dict["BACKGROUND_PATH"] is not None:
+            self._background = self._setup_stimulus(self._settings_dict["BACKGROUND_PATH"], type="image")
+        else:
+            self._background = np.zeros((self.height, self.width, 3), np.uint8)
+
         self._window = None
 
-    @staticmethod
-    def _setup_stimulus(path, type="image"):
+    def _setup_stimulus(self, path, type="image"):
         if type == "image":
             img = cv2.imread(path, -1)
             stimulus = np.uint8(img)
+            if self.width is None or self.height is None:
+                self.height, self.width = img.shape[:2]
+
         elif type == "video":
             stimulus = cv2.VideoCapture(path)
+            if self.width is None or self.height is None:
+                self.height, self.width = int(stimulus.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(
+                    stimulus.get(cv2.CAP_PROP_FRAME_WIDTH))
 
         return stimulus
 
@@ -216,6 +223,7 @@ class ScreenStimulation(BaseStimulation):
             self._setup_window()
         if self._settings_dict["TYPE"] == "image":
             cv2.imshow(self._name, self._stimulus)
+            cv2.waitKey(1)
 
         elif self._settings_dict["TYPE"] == "video":
             while self._stimulus.isOpened():
@@ -226,9 +234,11 @@ class ScreenStimulation(BaseStimulation):
                 else:
                     break
                 if cv2.waitKey(1) & 0xFF == ord("q"):
+                    # if user presses q, the video restarts from the beginning
                     break
             self._running = False
-            self._stimulus.release()
+            #reset video for next stimulus
+            self._stimulus.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     def remove(self):
         """remove stimulation (e.g. reward) and stop after being done"""
@@ -236,6 +246,8 @@ class ScreenStimulation(BaseStimulation):
             self._setup_window()
 
         cv2.imshow(self._name, self._background)
+        # add wait key. window waits until user presses a key (because cv2 crashes otherwise)
+        cv2.waitKey(1)
 
     def start(self):
         print(
