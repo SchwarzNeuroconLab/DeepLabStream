@@ -259,6 +259,8 @@ class BaseConditionalExperiment(BaseExperiment):
             if not self._intertrial_timer.check_timer():
                 # check if condition is met
                 result, response = self._trigger.check_skeleton(skeleton=skeleton)
+                #set event to result to export to dataframe
+                self._event = result
                 if result:
                     self._event_count += 1
                     print(f"Stimulation #{self._event_count}")
@@ -296,9 +298,10 @@ class BaseConditionalExperiment(BaseExperiment):
 
     def get_trial(self):
         """
-        Check which trial is going on right now
+        Check if event is going on right now
+        return: bool
         """
-        return self._current_trial
+        return self._event
 
 
 """Standardexperiments that can be setup by using the experiment config"""
