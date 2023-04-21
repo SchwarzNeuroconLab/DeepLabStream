@@ -299,8 +299,14 @@ class DeepLabStream:
         """
         Create video files dictionary by cameras names
         """
+        #check if video was cropped
+        if CROP:
+            SAVE_RESOLUTION = (CROP_X[1] - CROP_X[0], CROP_Y[1] - CROP_Y[0])
+        else:
+            SAVE_RESOLUTION = RESOLUTION
+
         self._video_files = create_video_files(
-            OUT_DIR, self.enabled_cameras, RESOLUTION, FRAMERATE, self._video_codec
+            OUT_DIR, self.enabled_cameras, SAVE_RESOLUTION, FRAMERATE, self._video_codec
         )
 
     def write_video(self, frames: dict, index: int):
