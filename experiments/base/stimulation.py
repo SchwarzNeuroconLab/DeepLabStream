@@ -187,6 +187,7 @@ class ScreenStimulation(BaseStimulation):
         self._running = False
         self._stim_device = None
         self.height, self.width = None, None
+        self.framerate = None # only for video
 
         self._stimulus = self._setup_stimulus(
             self._settings_dict["STIM_PATH"], type=self._settings_dict["TYPE"]
@@ -211,6 +212,8 @@ class ScreenStimulation(BaseStimulation):
             if self.width is None or self.height is None:
                 self.height, self.width = int(stimulus.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(
                     stimulus.get(cv2.CAP_PROP_FRAME_WIDTH))
+            # get framerate of video
+            self.framerate = int(stimulus.get(cv2.CAP_PROP_FPS))
 
         return stimulus
 
@@ -229,8 +232,14 @@ class ScreenStimulation(BaseStimulation):
             while self._stimulus.isOpened():
                 self._running = True
                 ret, frame = self._stimulus.read()
+                last_frame_time = time.time()
                 if ret is True:
                     cv2.imshow(self._name, frame)
+                    running_time = time.time() - last_frame_time
+                    # if the video is faster than the framerate, wait until the next frame should be shown
+                    if running_time <= 1 / self.framerate:
+                        sleepy_time = int(np.ceil(1000 / self.framerate - running_time / 1000))
+                        cv2.waitKey(sleepy_time)
                 else:
                     break
                 if cv2.waitKey(1) & 0xFF == ord("q"):
